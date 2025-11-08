@@ -1,0 +1,4210 @@
+definitions:
+  authdto.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    type: object
+  authdto.ForgotPasswordResponse:
+    properties:
+      expires_at:
+        type: string
+    type: object
+  authdto.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  authdto.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/entity.UserMin'
+    type: object
+  authdto.ResetPasswordRequest:
+    properties:
+      password:
+        type: string
+      token:
+        type: string
+    type: object
+  authdto.ValidateTokenResetPasswordRequest:
+    properties:
+      token:
+        type: string
+    type: object
+  authdto.ValidateTokenResetPasswordResponse:
+    properties:
+      email:
+        type: string
+    type: object
+  bannerdto.OrderBanner:
+    properties:
+      id:
+        type: integer
+      order:
+        type: integer
+    type: object
+  bannerdto.UpdateOrderBannerRequest:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/bannerdto.OrderBanner'
+        type: array
+    type: object
+  bannerdto.UpdateStatusBannerRequest:
+    properties:
+      id:
+        type: integer
+      status:
+        type: boolean
+    required:
+    - id
+    - status
+    type: object
+  bookingdto.AddToCartRequest:
+    properties:
+      check_in_date:
+        type: string
+      check_out_date:
+        type: string
+      promo_id:
+        type: integer
+      quantity:
+        type: integer
+      room_price_id:
+        type: integer
+      room_type_additional_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  bookingdto.BookingLog:
+    properties:
+      agent_name:
+        type: string
+      booking_code:
+        type: string
+      booking_status:
+        type: string
+      capacity:
+        type: string
+      check_in_date:
+        type: string
+      check_out_date:
+        type: string
+      confirm_date:
+        type: string
+      hotel_name:
+        type: string
+      payment_status:
+        type: string
+      room_nights:
+        type: integer
+      room_type_name:
+        type: string
+    type: object
+  bookingdto.CartDetail:
+    properties:
+      additional:
+        items:
+          $ref: '#/definitions/bookingdto.CartDetailAdditional'
+        type: array
+      check_in_date:
+        type: string
+      check_out_date:
+        type: string
+      guest:
+        type: string
+      hotel_name:
+        type: string
+      hotel_rating:
+        type: integer
+      is_breakfast:
+        type: boolean
+      price:
+        type: number
+      promo:
+        $ref: '#/definitions/bookingdto.CartDetailPromo'
+      room_type_name:
+        type: string
+      total_additional_price:
+        type: number
+      total_price:
+        type: number
+    type: object
+  bookingdto.CartDetailAdditional:
+    properties:
+      name:
+        type: string
+      price:
+        type: number
+    type: object
+  bookingdto.CartDetailPromo:
+    properties:
+      benefit:
+        type: string
+      code:
+        type: string
+      discount_percent:
+        type: number
+      fixed_price:
+        type: number
+      type:
+        type: string
+      upgraded_to_id:
+        type: integer
+    type: object
+  bookingdto.CheckOutCartRequest:
+    properties:
+      booking_id:
+        type: integer
+      detail:
+        items:
+          $ref: '#/definitions/bookingdto.CheckOutDetail'
+        type: array
+      guests:
+        items:
+          type: string
+        type: array
+    type: object
+  bookingdto.CheckOutDetail:
+    properties:
+      booking_detail_id:
+        type: integer
+      guest:
+        type: string
+    type: object
+  bookingdto.DataBooking:
+    properties:
+      agent_company:
+        type: string
+      agent_name:
+        type: string
+      booking_code:
+        type: string
+      booking_id:
+        type: integer
+      booking_status:
+        type: string
+      detail:
+        items:
+          $ref: '#/definitions/bookingdto.DetailBooking'
+        type: array
+      group_promo:
+        type: string
+      guest_name:
+        items:
+          type: string
+        type: array
+      payment_status:
+        type: string
+    type: object
+  bookingdto.DataBookingHistory:
+    properties:
+      booking_code:
+        type: string
+      booking_id:
+        type: integer
+      booking_status:
+        type: string
+      detail:
+        items:
+          $ref: '#/definitions/bookingdto.DetailBookingHistory'
+        type: array
+      guest_name:
+        items:
+          type: string
+        type: array
+      payment_status:
+        type: string
+    type: object
+  bookingdto.DetailBooking:
+    properties:
+      additional:
+        items:
+          type: string
+        type: array
+      booking_status:
+        type: string
+      cancelled_date:
+        type: string
+      guest_name:
+        type: string
+      hotel_name:
+        type: string
+      is_api:
+        type: boolean
+      payment_status:
+        type: string
+      promo_code:
+        type: string
+      promo_id:
+        type: integer
+      sub_booking_id:
+        type: string
+    type: object
+  bookingdto.DetailBookingHistory:
+    properties:
+      additional:
+        items:
+          type: string
+        type: array
+      agent_name:
+        type: string
+      booking_status:
+        type: string
+      cancellation_date:
+        type: string
+      guest_name:
+        type: string
+      hotel_name:
+        type: string
+      payment_status:
+        type: string
+      sub_booking_id:
+        type: string
+    type: object
+  bookingdto.ListCartResponse:
+    properties:
+      detail:
+        items:
+          $ref: '#/definitions/bookingdto.CartDetail'
+        type: array
+      grand_total:
+        type: integer
+      guest:
+        items:
+          type: string
+        type: array
+      id:
+        type: integer
+    type: object
+  bookingdto.UpdateStatusBookingRequest:
+    properties:
+      booking_detail_id:
+        type: integer
+      booking_id:
+        type: integer
+      reason:
+        type: string
+      status_id:
+        type: integer
+    type: object
+  bookingdto.UploadReceiptRequest:
+    type: object
+  emaildto.EmailLogResponse:
+    properties:
+      date_time:
+        type: string
+      hotel_name:
+        type: string
+      notes:
+        type: string
+      status:
+        type: string
+    type: object
+  emaildto.EmailTemplateResponse:
+    properties:
+      body:
+        type: string
+      signature:
+        type: string
+      subject:
+        type: string
+    type: object
+  entity.AgentCompany:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  entity.Banner:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      order:
+        type: integer
+      title:
+        type: string
+    type: object
+  entity.CustomBreakfast:
+    properties:
+      is_show:
+        type: boolean
+      pax:
+        type: integer
+      price:
+        type: number
+    type: object
+  entity.CustomBreakfastWithID:
+    properties:
+      id:
+        type: integer
+      is_show:
+        type: boolean
+      pax:
+        type: integer
+      price:
+        type: number
+    type: object
+  entity.CustomRoomAdditionalWithID:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+    type: object
+  entity.FilterBedTypeHotel:
+    properties:
+      bed_type:
+        type: string
+      bed_type_id:
+        type: integer
+      count:
+        type: integer
+    type: object
+  entity.FilterRangePrice:
+    properties:
+      max_price:
+        type: number
+      min_price:
+        type: number
+    type: object
+  entity.FilterRatingHotel:
+    properties:
+      count:
+        type: integer
+      rating:
+        type: integer
+    type: object
+  entity.FilterTotalBedroom:
+    properties:
+      count:
+        type: integer
+      total_bed_rooms:
+        type: integer
+    type: object
+  entity.NearbyPlace:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      radius:
+        type: number
+    type: object
+  entity.Notification:
+    properties:
+      id:
+        type: integer
+      is_read:
+        type: boolean
+      message:
+        type: string
+      read_at:
+        type: string
+      redirect_url:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  entity.Promo:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      detail:
+        $ref: '#/definitions/entity.PromoDetail'
+      duration:
+        type: integer
+      end_date:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      name:
+        type: string
+      promo_group_ids:
+        items:
+          type: integer
+        type: array
+      promo_groups:
+        items:
+          $ref: '#/definitions/entity.PromoGroup'
+        type: array
+      promo_room_types:
+        items:
+          $ref: '#/definitions/entity.PromoRoomType'
+        type: array
+      promo_type_id:
+        type: integer
+      promo_type_name:
+        type: string
+      start_date:
+        type: string
+    type: object
+  entity.PromoDetail:
+    properties:
+      benefit_note:
+        type: string
+      discount_percentage:
+        type: number
+      fixed_price:
+        type: number
+      upgraded_to_id:
+        type: integer
+    type: object
+  entity.PromoGroup:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  entity.PromoRoomType:
+    properties:
+      hotel_id:
+        type: integer
+      hotel_name:
+        type: string
+      room_type_id:
+        type: integer
+      room_type_name:
+        type: string
+      total_nights:
+        type: integer
+    type: object
+  entity.PromoType:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  entity.ReportAgentBooking:
+    properties:
+      agent_company:
+        type: string
+      agent_id:
+        type: integer
+      agent_name:
+        type: string
+      cancelled_booking:
+        type: integer
+      confirmed_booking:
+        type: integer
+      hotel_id:
+        type: integer
+      hotel_name:
+        type: string
+    type: object
+  entity.ReportAgentDetail:
+    properties:
+      additional:
+        type: string
+      capacity:
+        type: string
+      date_in:
+        type: string
+      date_out:
+        type: string
+      guest_name:
+        type: string
+      room_type:
+        type: string
+      status_booking:
+        type: string
+    type: object
+  entity.ReportForGraph:
+    properties:
+      count:
+        type: integer
+      date:
+        type: string
+    type: object
+  entity.StatusBooking:
+    properties:
+      id:
+        type: integer
+      status:
+        type: string
+    type: object
+  entity.StatusHotel:
+    properties:
+      id:
+        type: integer
+      status:
+        type: string
+    type: object
+  entity.StatusPayment:
+    properties:
+      id:
+        type: integer
+      status:
+        type: string
+    type: object
+  entity.UserMin:
+    properties:
+      full_name:
+        type: string
+      id:
+        type: integer
+      permissions:
+        items:
+          type: string
+        type: array
+      photo_url:
+        type: string
+      role:
+        type: string
+      role_id:
+        type: integer
+      username:
+        type: string
+    type: object
+  hoteldto.BreakfastBase:
+    properties:
+      is_show:
+        type: boolean
+      price:
+        type: number
+    type: object
+  hoteldto.BreakfastWith:
+    properties:
+      is_show:
+        type: boolean
+      pax:
+        type: integer
+      price:
+        type: number
+    type: object
+  hoteldto.DataAvailable:
+    properties:
+      available:
+        type: boolean
+      day:
+        type: integer
+    type: object
+  hoteldto.DetailHotelForAgentResponse:
+    properties:
+      cancellation_period:
+        type: integer
+      check_in_hour:
+        type: string
+      check_out_hour:
+        type: string
+      city:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      facilities:
+        items:
+          type: string
+        type: array
+      id:
+        type: integer
+      name:
+        type: string
+      nearby_place:
+        items:
+          $ref: '#/definitions/entity.NearbyPlace'
+        type: array
+      photos:
+        items:
+          type: string
+        type: array
+      province:
+        type: string
+      rating:
+        type: integer
+      room_type:
+        items:
+          $ref: '#/definitions/hoteldto.DetailRoomTypeForAgent'
+        type: array
+      social_media:
+        items:
+          $ref: '#/definitions/hoteldto.SocialMedia'
+        type: array
+      sub_district:
+        type: string
+    type: object
+  hoteldto.DetailHotelResponse:
+    properties:
+      cancellation_period:
+        type: integer
+      check_in_hour:
+        type: string
+      check_out_hour:
+        type: string
+      city:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      facilities:
+        items:
+          type: string
+        type: array
+      id:
+        type: integer
+      name:
+        type: string
+      nearby_place:
+        items:
+          $ref: '#/definitions/entity.NearbyPlace'
+        type: array
+      photos:
+        items:
+          type: string
+        type: array
+      province:
+        type: string
+      rating:
+        type: integer
+      room_type:
+        items:
+          $ref: '#/definitions/hoteldto.DetailRoomType'
+        type: array
+      social_media:
+        items:
+          $ref: '#/definitions/hoteldto.SocialMedia'
+        type: array
+      sub_district:
+        type: string
+    type: object
+  hoteldto.DetailRoomType:
+    properties:
+      additional:
+        items:
+          $ref: '#/definitions/entity.CustomRoomAdditionalWithID'
+        type: array
+      bed_types:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      id:
+        type: integer
+      is_smoking_room:
+        type: boolean
+      max_occupancy:
+        type: integer
+      name:
+        type: string
+      photos:
+        items:
+          type: string
+        type: array
+      room_size:
+        type: number
+      with_breakfast:
+        $ref: '#/definitions/entity.CustomBreakfast'
+      without_breakfast:
+        $ref: '#/definitions/entity.CustomBreakfast'
+    type: object
+  hoteldto.DetailRoomTypeForAgent:
+    properties:
+      additional:
+        items:
+          $ref: '#/definitions/entity.CustomRoomAdditionalWithID'
+        type: array
+      bed_types:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      is_smoking_room:
+        type: boolean
+      max_occupancy:
+        type: integer
+      name:
+        type: string
+      photos:
+        items:
+          type: string
+        type: array
+      promos:
+        items:
+          $ref: '#/definitions/hoteldto.PromoDetailRoom'
+        type: array
+      room_size:
+        type: number
+      with_breakfast:
+        $ref: '#/definitions/entity.CustomBreakfastWithID'
+      without_breakfast:
+        $ref: '#/definitions/entity.CustomBreakfastWithID'
+    type: object
+  hoteldto.ListHotel:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      is_api:
+        type: boolean
+      name:
+        type: string
+      region:
+        type: string
+      rooms:
+        items:
+          $ref: '#/definitions/hoteldto.RoomTypeItem'
+        type: array
+      status:
+        type: string
+    type: object
+  hoteldto.ListHotelForAgent:
+    properties:
+      address:
+        type: string
+      id:
+        type: integer
+      min_price:
+        type: number
+      name:
+        type: string
+      photo:
+        type: string
+      rating:
+        type: integer
+    type: object
+  hoteldto.ListHotelForAgentResponse:
+    properties:
+      filter_bed_types:
+        items:
+          $ref: '#/definitions/entity.FilterBedTypeHotel'
+        type: array
+      filter_districts:
+        items:
+          type: string
+        type: array
+      filter_pricing:
+        $ref: '#/definitions/entity.FilterRangePrice'
+      filter_ratings:
+        items:
+          $ref: '#/definitions/entity.FilterRatingHotel'
+        type: array
+      filter_total_rooms:
+        items:
+          $ref: '#/definitions/entity.FilterTotalBedroom'
+        type: array
+      hotels:
+        items:
+          $ref: '#/definitions/hoteldto.ListHotelForAgent'
+        type: array
+      total:
+        type: integer
+    type: object
+  hoteldto.ListRoomType:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  hoteldto.NearbyPlace:
+    properties:
+      distance:
+        type: number
+      name:
+        type: string
+    type: object
+  hoteldto.PromoDetailRoom:
+    properties:
+      code_promo:
+        type: string
+      description:
+        type: string
+      other_notes:
+        type: string
+      price_with_breakfast:
+        type: number
+      price_without_breakfast:
+        type: number
+      promo_id:
+        type: integer
+      total_nights:
+        type: integer
+    type: object
+  hoteldto.RoomAdditional:
+    properties:
+      name:
+        type: string
+      price:
+        type: number
+    type: object
+  hoteldto.RoomAvailable:
+    properties:
+      available:
+        items:
+          $ref: '#/definitions/hoteldto.DataAvailable'
+        type: array
+      room_type_id:
+        type: integer
+      room_type_name:
+        type: string
+    type: object
+  hoteldto.RoomTypeItem:
+    properties:
+      name:
+        type: string
+      price:
+        type: number
+      price_with_breakfast:
+        type: number
+    type: object
+  hoteldto.SocialMedia:
+    properties:
+      link:
+        type: string
+      platform:
+        type: string
+    type: object
+  hoteldto.UpdateRoomAvailableData:
+    properties:
+      room_available:
+        items:
+          $ref: '#/definitions/hoteldto.DataAvailable'
+        type: array
+      room_type_id:
+        type: integer
+    type: object
+  hoteldto.UpdateRoomAvailableRequest:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/hoteldto.UpdateRoomAvailableData'
+        type: array
+      month:
+        description: 'Format: YYYY-MM'
+        type: string
+    type: object
+  notifdto.UpdateNotificationSettingRequest:
+    properties:
+      channel:
+        type: string
+      isEnable:
+        type: boolean
+      type:
+        type: string
+    type: object
+  promodto.PromoResponse:
+    properties:
+      duration:
+        type: integer
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      promo_code:
+        type: string
+      promo_description:
+        type: string
+      promo_detail:
+        $ref: '#/definitions/entity.PromoDetail'
+      promo_end_date:
+        type: string
+      promo_name:
+        type: string
+      promo_start_date:
+        type: string
+      promo_type:
+        type: string
+    type: object
+  promodto.RoomType:
+    properties:
+      room_type_id:
+        type: integer
+      total_night:
+        type: integer
+    type: object
+  promodto.UpsertPromoRequest:
+    properties:
+      description:
+        type: string
+      detail:
+        type: string
+      end_date:
+        type: string
+      promo_code:
+        type: string
+      promo_name:
+        type: string
+      promo_type:
+        type: integer
+      room_types:
+        items:
+          $ref: '#/definitions/promodto.RoomType'
+        type: array
+      start_date:
+        type: string
+    type: object
+  promogroupdto.AssignPromoGroupMemberRequest:
+    properties:
+      agent_company_id:
+        type: integer
+      member_id:
+        type: integer
+      promo_group_id:
+        type: integer
+    type: object
+  promogroupdto.AssignPromoToGroupRequest:
+    properties:
+      promo_group_id:
+        type: integer
+      promo_id:
+        type: integer
+    type: object
+  promogroupdto.CreatePromoGroupRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  promogroupdto.ListPromoGroupMemberData:
+    properties:
+      agent_company:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  promogroupdto.ListPromoGroupPromosData:
+    properties:
+      promo_code:
+        type: string
+      promo_end_date:
+        type: string
+      promo_id:
+        type: integer
+      promo_name:
+        type: string
+      promo_start_date:
+        type: string
+    type: object
+  promogroupdto.ListUnassignedPromoData:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  promogroupdto.RemovePromoFromGroupRequest:
+    properties:
+      promo_group_id:
+        type: integer
+      promo_id:
+        type: integer
+    type: object
+  promogroupdto.RemovePromoGroupMemberRequest:
+    properties:
+      member_id:
+        type: integer
+      promo_group_id:
+        type: integer
+    type: object
+  reportdto.DataTotalWithPercentage:
+    properties:
+      count:
+        type: integer
+      message:
+        type: string
+      percent:
+        type: number
+    type: object
+  reportdto.ReportSummaryResponse:
+    properties:
+      graphic_data:
+        items:
+          $ref: '#/definitions/entity.ReportForGraph'
+        type: array
+      summary_data:
+        $ref: '#/definitions/reportdto.SummaryData'
+    type: object
+  reportdto.SummaryData:
+    properties:
+      cancellation_booking:
+        $ref: '#/definitions/reportdto.DataTotalWithPercentage'
+      confirmed_booking:
+        $ref: '#/definitions/reportdto.DataTotalWithPercentage'
+      new_customer:
+        $ref: '#/definitions/reportdto.DataTotalWithPercentage'
+    type: object
+  response.Pagination:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.Response:
+    properties:
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+  response.ResponseWithData:
+    properties:
+      data: {}
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+  response.ResponseWithPagination:
+    properties:
+      data: {}
+      message:
+        type: string
+      pagination:
+        $ref: '#/definitions/response.Pagination'
+      status:
+        type: integer
+    type: object
+  userdto.ListRoleAccessResponse:
+    properties:
+      access:
+        additionalProperties:
+          additionalProperties:
+            type: boolean
+          type: object
+        description: page → action → allowed
+        type: object
+      role:
+        type: string
+    type: object
+  userdto.ListUserData:
+    properties:
+      agent_company_name:
+        type: string
+      certificate:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      id_card:
+        type: string
+      kakao_talk_id:
+        type: string
+      name:
+        type: string
+      name_card:
+        type: string
+      phone_number:
+        type: string
+      photo:
+        type: string
+      promo_group_id:
+        type: integer
+      promo_group_name:
+        type: string
+      status:
+        type: string
+    type: object
+  userdto.ListUsersByAgentCompanyData:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  userdto.NotificationSetting:
+    properties:
+      channel:
+        type: string
+      is_enable:
+        type: boolean
+      type:
+        type: string
+    type: object
+  userdto.ProfileResponse:
+    properties:
+      certificate:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: integer
+      kakao_talk_id:
+        type: string
+      name_card:
+        type: string
+      notification_settings:
+        items:
+          $ref: '#/definitions/userdto.NotificationSetting'
+        type: array
+      password:
+        type: string
+      phone:
+        type: string
+      photo_profile:
+        type: string
+      status:
+        type: string
+      username:
+        type: string
+    type: object
+  userdto.UpdateProfileRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      kakao_talk_id:
+        type: string
+      phone:
+        type: string
+    type: object
+  userdto.UpdateRoleAccessRequest:
+    properties:
+      action:
+        type: string
+      allowed:
+        type: boolean
+      page:
+        type: string
+      role:
+        type: string
+    type: object
+  userdto.UpdateSettingRequest:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+      username:
+        type: string
+    type: object
+  userdto.UpdateStatusUserRequest:
+    properties:
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      reason:
+        type: string
+    type: object
+  userdto.UpdateUserByAdminRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      is_active:
+        type: boolean
+      phone:
+        type: string
+      user_id:
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: This is a group of API for WTM Service
+  title: WTM Backend Service
+  version: "1"
+paths:
+  /banners:
+    get:
+      consumes:
+      - application/json
+      description: List all banners with pagination and search functionality
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search term for banner title
+        in: query
+        name: search
+        type: string
+      - description: Filter by active status of banners
+        in: query
+        name: is_active
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved banners
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.Banner'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Banners
+      tags:
+      - Banner
+    post:
+      consumes:
+      - application/json
+      description: Create a new banner with the specified details.
+      parameters:
+      - description: Title of the banner
+        in: formData
+        name: title
+        required: true
+        type: string
+      - description: Description of the banner
+        in: formData
+        name: description
+        type: string
+      - description: Image file for the banner
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully created banner
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create Banner
+      tags:
+      - Banner
+  /banners/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a banner by Id.
+      parameters:
+      - description: Banner Id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully removed banner
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove Banner
+      tags:
+      - Banner
+    get:
+      consumes:
+      - application/json
+      description: Fetch details of a specific banner by its Id.
+      parameters:
+      - description: Banner Id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Banner details fetched successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.Banner'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get Banner Details
+      tags:
+      - Banner
+    put:
+      consumes:
+      - application/json
+      description: Update an existing banner with the specified details.
+      parameters:
+      - description: Banner Id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Title of the banner
+        in: formData
+        name: title
+        type: string
+      - description: Description of the banner
+        in: formData
+        name: description
+        type: string
+      - description: Image file for the banner
+        in: formData
+        name: image
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated banner
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Banner
+      tags:
+      - Banner
+  /banners/order:
+    post:
+      consumes:
+      - application/json
+      description: Update the order of a banner in the promotional banners.
+      parameters:
+      - description: Update Order Banner Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bannerdto.UpdateOrderBannerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated order banner
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Order Banner
+      tags:
+      - Banner
+  /banners/status:
+    post:
+      consumes:
+      - application/json
+      description: Update the status of a banner (active/inactive).
+      parameters:
+      - description: Status of the banner
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/bannerdto.UpdateStatusBannerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated banner status
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Banner Status
+      tags:
+      - Banner
+  /bookings:
+    get:
+      consumes:
+      - application/json
+      description: List bookings with pagination and filtering options
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search by booking code or guest name
+        in: query
+        name: search
+        type: string
+      - description: Filter by booking status Id
+        in: query
+        name: booking_status_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved bookings
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/bookingdto.DataBooking'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Bookings
+      tags:
+      - Booking
+  /bookings/cart:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all items in the user's cart
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved cart items
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  $ref: '#/definitions/bookingdto.ListCartResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List cart items
+      tags:
+      - Booking
+    post:
+      consumes:
+      - application/json
+      description: Add an item to the user's cart
+      parameters:
+      - description: Add to cart request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bookingdto.AddToCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully added to cart
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Add item to cart
+      tags:
+      - Booking
+  /bookings/cart/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove an item from the user's cart
+      parameters:
+      - description: Booking Detail Id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully removed item from cart
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove item from cart
+      tags:
+      - Booking
+  /bookings/checkout:
+    post:
+      consumes:
+      - application/json
+      description: Finalize the cart by submitting guest data and changing booking
+        status to "in review"
+      parameters:
+      - description: Checkout cart request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bookingdto.CheckOutCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully checked out cart
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Invalid request payload
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Checkout cart
+      tags:
+      - Booking
+  /bookings/history:
+    get:
+      consumes:
+      - application/json
+      description: List booking history with pagination and filtering options
+      parameters:
+      - default: 1
+        description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search by booking code or guest name
+        in: query
+        name: search
+        type: string
+      - description: Search by guest name or booking code
+        enum:
+        - guest_name
+        - booking_id
+        in: query
+        name: search_by
+        type: string
+      - description: Filter by booking status Id
+        in: query
+        name: status_booking_id
+        type: integer
+      - description: Filter by payment status Id
+        in: query
+        name: status_payment_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved booking history
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/bookingdto.DataBookingHistory'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Booking History
+      tags:
+      - Booking
+  /bookings/logs:
+    get:
+      consumes:
+      - application/json
+      description: List booking logs with pagination and filtering options
+      parameters:
+      - default: 1
+        description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search by booking code or guest name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved booking logs
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/bookingdto.BookingLog'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Booking Log
+      tags:
+      - Booking
+  /bookings/payment-status:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of payment statuses.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of payment statuses
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.StatusPayment'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Payment Statuses
+      tags:
+      - Booking
+  /bookings/receipt:
+    post:
+      consumes:
+      - application/json
+      description: Upload a receipt for a booking
+      parameters:
+      - description: Upload receipt request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bookingdto.UploadReceiptRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully uploaded receipt
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Upload Receipt
+      tags:
+      - Booking
+  /bookings/status:
+    post:
+      consumes:
+      - application/json
+      description: Update the status of a booking
+      parameters:
+      - description: Update status booking request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bookingdto.UpdateStatusBookingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated booking status
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update booking status
+      tags:
+      - Booking
+  /bookings/statuses:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of booking statuses.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of booking statuses
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.StatusBooking'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Booking Statuses
+      tags:
+      - Booking
+  /email/contact-us:
+    post:
+      consumes:
+      - application/json
+      description: Send a contact us email
+      parameters:
+      - description: Name
+        in: query
+        name: name
+        required: true
+        type: string
+      - description: Email
+        in: query
+        name: email
+        required: true
+        type: string
+      - description: Subject
+        in: query
+        name: subject
+        required: true
+        type: string
+      - description: Department
+        in: query
+        name: department
+        required: true
+        type: string
+      - description: Type
+        enum:
+        - general
+        - booking
+        in: query
+        name: type
+        required: true
+        type: string
+      - description: Booking Code
+        in: query
+        name: booking_code
+        type: string
+      - description: Sub Booking Code
+        in: query
+        name: sub_booking_code
+        type: string
+      - description: Message
+        in: query
+        name: message
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully sent contact us email
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Send Contact Us Email
+      tags:
+      - Email
+  /email/logs:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of email logs using query parameters.
+      parameters:
+      - description: 'Page number for pagination (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of email logs
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/emaildto.EmailLogResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Email Logs
+      tags:
+      - Email
+  /email/template:
+    get:
+      description: Retrieve a list of email templates
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved email templates
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/emaildto.EmailTemplateResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get Email Templates
+      tags:
+      - Email
+    put:
+      consumes:
+      - application/json
+      description: Update an existing email template
+      parameters:
+      - description: Template Subject
+        in: formData
+        name: subject
+        required: true
+        type: string
+      - description: Template Body dalam html format
+        in: formData
+        name: body
+        required: true
+        type: string
+      - description: Template Signature Text dalam html format
+        in: formData
+        name: signature_text
+        type: string
+      - description: Template Signature Image
+        in: formData
+        name: signature_image
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated email template
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Email Template
+      tags:
+      - Email
+  /example_additional_features:
+    get:
+      consumes:
+      - application/json
+      description: Example payload JSON for additional room features
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Payload additional room features in JSON format
+          schema:
+            items:
+              $ref: '#/definitions/hoteldto.RoomAdditional'
+            type: array
+      summary: Example Data Additional Features
+      tags:
+      - Hotel
+  /example_nearby_places:
+    get:
+      consumes:
+      - application/json
+      description: Example payload JSON for nearby places
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Payload nearby places in JSON format
+          schema:
+            items:
+              $ref: '#/definitions/hoteldto.NearbyPlace'
+            type: array
+      summary: Example Data Nearby Places
+      tags:
+      - Hotel
+  /example_room_options:
+    get:
+      consumes:
+      - application/json
+      description: Example payload for room options based on breakfast type
+      parameters:
+      - description: Type of room options
+        enum:
+        - without_breakfast
+        - with_breakfast
+        in: query
+        name: room_options
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Payload room options with breakfast in JSON format
+          schema:
+            $ref: '#/definitions/hoteldto.BreakfastWith'
+      summary: Example Room Options
+      tags:
+      - Hotel
+  /example_social_medias:
+    get:
+      consumes:
+      - application/json
+      description: Example payload JSON for social medias
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Payload social medias in JSON format
+          schema:
+            items:
+              $ref: '#/definitions/hoteldto.SocialMedia'
+            type: array
+      summary: Example Data Social Media
+      tags:
+      - Hotel
+  /files/{bucket}/{object}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a file from the specified bucket and object key.
+      parameters:
+      - description: Bucket name
+        in: path
+        name: bucket
+        required: true
+        type: string
+      - description: Object key
+        in: path
+        name: object
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Successfully retrieved file
+          schema:
+            type: file
+      summary: Get File
+      tags:
+      - File
+  /forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Initiates the password reset process by sending a reset link to
+        the user's email
+      parameters:
+      - description: Forgot Password Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/authdto.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset link has been sent to your email
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/authdto.ForgotPasswordResponse'
+              type: object
+      summary: Forgot Password
+      tags:
+      - Auth
+  /hotels:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of hotels using query parameters.
+      parameters:
+      - description: Filter hotels by API status
+        in: query
+        name: is_api
+        type: boolean
+      - description: Filter hotels by region
+        in: query
+        name: region
+        type: string
+      - description: Filter hotels by status_id
+        in: query
+        name: status_id
+        type: integer
+      - description: 'Page number for pagination (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter hotels by name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of hotels
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/hoteldto.ListHotel'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Hotels
+      tags:
+      - Hotel
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: Hotel name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - collectionFormat: multi
+        description: Hotel photos (multiple allowed)
+        in: formData
+        items:
+          type: file
+        name: photos
+        required: true
+        type: array
+      - description: Sub-district location
+        in: formData
+        name: sub_district
+        required: true
+        type: string
+      - description: District location
+        in: formData
+        name: district
+        required: true
+        type: string
+      - description: Province location
+        in: formData
+        name: province
+        required: true
+        type: string
+      - description: Contact email
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: Hotel description
+        in: formData
+        name: description
+        type: string
+      - description: Hotel rating (1–5)
+        in: formData
+        name: rating
+        type: integer
+      - description: 'Nearby places as JSON string. Example: /example_nearby_places '
+        in: formData
+        name: nearby_places
+        type: string
+      - collectionFormat: multi
+        description: Facilities (multiple allowed)
+        in: formData
+        items:
+          type: string
+        name: facilities
+        type: array
+      - description: 'Social media links as JSON string. Example: /example_social_medias '
+        in: formData
+        name: social_medias
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully created hotel
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create Hotel
+      tags:
+      - Hotel
+  /hotels/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a hotel by its Id.
+      parameters:
+      - description: Hotel Id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully removed hotel
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove Hotel
+      tags:
+      - Hotel
+    get:
+      consumes:
+      - application/json
+      description: Retrieve hotel details by Id.
+      parameters:
+      - description: Hotel Id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved hotel details
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  $ref: '#/definitions/hoteldto.DetailHotelResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get Hotel Details by Id
+      tags:
+      - Hotel
+    put:
+      consumes:
+      - multipart/form-data
+      description: Update hotel information by Id
+      parameters:
+      - description: Hotel ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Hotel name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - collectionFormat: multi
+        description: Hotel photos (multiple allowed)
+        in: formData
+        items:
+          type: file
+        name: photos
+        type: array
+      - description: Sub-district location
+        in: formData
+        name: sub_district
+        required: true
+        type: string
+      - description: District location
+        in: formData
+        name: district
+        required: true
+        type: string
+      - description: Province location
+        in: formData
+        name: province
+        required: true
+        type: string
+      - description: Contact email
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: Hotel description
+        in: formData
+        name: description
+        type: string
+      - description: Hotel rating (1–5)
+        in: formData
+        name: rating
+        type: integer
+      - description: 'Nearby places as JSON string. Example: /example_nearby_places '
+        in: formData
+        name: nearby_places
+        type: string
+      - collectionFormat: multi
+        description: Facilities (multiple allowed)
+        in: formData
+        items:
+          type: string
+        name: facilities
+        type: array
+      - description: 'Social media links as JSON string. Example: /example_social_medias '
+        in: formData
+        name: social_medias
+        type: string
+      - collectionFormat: multi
+        description: Unchanged hotel photos (multiple allowed)
+        in: formData
+        items:
+          type: string
+        name: unchanged_hotel_photos
+        type: array
+      - collectionFormat: multi
+        description: Unchanged nearby place IDs (multiple allowed)
+        in: formData
+        items:
+          type: integer
+        name: unchanged_nearby_place_ids
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated hotel
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Hotel
+      tags:
+      - Hotel
+  /hotels/additional-rooms:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of additional rooms with pagination.
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter additional rooms by name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of additional rooms
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Additional Rooms
+      tags:
+      - Hotel
+  /hotels/agent:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of hotels for a specific agent with pagination
+        and filtering options.
+      parameters:
+      - description: 'Number of hotels to return per page (default: 10)'
+        in: query
+        name: limit
+        type: integer
+      - description: 'Page number to retrieve (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: Search term to filter hotels by name or description
+        in: query
+        name: search
+        type: string
+      - description: Filter hotels by rating (e.g., 1,2,3,4,5)
+        in: query
+        name: rating
+        type: array
+      - description: Filter hotels by district (e.g., 'Jakarta', 'Bandung')
+        in: query
+        name: district
+        type: array
+      - description: Minimum price range for filtering hotels
+        in: query
+        name: range_price_min
+        type: number
+      - description: Maximum price range for filtering hotels
+        in: query
+        name: range_price_max
+        type: number
+      - description: Filter hotels by total number of rooms (e.g., 1,2,3,4,5)
+        in: query
+        name: total_rooms
+        type: array
+      - description: Filter hotels by bed type Id (e.g., 1,2,3)
+        in: query
+        name: bed_type_id
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of hotels for agent
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  $ref: '#/definitions/hoteldto.ListHotelForAgentResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Hotels for Agent
+      tags:
+      - Hotel
+  /hotels/agent/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific hotel for agents.
+      parameters:
+      - description: Hotel Id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved hotel details
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  $ref: '#/definitions/hoteldto.DetailHotelForAgentResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get Hotel Detail for Agent
+      tags:
+      - Hotel
+  /hotels/bed-types:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all bed types with pagination.
+      parameters:
+      - description: 'Page number for pagination (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Number of items per page (default: 10)'
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter bed types by name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of all bed types
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List All Bed Types
+      tags:
+      - Hotel
+  /hotels/facilities:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of facilities with pagination.
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter facilities by name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of facilities
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Facilities
+      tags:
+      - Hotel
+  /hotels/provinces:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of provinces where hotels are located.
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of provinces
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Provinces
+      tags:
+      - Hotel
+  /hotels/room-available:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of available rooms based on the provided filters.
+      parameters:
+      - description: Hotel Id to filter available rooms
+        in: query
+        name: hotel_id
+        required: true
+        type: integer
+      - description: 'Month to filter available rooms (format: YYYY-MM)'
+        in: query
+        name: month
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of available rooms
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/hoteldto.RoomAvailable'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Room Available
+      tags:
+      - Hotel
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Update Room Available Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/hoteldto.UpdateRoomAvailableRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated room available
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Room Available
+      tags:
+      - Hotel
+  /hotels/room-types:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of room types for a specific hotel.
+      parameters:
+      - description: Hotel Id to filter room types
+        in: query
+        name: hotel_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of room types
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/hoteldto.ListRoomType'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Room Types
+      tags:
+      - Hotel
+    post:
+      consumes:
+      - multipart/form-data
+      description: Add a new room type to a hotel
+      parameters:
+      - description: Hotel ID
+        in: formData
+        name: hotel_id
+        required: true
+        type: integer
+      - description: Room type name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - collectionFormat: multi
+        description: Room type photos (multiple allowed)
+        in: formData
+        items:
+          type: file
+        name: photos
+        required: true
+        type: array
+      - description: 'Without breakfast details as JSON string. Example : /example_room_options?room_options=without_breakfast'
+        in: formData
+        name: without_breakfast
+        type: string
+      - description: 'With breakfast details as JSON string. Example : /example_room_options?room_options=with_breakfast'
+        in: formData
+        name: with_breakfast
+        type: string
+      - description: Room size in square meters
+        in: formData
+        name: room_size
+        type: number
+      - description: Maximum occupancy
+        in: formData
+        name: max_occupancy
+        required: true
+        type: integer
+      - collectionFormat: multi
+        description: Bed types (multiple allowed)
+        in: formData
+        items:
+          type: string
+        name: bed_types
+        required: true
+        type: array
+      - description: Is smoking room
+        in: formData
+        name: is_smoking_room
+        type: boolean
+      - description: 'Additional room features as JSON string. Example: /example_additional_features'
+        in: formData
+        name: additional
+        type: string
+      - description: Room type description
+        in: formData
+        name: description
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully added room type
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Add Room Type
+      tags:
+      - Hotel
+  /hotels/room-types/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a room type by its Id.
+      parameters:
+      - description: Room Type Id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully removed room type
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove Room Type
+      tags:
+      - Hotel
+    put:
+      consumes:
+      - multipart/form-data
+      description: Update the details of a room type by Id.
+      parameters:
+      - description: Room Type Id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Room Type Name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - collectionFormat: multi
+        description: Room Type Photos (multiple allowed)
+        in: formData
+        items:
+          type: file
+        name: photos
+        type: array
+      - description: 'Price without breakfast as JSON string. Example: /example_room_options?room_options=without_breakfast '
+        in: formData
+        name: without_breakfast
+        required: true
+        type: string
+      - description: 'Price with breakfast as JSON string. Example: /example_room_options?room_options=with_breakfast '
+        in: formData
+        name: with_breakfast
+        required: true
+        type: string
+      - description: Room Size in square meters
+        in: formData
+        name: room_size
+        required: true
+        type: number
+      - description: Maximum Occupancy
+        in: formData
+        name: max_occupancy
+        required: true
+        type: integer
+      - collectionFormat: multi
+        description: Bed Types (multiple allowed)
+        in: formData
+        items:
+          type: string
+        name: bed_types
+        required: true
+        type: array
+      - description: Is Smoking Room
+        in: formData
+        name: is_smoking_room
+        required: true
+        type: boolean
+      - description: 'Additional amenities as JSON string. Example: /example_additional_features'
+        in: formData
+        name: additional
+        type: string
+      - description: Room Type Description
+        in: formData
+        name: description
+        type: string
+      - collectionFormat: multi
+        description: Unchanged room photos (multiple allowed)
+        in: formData
+        items:
+          type: string
+        name: unchanged_room_photos
+        type: array
+      - collectionFormat: multi
+        description: Unchanged addition IDs (multiple allowed)
+        in: formData
+        items:
+          type: integer
+        name: unchanged_additions_ids
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated room type
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Room Type
+      tags:
+      - Hotel
+  /hotels/status:
+    put:
+      consumes:
+      - multipart/form-data
+      description: Update the status of a hotel by Id.
+      parameters:
+      - description: Hotel Id
+        in: formData
+        name: hotel_id
+        required: true
+        type: integer
+      - description: Hotel status (true for approved, false for rejected)
+        in: formData
+        name: status
+        required: true
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated hotel status
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Hotel Status
+      tags:
+      - Hotel
+  /hotels/statuses:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of hotel statuses.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of hotel statuses
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.StatusHotel'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Hotel Statuses
+      tags:
+      - Hotel
+  /login:
+    post:
+      description: Logs in a user with username and password
+      parameters:
+      - description: Login Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/authdto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  $ref: '#/definitions/authdto.LoginResponse'
+              type: object
+      summary: User Login
+      tags:
+      - Auth
+  /logout:
+    post:
+      description: Logs out the user by clearing the refresh token cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successfully
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: User Logout
+      tags:
+      - Auth
+  /notifications:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of notifications with pagination
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by User Id
+        in: query
+        name: user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved notifications
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.Notification'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Notifications
+      tags:
+      - Notifications
+  /notifications/settings:
+    put:
+      consumes:
+      - application/json
+      description: Update user's notification settings
+      parameters:
+      - description: Update Notification Settings Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/notifdto.UpdateNotificationSettingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated notification settings
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update notification settings
+      tags:
+      - Notifications
+  /ping:
+    get:
+      description: Cek apakah server berjalan
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Ping API
+      tags:
+      - Health Check
+  /profile:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the profile information of the currently authenticated
+        user based on the JWT token provided in the Authorization header.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved user profile
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  $ref: '#/definitions/userdto.ProfileResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get authenticated user's profile
+      tags:
+      - Profile
+    put:
+      description: Update user profile information
+      parameters:
+      - description: Update Profile Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/userdto.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated profile
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Profile
+  /profile/file:
+    put:
+      consumes:
+      - multipart/form-data
+      description: Update user profile file
+      parameters:
+      - description: File Type
+        enum:
+        - photo
+        - certificate
+        - name_card
+        in: formData
+        name: file_type
+        required: true
+        type: string
+      - description: File
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated profile file
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user profile file
+      tags:
+      - Profile
+  /profile/setting:
+    put:
+      description: Update user settings
+      parameters:
+      - description: Update Setting Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/userdto.UpdateSettingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated user settings
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user settings
+      tags:
+      - Profile
+  /promo-groups:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of promo groups based on optional filters
+        such as search keyword, page, and limit.
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter promo groups
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of promo groups
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.PromoGroup'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get list of promo groups
+      tags:
+      - Promo Group
+    post:
+      consumes:
+      - application/json
+      description: Create a new promo group by providing the group name in JSON format.
+      parameters:
+      - description: Promo group creation payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/promogroupdto.CreatePromoGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully created promo group
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a new promo group
+      tags:
+      - Promo Group
+  /promo-groups/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a promo group by its ID.
+      parameters:
+      - description: Id of the promo group to be removed
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully removed promo group
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove Promo Group
+      tags:
+      - Promo Group
+    get:
+      consumes:
+      - application/json
+      description: Retrieve detailed information about a specific promo group by its
+        ID.
+      parameters:
+      - description: Promo Group ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved promo group details
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.PromoGroup'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get Promo Group Details
+      tags:
+      - Promo Group
+  /promo-groups/members:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a user from a specific promo group by providing the required
+        data in JSON format.
+      parameters:
+      - description: Payload to remove member from promo group
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/promogroupdto.RemovePromoGroupMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully removed member from promo group
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove a member from a promo group
+      tags:
+      - Promo Group
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of members belonging to a specific promo
+        group using query parameters.
+      parameters:
+      - description: Id of the promo group
+        in: query
+        name: promo_group_id
+        required: true
+        type: integer
+      - description: 'Page number for pagination (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved promo group members
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/promogroupdto.ListPromoGroupMemberData'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get members of a promo group
+      tags:
+      - Promo Group
+    post:
+      consumes:
+      - application/json
+      description: Assign one or more users to a promo group. This can be used to
+        add new members or update existing users' promo group association.
+      parameters:
+      - description: Payload to add member to promo group
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/promogroupdto.AssignPromoGroupMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully assigned member to promo group
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Assign users to a promo group
+      tags:
+      - Promo Group
+  /promo-groups/promo:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a promo from a specified promo group.
+      parameters:
+      - description: Remove Promo from Promo Group
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/promogroupdto.RemovePromoFromGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully removed promo from group
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove Promo from Promo Group
+      tags:
+      - Promo Group
+    post:
+      consumes:
+      - application/json
+      description: Assign a promo to a specified promo group.
+      parameters:
+      - description: Assign Promo to Promo Group
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/promogroupdto.AssignPromoToGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully assigned promo to group
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Assign Promo to Promo Group
+      tags:
+      - Promo Group
+  /promo-groups/promos:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of promos that belong to a specific promo
+        group using query parameters.
+      parameters:
+      - description: Promo Group ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: 'Page number for pagination (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved promo group details
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/promogroupdto.ListPromoGroupPromosData'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get detailed promos in a promo group
+      tags:
+      - Promo Group
+  /promo-groups/unassigned-promos:
+    get:
+      consumes:
+      - application/json
+      description: List promos that are not assigned to any promo group.
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search term for filtering promos
+        in: query
+        name: search
+        type: string
+      - description: Promo Group ID to exclude promos already assigned to this group
+        in: query
+        name: promo_group_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved unassigned promos
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/promogroupdto.ListUnassignedPromoData'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Unassigned Promos
+      tags:
+      - Promo Group
+  /promos:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of promos with pagination.
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter promos by name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of promos
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/promodto.PromoResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Promos
+      tags:
+      - Promo
+    post:
+      consumes:
+      - application/json
+      description: Create a new promo with the specified details.
+      parameters:
+      - description: Promo details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/promodto.UpsertPromoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully created promo
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create Promo
+      tags:
+      - Promo
+  /promos/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a member from a promo by Id.
+      parameters:
+      - description: Promo Id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully removed promo
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove Promo
+      tags:
+      - Promo
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a promo by its Id.
+      parameters:
+      - description: Promo Id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved promo
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  $ref: '#/definitions/entity.Promo'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get Promo by Id
+      tags:
+      - Promo
+    put:
+      consumes:
+      - application/json
+      description: Update an existing promo with the specified details.
+      parameters:
+      - description: Promo ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Promo details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/promodto.UpsertPromoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated promo
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update Promo
+      tags:
+      - Promo
+  /promos/status:
+    put:
+      consumes:
+      - multipart/form-data
+      description: API to set the status of a promo (active/inactive)
+      parameters:
+      - description: Promo ID
+        in: formData
+        name: promo_id
+        required: true
+        type: string
+      - description: IsActive to set (true for active, false for inactive)
+        in: formData
+        name: is_active
+        required: true
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully set promo status
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Set Status Promo
+      tags:
+      - Promo
+  /promos/types:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of promo types with pagination.
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter promo types by name
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of promo types
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.PromoType'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Promo Types
+      tags:
+      - Promo
+  /refresh-token:
+    get:
+      description: Refreshes the user's access token using the refresh token stored
+        in a cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  $ref: '#/definitions/authdto.LoginResponse'
+              type: object
+      summary: Refresh User Token
+      tags:
+      - Auth
+  /register:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Registers a new user with username, email, and etc.
+      parameters:
+      - description: Full Name
+        in: formData
+        name: full_name
+        required: true
+        type: string
+      - description: Agent Company
+        in: formData
+        name: agent_company
+        type: string
+      - description: Email
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: Phone
+        in: formData
+        name: phone
+        required: true
+        type: string
+      - description: Username
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Kakao Talk Id
+        in: formData
+        name: kakao_talk_id
+        required: true
+        type: string
+      - description: Password
+        in: formData
+        name: password
+        required: true
+        type: string
+      - description: File Selfie
+        in: formData
+        name: photo_selfie
+        required: true
+        type: file
+      - description: File Id Card
+        in: formData
+        name: photo_id_card
+        required: true
+        type: file
+      - description: Certificate
+        in: formData
+        name: certificate
+        type: file
+      - description: Name Card
+        in: formData
+        name: name_card
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully registered
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: User Registration
+      tags:
+      - User
+  /reports/agent:
+    get:
+      consumes:
+      - application/json
+      description: Generate a report for agent bookings within a specified date range
+        and filters
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      - description: Filter by Hotel Id
+        in: query
+        name: hotel_id
+        type: integer
+      - description: Filter by Agent Company Id
+        in: query
+        name: agent_company_id
+        type: integer
+      - description: Start date for the report in YYYY-MM-DD format
+        in: query
+        name: date_from
+        type: string
+      - description: End date for the report in YYYY-MM-DD format
+        in: query
+        name: date_to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully generated report for agent bookings
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.ReportAgentBooking'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Generate Agent Report
+      tags:
+      - Reports
+  /reports/agent/detail:
+    get:
+      consumes:
+      - application/json
+      description: Generate a detailed report for agent bookings with pagination
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by Hotel Id
+        in: query
+        name: hotel_id
+        type: integer
+      - description: Filter by Agent Id
+        in: query
+        name: agent_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully generated detailed report for agent bookings
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.ReportAgentDetail'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Generate Agent Report Detail
+      tags:
+      - Reports
+  /reports/summary:
+    get:
+      consumes:
+      - application/json
+      description: Generate a summary report of bookings with optional filters
+      parameters:
+      - description: Search term
+        in: query
+        name: search
+        type: string
+      - description: Filter by Hotel Id
+        in: query
+        name: hotel_id
+        type: integer
+      - description: Filter by Agent Company Id
+        in: query
+        name: agent_company_id
+        type: integer
+      - description: Start date for the report in YYYY-MM-DD format
+        in: query
+        name: date_from
+        type: string
+      - description: End date for the report in YYYY-MM-DD format
+        in: query
+        name: date_to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully generated summary report
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  $ref: '#/definitions/reportdto.ReportSummaryResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Generate Report Summary
+      tags:
+      - Reports
+  /reset-password:
+    get:
+      consumes:
+      - application/json
+      description: Validates the password reset token
+      parameters:
+      - description: Validate Reset Password Token Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/authdto.ValidateTokenResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset password token is valid
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/authdto.ValidateTokenResetPasswordResponse'
+              type: object
+      summary: Validate Reset Password Token
+      tags:
+      - Auth
+    post:
+      consumes:
+      - application/json
+      description: Resets the user's password using a valid reset token
+      parameters:
+      - description: Reset Password Payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/authdto.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password has been reset
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Reset Password
+      tags:
+      - Auth
+  /role-access:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of available role access configurations.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved role access list
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/userdto.ListRoleAccessResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get list of role access
+      tags:
+      - User
+    put:
+      consumes:
+      - application/json
+      description: Update the access permissions associated with a specific role by
+        providing the updated configuration in JSON format.
+      parameters:
+      - description: Payload to update role access
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/userdto.UpdateRoleAccessRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated role access
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update role access configuration
+      tags:
+      - User
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of users using query parameters.
+      parameters:
+      - description: Role name to filter users (e.g. admin, agent, support, super_admin)
+        in: query
+        name: role
+        type: string
+      - description: Id of the agent company to filter users
+        in: query
+        name: agent_company_id
+        type: integer
+      - description: 'Page number for pagination (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter users
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved users
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/userdto.ListUserData'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get users
+      tags:
+      - User
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a new user with the provided details
+      parameters:
+      - description: Full Name
+        in: formData
+        name: full_name
+        required: true
+        type: string
+      - description: Role (e.g., admin, agent, customer)
+        in: formData
+        name: role
+        required: true
+        type: string
+      - description: Email
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: Phone
+        in: formData
+        name: phone
+        required: true
+        type: string
+      - description: Kakao Talk Id
+        in: formData
+        name: kakao_talk_id
+        type: string
+      - description: Promo Group ID (required if role is agent)
+        in: formData
+        name: promo_group_id
+        type: integer
+      - description: Agent Company (required if role is agent)
+        in: formData
+        name: agent_company
+        type: string
+      - description: Certificate (optional)
+        in: formData
+        name: certificate
+        type: file
+      - description: File Selfie
+        in: formData
+        name: photo_selfie
+        type: file
+      - description: File Id Card
+        in: formData
+        name: photo_id_card
+        type: file
+      - description: Name Card
+        in: formData
+        name: name_card
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully created user
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Create a new user
+      tags:
+      - User
+    put:
+      description: Update a user with the provided details
+      parameters:
+      - description: Update user request payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/userdto.UpdateUserByAdminRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated user
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update a user by admin
+      tags:
+      - User
+  /users/agent-companies:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of agent companies using query parameters.
+      parameters:
+      - description: 'Page number for pagination (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter agent companies
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved agent companies
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.AgentCompany'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get list of agent companies
+      tags:
+      - User
+  /users/by-agent-company/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of users associated with a specific agent
+        company using query parameters.
+      parameters:
+      - description: Id of the agent company
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 'Page number for pagination (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter users
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved users by agent company
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/userdto.ListUsersByAgentCompanyData'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get users by agent company
+      tags:
+      - User
+  /users/control:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of control users using query parameters.
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter users
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved users
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/userdto.ListUserData'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Control Users
+      tags:
+      - User
+  /users/status:
+    post:
+      consumes:
+      - application/json
+      description: Update the status of a user (active/inactive).
+      parameters:
+      - description: Status of the user
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/userdto.UpdateStatusUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated user settings
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update user status
+      tags:
+      - User
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

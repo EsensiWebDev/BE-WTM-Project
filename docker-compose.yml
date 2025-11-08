@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: wtm-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DATABASE}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    restart: always
+
+  redis:
+    image: redis:7
+    container_name: wtm-redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redisdata:/data
+    restart: always
+
+  minio:
+    image: minio/minio
+    container_name: wtm-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    restart: always
+
+  pghero:
+    image: ankane/pghero
+    container_name: wtm-pghero
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}
+      PGHERO_USERNAME: ${PGHERO_USERNAME}
+      PGHERO_PASSWORD: ${PGHERO_PASSWORD}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    restart: always
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: wtm-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: always
+
+  loki:
+    image: grafana/loki:2.9.4
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:2.9.4
+    volumes:
+      - ./logs:/app/logs
+      - ./promtail-config.yaml:/etc/promtail/promtail.yaml
+    command: -config.file=/etc/promtail/promtail.yaml
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - loki
+      - prometheus
+
+  backend:
+    image: golang:1.21
+    container_name: wtm-backend
+    working_dir: /app
+    volumes:
+      - ./app:/app/app
+      - ./logs:/app/logs
+      - ./.env:/app/.env
+    command: ["/app/app"]
+    env_file:
+      - .env
+    ports:
+      - "4816:4816"
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    restart: always
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
