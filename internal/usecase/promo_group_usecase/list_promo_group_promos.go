@@ -2,6 +2,7 @@ package promo_group_usecase
 
 import (
 	"context"
+	"time"
 	"wtm-backend/internal/dto/promogroupdto"
 )
 
@@ -17,10 +18,10 @@ func (pgu *PromoGroupUsecase) ListPromoGroupPromos(ctx context.Context, req *pro
 
 		var startDate, endDate string
 		if promo.StartDate != nil {
-			startDate = promo.StartDate.Format("02 January 2006 15:04:05")
+			startDate = promo.StartDate.Format(time.RFC3339)
 		}
 		if promo.EndDate != nil {
-			endDate = promo.EndDate.Format("02 January 2006 15:04:05")
+			endDate = promo.EndDate.Format(time.RFC3339)
 		}
 
 		respData = append(respData, promogroupdto.ListPromoGroupPromosData{

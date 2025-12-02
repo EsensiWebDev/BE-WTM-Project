@@ -2,10 +2,10 @@ package hotel_repository
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/repository/filter"
+	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
 )
@@ -14,69 +14,94 @@ func (hr *HotelRepository) GetFilterPricing(ctx context.Context, filter filter.H
 	db := hr.db.GetTx(ctx)
 
 	var args []interface{}
-	var conditions []string
+	var hotelConditions []string
+	var roomConditions []string
+
+	// 🔍 Filter bed type
+	if len(filter.BedTypeIDs) > 0 {
+		roomConditions = append(roomConditions, "bt.id IN ?")
+		args = append(args, filter.BedTypeIDs)
+	}
+
+	// 🔍 Filter total bedrooms
+	if len(filter.TotalBedrooms) > 0 {
+		roomConditions = append(roomConditions, "rt.total_unit IN ?")
+		args = append(args, filter.TotalBedrooms)
+	}
+
+	// 🔍 Filter min guest
+	if filter.MinGuest > 0 {
+		roomConditions = append(roomConditions, "rt.max_occupancy >= ?")
+		args = append(args, filter.MinGuest)
+	}
+
+	// 🔍 Filter promo
+	if filter.PromoID > 0 {
+		roomConditions = append(roomConditions, `
+			EXISTS (
+				SELECT 1 
+				FROM promo_room_types prt
+				JOIN promos p ON prt.promo_id = p.id
+				WHERE prt.room_type_id = rt.id
+				AND prt.promo_id = ?
+				AND p.is_active = true
+			)
+		`)
+		args = append(args, filter.PromoID)
+	}
+
+	// 🔍 Filter availability
+	if filter.DateFrom != nil && filter.DateTo != nil {
+		roomConditions = append(roomConditions,
+			"NOT EXISTS (SELECT 1 FROM room_unavailables ru WHERE ru.room_type_id = rt.id AND ru.date BETWEEN ? AND ?)")
+		args = append(args, *filter.DateFrom, *filter.DateTo)
+	}
+
+	// ⚠️ TIDAK include PriceMin/PriceMax (karena ini fungsi untuk get range)
+
+	// 🔍 Filter province
+	if filter.Province != nil && strings.TrimSpace(*filter.Province) != "" {
+		hotelConditions = append(hotelConditions, "h.addr_province = ?")
+		args = append(args, *filter.Province)
+	}
 
 	// 🔍 Filter kota
 	if len(filter.Cities) > 0 {
-		conditions = append(conditions, "h.addr_city IN (?)")
+		hotelConditions = append(hotelConditions, "h.addr_city IN ?")
 		args = append(args, filter.Cities)
 	}
 
 	// 🔍 Filter rating
 	if len(filter.Ratings) > 0 {
-		conditions = append(conditions, "h.rating IN (?)")
+		hotelConditions = append(hotelConditions, "h.rating IN ?")
 		args = append(args, filter.Ratings)
 	}
 
-	// 🔍 Filter nama hotel
+	// 🔍 Filter search
 	if strings.TrimSpace(filter.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		conditions = append(conditions, "LOWER(h.name) ILIKE ? ESCAPE '\\'")
+		hotelConditions = append(hotelConditions, "LOWER(h.name) ILIKE ?")
 		args = append(args, "%"+safeSearch+"%")
 	}
 
-	// 🔍 Filter bed type dan total unit
-	var roomConditions []string
-	if len(filter.BedTypeIDs) > 0 {
-		roomConditions = append(roomConditions, "bt.id IN (?)")
-		args = append(args, filter.BedTypeIDs)
-	}
-	if len(filter.TotalBedrooms) > 0 {
-		roomConditions = append(roomConditions, "rt.total_unit IN (?)")
-		args = append(args, filter.TotalBedrooms)
-	}
+	// 🔍 Filter status hotel
+	hotelConditions = append(hotelConditions, "h.status_id = ?")
+	args = append(args, constant.StatusHotelApprovedID)
 
-	// 🧩 WHERE clause hotel
-	whereClause := ""
-	if len(conditions) > 0 {
-		whereClause = "WHERE " + strings.Join(conditions, " AND ")
-	}
+	// Build query
+	query := hr.buildBaseHotelQuery(
+		`SELECT MIN(mp.min_price) AS min_price, MAX(mp.min_price) AS max_price`,
+		roomConditions,
+		"", // no price HAVING
+		hotelConditions,
+		"", // no additional joins
+		"", // no group by
+		"", // no order by
+	)
 
-	// 🧩 WHERE clause room type
-	roomFilterClause := ""
-	if len(roomConditions) > 0 {
-		roomFilterClause = "AND " + strings.Join(roomConditions, " AND ")
-	}
-
-	// 🧠 Final raw SQL
-	rawQuery := fmt.Sprintf(`
-        SELECT MIN(mp.min_price) AS min_price, MAX(mp.min_price) AS max_price
-        FROM hotels h
-        JOIN (
-            SELECT rt.hotel_id, MIN(rp.price) AS min_price
-            FROM room_types rt
-            JOIN room_prices rp ON rt.id = rp.room_type_id
-            JOIN bed_type_rooms btr ON btr.room_type_id = rt.id
-            JOIN bed_types bt ON bt.id = btr.bed_type_id
-            WHERE rp.is_show = true
-            %s
-            GROUP BY rt.hotel_id
-        ) mp ON mp.hotel_id = h.id
-        %s
-    `, roomFilterClause, whereClause)
-
+	// 🔍 Execute query
 	var result entity.FilterRangePrice
-	if err := db.Raw(rawQuery, args...).Debug().Scan(&result).Error; err != nil {
+	if err := db.Raw(query, args...).Debug().Scan(&result).Error; err != nil {
 		logger.Error(ctx, "Error fetching range price (raw)", err.Error())
 		return nil, err
 	}

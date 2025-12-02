@@ -37,29 +37,29 @@ func (s *Seed) SeedUser() {
 		s.db.Unscoped().Where("1 = 1").Delete(&model.Role{})
 
 		perms := []model.Permission{
-			{Permission: "account:read", Page: "account", Action: "read"},
+			{Permission: "account:view", Page: "account", Action: "view"},
 			{Permission: "account:create", Page: "account", Action: "create"},
-			{Permission: "account:update", Page: "account", Action: "update"},
+			{Permission: "account:edit", Page: "account", Action: "edit"},
 			{Permission: "account:delete", Page: "account", Action: "delete"},
-			{Permission: "hotel:read", Page: "hotel", Action: "read"},
+			{Permission: "hotel:view", Page: "hotel", Action: "view"},
 			{Permission: "hotel:create", Page: "hotel", Action: "create"},
-			{Permission: "hotel:update", Page: "hotel", Action: "update"},
+			{Permission: "hotel:edit", Page: "hotel", Action: "edit"},
 			{Permission: "hotel:delete", Page: "hotel", Action: "delete"},
-			{Permission: "promo:read", Page: "promo", Action: "read"},
+			{Permission: "promo:view", Page: "promo", Action: "view"},
 			{Permission: "promo:create", Page: "promo", Action: "create"},
-			{Permission: "promo:update", Page: "promo", Action: "update"},
+			{Permission: "promo:edit", Page: "promo", Action: "edit"},
 			{Permission: "promo:delete", Page: "promo", Action: "delete"},
-			{Permission: "promo-group:read", Page: "promo-group", Action: "read"},
+			{Permission: "promo-group:view", Page: "promo-group", Action: "view"},
 			{Permission: "promo-group:create", Page: "promo-group", Action: "create"},
-			{Permission: "promo-group:update", Page: "promo-group", Action: "update"},
+			{Permission: "promo-group:edit", Page: "promo-group", Action: "edit"},
 			{Permission: "promo-group:delete", Page: "promo-group", Action: "delete"},
-			{Permission: "report:read", Page: "report", Action: "read"},
+			{Permission: "report:view", Page: "report", Action: "view"},
 			{Permission: "report:create", Page: "report", Action: "create"},
-			{Permission: "report:update", Page: "report", Action: "update"},
+			{Permission: "report:edit", Page: "report", Action: "edit"},
 			{Permission: "report:delete", Page: "report", Action: "delete"},
-			{Permission: "booking:read", Page: "booking", Action: "read"},
+			{Permission: "booking:view", Page: "booking", Action: "view"},
 			{Permission: "booking:create", Page: "booking", Action: "create"},
-			{Permission: "booking:update", Page: "booking", Action: "update"},
+			{Permission: "booking:edit", Page: "booking", Action: "edit"},
 			{Permission: "booking:delete", Page: "booking", Action: "delete"},
 		}
 		if err := s.db.Create(&perms).Error; err != nil {
@@ -80,9 +80,9 @@ func (s *Seed) SeedUser() {
 		}
 
 		superAdmin := model.Role{Role: "Super Admin"}
-		admin := model.Role{Role: "Admin", Permissions: collectPerms("read", "create", "update")}
-		agent := model.Role{Role: "Agent", Permissions: collectPerms("read")}
-		support := model.Role{Role: "Support", Permissions: collectPerms("read", "update")}
+		admin := model.Role{Role: "Admin", Permissions: collectPerms("view", "create", "edit")}
+		agent := model.Role{Role: "Agent", Permissions: collectPerms("view")}
+		support := model.Role{Role: "Support", Permissions: collectPerms("view", "edit")}
 
 		roles := []model.Role{superAdmin, admin, agent, support}
 		if err := s.db.Create(&roles).Error; err != nil {

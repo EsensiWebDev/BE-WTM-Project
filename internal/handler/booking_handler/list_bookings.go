@@ -14,10 +14,11 @@ import (
 // @Tags         Booking
 // @Accept       json
 // @Produce      json
-// @Param        page         query  int    false "Page number for pagination" default(
+// @Param        page         query  int    false "Page number for pagination" default(1)
 // @Param        limit        query  int    false "Number of items per page" default(10)
 // @Param        search       query  string false "Search by booking code or guest name"
 // @Param		 booking_status_id query  int    false "Filter by booking status Id"
+// @Param        payment_status_id query  int    false "Filter by payment status Id"
 // @Success      200          {object} response.ResponseWithPagination{data=[]bookingdto.DataBooking} "Successfully retrieved bookings"
 // @Security     BearerAuth
 // @Router       /bookings [get]

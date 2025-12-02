@@ -95,5 +95,5 @@ func getStatusID(isActive bool) uint {
 	if isActive {
 		return constant.StatusUserActiveID // Active
 	}
-	return constant.StatusUserWaitingApprovalID // Sign
+	return constant.StatusUserInactiveID // Sign
 }

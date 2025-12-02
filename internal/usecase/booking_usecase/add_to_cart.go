@@ -76,50 +76,35 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			return fmt.Errorf("invalid check-out date: %s", err.Error())
 		}
 
-		var photoUrl string
-		for _, photo := range roomPrice.RoomType.Hotel.Photos {
-			if photo != "" {
-				bucketName := fmt.Sprintf("%s-%s", constant.ConstHotel, constant.ConstPublic)
-				photoUrl, err = bu.fileStorage.GetFile(ctx, bucketName, photo)
-				if err != nil {
-					logger.Error(ctx, "Error getting banner image", err.Error())
-					continue
-				}
-				break
-			}
-		}
+		//var photoUrl string
+		//for _, photo := range roomPrice.RoomType.Hotel.Photos {
+		//	if photo != "" {
+		//		bucketName := fmt.Sprintf("%s-%s", constant.ConstHotel, constant.ConstPublic)
+		//		photoUrl, err = bu.fileStorage.GetFile(ctx, bucketName, photo)
+		//		if err != nil {
+		//			logger.Error(ctx, "Error getting banner image", err.Error())
+		//			continue
+		//		}
+		//		break
+		//	}
+		//}
 
-		detailRoom := entity.DetailRoom{
-			HotelName:    roomPrice.RoomType.Hotel.Name,
-			HotelRating:  roomPrice.RoomType.Hotel.Rating,
-			HotelPhoto:   photoUrl,
-			RoomTypeName: roomPrice.RoomType.Name,
-			IsBreakfast:  roomPrice.IsBreakfast,
-		}
-
-		basePrice := roomPrice.Price
-		var finalRoomPrice float64
-		if promo != nil {
-			switch promo.PromoTypeName {
-			case constant.PromoTypeFixedPrice:
-				finalRoomPrice = promo.Detail.FixedPrice
-			case constant.PromoTypeDiscount:
-				finalRoomPrice = (100 - promo.Detail.DiscountPercentage) / 100 * basePrice
-			default:
-				finalRoomPrice = basePrice // promo lain tidak dihitung
-			}
-		} else {
-			finalRoomPrice = basePrice
-		}
-
-		// Hitung total harga additionals
-		var additionalsTotal float64
-		for _, add := range additionals {
-			additionalsTotal += add.Price
-		}
-
-		// Total harga per malam
-		pricePerNight := finalRoomPrice + additionalsTotal
+		//var cancelledDate time.Time
+		//cancellationPeriod := roomPrice.RoomType.Hotel.CancellationPeriod
+		//if cancellationPeriod > 0 {
+		//	cancelledDate = checkInDate.AddDate(0, 0, -cancellationPeriod)
+		//}
+		//detailRoom := entity.DetailRoom{
+		//	OriPrice:      roomPrice.Price,
+		//	HotelName:     roomPrice.RoomType.Hotel.Name,
+		//	HotelRating:   roomPrice.RoomType.Hotel.Rating,
+		//	HotelPhoto:    photoUrl,
+		//	RoomTypeName:  roomPrice.RoomType.Name,
+		//	IsBreakfast:   roomPrice.IsBreakfast,
+		//	CancelledDate: cancelledDate.Format(time.DateOnly),
+		//	IsAPI:         roomPrice.RoomType.Hotel.IsAPI,
+		//	Capacity:      roomPrice.RoomType.MaxOccupancy,
+		//}
 
 		// Hitung jumlah malam
 		nights := int(checkOutDate.Sub(checkInDate).Hours() / 24)
@@ -128,29 +113,57 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			return fmt.Errorf("check-out date must be after check-in date")
 		}
 
-		// Total harga akhir
-		totalPrice := pricePerNight * float64(req.Quantity) * float64(nights)
+		if promo != nil {
+			if promo.Duration > nights {
+				logger.Error(ctx, "This promo is not valid for the selected stay duration")
+				return fmt.Errorf("this promo is not valid for the selected stay duration")
+			}
+		}
 
 		detailBooking := &entity.BookingDetail{
-			BookingID:       bookingID,
-			RoomTypeID:      roomPrice.RoomType.ID,
-			CheckInDate:     checkInDate,
-			CheckOutDate:    checkOutDate,
-			Quantity:        req.Quantity,
-			Price:           totalPrice,
-			DetailRooms:     detailRoom,
-			StatusBookingID: constant.StatusBookingInReviewID,
+			BookingID:   bookingID,
+			RoomPriceID: roomPrice.ID,
+			//RoomTypeID:      roomPrice.RoomType.ID,
+			CheckInDate:  checkInDate,
+			CheckOutDate: checkOutDate,
+			Quantity:     req.Quantity,
+			//DetailRooms:     detailRoom,
+			StatusBookingID: constant.StatusBookingWaitingApprovalID,
 			StatusPaymentID: constant.StatusPaymentUnpaidID,
 		}
 
 		if promo != nil {
-			detailPromo, err := bu.generateDetailPromo(promo)
-			if err != nil {
-				logger.Error(ctx, "failed to generate detail promo", err.Error())
-			}
 			detailBooking.PromoID = &promo.ID
-			detailBooking.DetailPromos = detailPromo
 		}
+
+		//basePrice := roomPrice.Price
+		//var finalRoomPrice float64
+		//if promo != nil {
+		//	switch promo.PromoTypeName {
+		//	case constant.PromoTypeFixedPrice:
+		//		finalRoomPrice = promo.Detail.FixedPrice
+		//		if promo.Duration > nights {
+		//			finalRoomPrice += float64(nights-promo.Duration) * basePrice
+		//		}
+		//	case constant.PromoTypeDiscount:
+		//		finalRoomPrice = (100 - promo.Detail.DiscountPercentage) / 100 * basePrice * float64(nights)
+		//		if promo.Duration > nights {
+		//			finalRoomPrice += float64(nights-promo.Duration) * basePrice
+		//		}
+		//	default:
+		//		finalRoomPrice = basePrice * float64(nights)
+		//	}
+		//	detailPromo, err := bu.generateDetailPromo(promo)
+		//	if err != nil {
+		//		logger.Error(ctx, "failed to generate detail promo", err.Error())
+		//	}
+		//	detailBooking.PromoID = &promo.ID
+		//	detailBooking.DetailPromos = detailPromo
+		//} else {
+		//	finalRoomPrice = basePrice * float64(nights)
+		//}
+		//
+		//detailBooking.Price = finalRoomPrice
 
 		bookingDetailIds, err := bu.bookingRepo.CreateBookingDetail(txCtx, detailBooking)
 		if err != nil {
@@ -163,8 +176,8 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			additional := &entity.BookingDetailAdditional{
 				BookingDetailIDs:     bookingDetailIds,
 				RoomTypeAdditionalID: add.ID,
-				Price:                add.Price,
-				NameAdditional:       add.RoomAdditional.Name,
+				//Price:                add.Price,
+				//NameAdditional:       add.RoomAdditional.Name,
 			}
 			if err := bu.bookingRepo.CreateBookingDetailAdditional(txCtx, additional); err != nil {
 				return fmt.Errorf("failed to create additional: %s", err.Error())
@@ -178,6 +191,8 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 func (bu *BookingUsecase) generateDetailPromo(promo *entity.Promo) (entity.DetailPromo, error) {
 
 	detailPromo := entity.DetailPromo{
+		Name:            promo.Name,
+		PromoCode:       promo.Code,
 		Type:            promo.PromoTypeName,
 		DiscountPercent: promo.Detail.DiscountPercentage,
 		FixedPrice:      promo.Detail.FixedPrice,

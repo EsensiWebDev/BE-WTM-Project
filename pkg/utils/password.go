@@ -32,12 +32,13 @@ func GenerateSafeRandomString(n int) string {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	// ASCII printable range: 33 ('!') to 126 ('~')
-	// Tapi kita exclude: ' " ( ) { } [ ]
+	// Tapi kita exclude: ' " ( ) { } [ ] , :
 	exclude := map[byte]bool{
 		'\'': true, '"': true,
 		'(': true, ')': true,
 		'{': true, '}': true,
 		'[': true, ']': true,
+		',': true, ':': true,
 	}
 
 	result := make([]byte, 0, n)

@@ -18,6 +18,7 @@ func (ur *UserRepository) GetUserByUsername(ctx context.Context, username string
 		Preload("Role").
 		Preload("Role.Permissions").
 		Where("username = ?", username).
+		Or("email = ?", username).
 		First(&user).Error
 
 	if err != nil {

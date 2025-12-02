@@ -3,8 +3,10 @@ package booking_usecase
 import (
 	"context"
 	"fmt"
+	"time"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/internal/repository/filter"
+	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 )
 
@@ -25,8 +27,8 @@ func (bu *BookingUsecase) ListBookingHistory(ctx context.Context, req *bookingdt
 
 	bookingFilter := filter.BookingFilter{
 		AgentID:         agentID,
-		StatusBookingID: req.StatusBookingID,
-		StatusPaymentID: req.StatusPaymentID,
+		BookingStatusID: req.StatusBookingID,
+		PaymentStatusID: req.StatusPaymentID,
 	}
 	if req.SearchBy == "booking_id" {
 		bookingFilter.BookingIDSearch = req.Search
@@ -46,9 +48,10 @@ func (bu *BookingUsecase) ListBookingHistory(ctx context.Context, req *bookingdt
 	}
 
 	for i, booking := range bookings {
+		var statusBooking []string
+		var statusPayment []string
 		resp.Data[i] = bookingdto.DataBookingHistory{
 			BookingID:     booking.ID,
-			GuestName:     booking.Guests,
 			BookingCode:   booking.BookingCode,
 			BookingStatus: booking.BookingStatus,
 			PaymentStatus: booking.PaymentStatus,
@@ -66,7 +69,35 @@ func (bu *BookingUsecase) ListBookingHistory(ctx context.Context, req *bookingdt
 				PaymentStatus:    detail.PaymentStatus,
 				CancellationDate: detail.DetailRooms.CancelledDate,
 			}
+			statusBooking = append(statusBooking, detail.BookingStatus)
+			statusPayment = append(statusPayment, detail.PaymentStatus)
+			var receiptUrl string
+			if detail.ReceiptUrl != "" {
+				bucketName := fmt.Sprintf("%s-%s", constant.ConstBooking, constant.ConstPrivate)
+				receiptUrl, err = bu.fileStorage.GetFile(ctx, bucketName, detail.ReceiptUrl)
+				if err != nil {
+					logger.Error(ctx, "ListHotelsForAgent", err.Error())
+				}
+				resp.Data[i].Detail[j].Receipt = receiptUrl
+				resp.Data[i].Receipts = append(resp.Data[i].Receipts, receiptUrl)
+			}
+			if detail.Invoice != nil {
+				invoice := bookingdto.DataInvoice{
+					InvoiceNumber: detail.Invoice.InvoiceCode,
+					DetailInvoice: detail.Invoice.DetailInvoice,
+					InvoiceDate:   detail.Invoice.CreatedAt.Format(time.DateOnly),
+					Receipt:       receiptUrl,
+				}
+				resp.Data[i].Detail[j].Invoice = invoice
+				resp.Data[i].Invoices = append(resp.Data[i].Invoices, invoice)
+			}
+			if detail.Guest != "" {
+				resp.Data[i].GuestName = append(resp.Data[i].GuestName, detail.Guest)
+			}
 		}
+		resp.Data[i].BookingStatus = bu.summaryStatus(statusBooking, constant.ConstBooking)
+		resp.Data[i].PaymentStatus = bu.summaryStatus(statusPayment, constant.ConstPayment)
+
 	}
 
 	return resp, nil

@@ -2,6 +2,7 @@ package hotel_usecase
 
 import (
 	"context"
+	"fmt"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/pkg/constant"
@@ -19,6 +20,8 @@ func (hu *HotelUsecase) DetailHotel(ctx context.Context, hotelID uint) (*hoteldt
 		return nil, nil
 	}
 
+	bucketName := fmt.Sprintf("%s-%s", constant.ConstHotel, constant.ConstPublic)
+
 	respHotel := &hoteldto.DetailHotelResponse{
 		ID:                 hotel.ID,
 		Name:               hotel.Name,
@@ -26,12 +29,20 @@ func (hu *HotelUsecase) DetailHotel(ctx context.Context, hotelID uint) (*hoteldt
 		District:           hotel.AddrCity,
 		SubDistrict:        hotel.AddrSubDistrict,
 		Description:        hotel.Description,
-		Photos:             hotel.Photos,
 		Rating:             hotel.Rating,
 		Email:              hotel.Email,
 		Facilities:         hotel.FacilityNames,
 		NearbyPlace:        hotel.NearbyPlaces,
 		CancellationPeriod: hotel.CancellationPeriod,
+	}
+
+	for _, photo := range hotel.Photos {
+		photoUrl, err := hu.fileStorage.GetFile(ctx, bucketName, photo)
+		if err != nil {
+			logger.Error(ctx, "Error getting hotel photo", err.Error())
+			return nil, fmt.Errorf("failed to get hotel photo: %s", err.Error())
+		}
+		respHotel.Photos = append(respHotel.Photos, photoUrl)
 	}
 
 	if hotel.CheckInHour != nil {
@@ -51,7 +62,15 @@ func (hu *HotelUsecase) DetailHotel(ctx context.Context, hotelID uint) (*hoteldt
 			BedTypes:      rt.BedTypeNames,
 			IsSmokingRoom: rt.IsSmokingAllowed != nil && *rt.IsSmokingAllowed,
 			Description:   rt.Description,
-			Photos:        rt.Photos,
+		}
+
+		for i, photo := range rt.Photos {
+			photoUrl, err := hu.fileStorage.GetFile(ctx, bucketName, photo)
+			if err != nil {
+				logger.Error(ctx, fmt.Sprintf("Error getting room type photo index %d for room type ID %d", i, rt.ID), err.Error())
+				return nil, fmt.Errorf("failed to get room type photo: %s", err.Error())
+			}
+			roomType.Photos = append(roomType.Photos, photoUrl)
 		}
 
 		roomType.WithoutBreakfast = entity.CustomBreakfast{

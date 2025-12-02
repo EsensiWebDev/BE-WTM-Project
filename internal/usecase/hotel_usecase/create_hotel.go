@@ -12,9 +12,9 @@ import (
 	"wtm-backend/pkg/utils"
 )
 
-func (hu *HotelUsecase) CreateHotel(ctx context.Context, req *hoteldto.CreateHotelRequest) error {
-	return hu.dbTransaction.WithTransaction(ctx, func(txCtx context.Context) error {
-
+func (hu *HotelUsecase) CreateHotel(ctx context.Context, req *hoteldto.CreateHotelRequest) (*hoteldto.CreateHotelResponse, error) {
+	var hotelID uint
+	err := hu.dbTransaction.WithTransaction(ctx, func(txCtx context.Context) error {
 		var nearbyPlaces []hoteldto.NearbyPlace
 		if req.NearbyPlaces != "" {
 			if err := json.Unmarshal([]byte(req.NearbyPlaces), &nearbyPlaces); err != nil {
@@ -50,11 +50,25 @@ func (hu *HotelUsecase) CreateHotel(ctx context.Context, req *hoteldto.CreateHot
 			socialMediasMap[strings.ToLower(sosmed.Platform)] = sosmed.Link
 		}
 
+		var name, province, city, subDistrict string
+		if strings.TrimSpace(req.Province) != "" {
+			province = utils.CapitalizeWords(req.Province)
+		}
+		if strings.TrimSpace(req.District) != "" {
+			city = utils.CapitalizeWords(req.District)
+		}
+		if strings.TrimSpace(req.SubDistrict) != "" {
+			subDistrict = utils.CapitalizeWords(req.SubDistrict)
+		}
+		if strings.TrimSpace(req.Name) != "" {
+			name = utils.CapitalizeWords(req.Name)
+		}
+
 		hotel := &entity.Hotel{
-			Name:               req.Name,
-			AddrSubDistrict:    req.SubDistrict,
-			AddrCity:           req.District,
-			AddrProvince:       req.Province,
+			Name:               name,
+			AddrSubDistrict:    subDistrict,
+			AddrCity:           city,
+			AddrProvince:       province,
 			IsAPI:              false,
 			Description:        req.Description,
 			Rating:             req.Rating,
@@ -72,6 +86,8 @@ func (hu *HotelUsecase) CreateHotel(ctx context.Context, req *hoteldto.CreateHot
 			logger.Error(ctx, "Error inserting hotel", err.Error())
 			return err
 		}
+
+		hotelID = hotel.ID
 
 		// File hotel upload and attachment
 		if len(req.Photos) > 0 {
@@ -105,4 +121,14 @@ func (hu *HotelUsecase) CreateHotel(ctx context.Context, req *hoteldto.CreateHot
 
 		return nil
 	})
+
+	if err != nil {
+		logger.Error(ctx, "Transaction failed in CreateHotel usecase", err.Error())
+		return nil, err
+	}
+
+	return &hoteldto.CreateHotelResponse{
+		HotelID: hotelID,
+	}, nil
+
 }

@@ -18,7 +18,6 @@ import (
 // @Param limit query int false "Number of items per page" default(10)
 // @Success 200 {object} response.ResponseWithPagination{data=[]string} "Successfully retrieved list of provinces"
 // @Router /hotels/provinces [get]
-// @Security BearerAuth
 func (hh *HotelHandler) ListProvinces(c *gin.Context) {
 	ctx := c.Request.Context()
 

@@ -2,6 +2,7 @@ package booking_usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"wtm-backend/internal/domain/entity"
@@ -11,45 +12,69 @@ import (
 	"wtm-backend/pkg/utils"
 )
 
-func (bu *BookingUsecase) UpdateStatusBooking(ctx context.Context, req *bookingdto.UpdateStatusBookingRequest) error {
+func (bu *BookingUsecase) UpdateStatusBooking(ctx context.Context, req *bookingdto.UpdateStatusRequest, scope string) error {
 	var bookingDetailIDs []uint
+	var err error
 
-	if req.BookingID > 0 {
-		booking, err := bu.bookingRepo.GetBookingByID(ctx, req.BookingID)
+	var types string
+
+	if req.BookingID != "" {
+		bookingDetailIDs, err = bu.bookingRepo.GetBookingDetailIDsByBookingCode(ctx, req.BookingID)
 		if err != nil {
-			logger.Error(ctx, "failed to get bookings", err.Error())
+			logger.Error(ctx, "failed to get booking detail IDs by booking code", err.Error())
 			return err
 		}
-		bookingDetailIDs = make([]uint, 0, len(booking.BookingDetails))
-		for _, detail := range booking.BookingDetails {
-			bookingDetailIDs = append(bookingDetailIDs, detail.ID)
-		}
+		types = constant.ConstBooking
+
 	} else {
-		bookingDetailIDs = append(bookingDetailIDs, req.BookingDetailID)
+		if req.SubBookingID == "" {
+			return errors.New("sub booking ID cannot be empty")
+		}
+		id, err := bu.bookingRepo.GetIDBySubBookingID(ctx, req.SubBookingID)
+		if err != nil {
+			logger.Error(ctx, "failed to get ID by sub booking ID", err.Error())
+			return err
+		}
+		bookingDetailIDs = append(bookingDetailIDs, id)
+		types = constant.ConstSubBooking
+
 	}
 
-	bookingDetails, err := bu.bookingRepo.UpdateBookingDetailStatus(ctx, bookingDetailIDs, req.StatusID)
-	if err != nil {
-		logger.Error(ctx, "failed to update status booking", err.Error())
-		return err
+	switch scope {
+	case constant.ConstBooking:
+		if req.StatusID == constant.StatusBookingWaitingApprovalID {
+			logger.Warn(ctx, "Booking status cannot be changed to waiting approval")
+			return errors.New("booking status cannot be changed to waiting approval")
+		}
+		bookingDetails, guests, err := bu.bookingRepo.UpdateBookingDetailStatusBooking(ctx, bookingDetailIDs, req.StatusID)
+		if err != nil {
+			logger.Error(ctx, "failed to update status booking", err.Error())
+			return err
+		}
+
+		go func() {
+			newCtx, cancel := context.WithTimeout(context.Background(), bu.config.DurationCtxTOSlow)
+			defer cancel()
+			bu.sendEmailNotificationHotel(newCtx, bookingDetails, req.StatusID, req.Reason)
+		}()
+
+		go func() {
+			newCtx, cancel := context.WithTimeout(context.Background(), bu.config.DurationCtxTOSlow)
+			defer cancel()
+			bu.sendEmailNotificationAgent(newCtx, bookingDetails, req.StatusID, req.Reason, types, guests)
+		}()
+
+	case constant.ConstPayment:
+		if err = bu.bookingRepo.UpdateBookingDetailStatusPayment(ctx, bookingDetailIDs, req.StatusID); err != nil {
+			logger.Error(ctx, "failed to update status payment", err.Error())
+			return err
+		}
 	}
-
-	go func() {
-		newCtx, cancel := context.WithTimeout(context.Background(), bu.config.DurationCtxTOSlow)
-		defer cancel()
-		bu.sendEmailNotificationHotel(newCtx, bookingDetails, req.StatusID, req.Reason)
-	}()
-
-	go func() {
-		newCtx, cancel := context.WithTimeout(context.Background(), bu.config.DurationCtxTOSlow)
-		defer cancel()
-		bu.sendEmailNotificationAgent(newCtx, bookingDetails, req.StatusID, req.Reason)
-	}()
 
 	return nil
 }
 
-func (bu *BookingUsecase) sendEmailNotificationAgent(ctx context.Context, details []entity.BookingDetail, statusID uint, rejectionReason string) {
+func (bu *BookingUsecase) sendEmailNotificationAgent(ctx context.Context, details []entity.BookingDetail, statusID uint, rejectionReason, types string, guests []string) {
 	if len(details) == 0 {
 		logger.Warn(ctx,
 			"No booking details provided for email notification")
@@ -60,7 +85,7 @@ func (bu *BookingUsecase) sendEmailNotificationAgent(ctx context.Context, detail
 
 	var templateName string
 	switch statusID {
-	case constant.StatusBookingApprovedID:
+	case constant.StatusBookingConfirmedID:
 		templateName = constant.EmailBookingConfirmed
 	case constant.StatusBookingRejectedID:
 		templateName = constant.EmailBookingRejected
@@ -77,23 +102,31 @@ func (bu *BookingUsecase) sendEmailNotificationAgent(ctx context.Context, detail
 	}
 
 	var subBookings []SubBookingData
-	for i, bd := range details {
+	for _, bd := range details {
 		subBookings = append(subBookings, SubBookingData{
-			Index:     i + 1,
-			HotelName: bd.DetailRooms.RoomTypeName,
-			CheckIn:   bd.CheckInDate.Format("02-01-2006"),
-			CheckOut:  bd.CheckOutDate.Format("02-01-2006"),
+			SubBookingID: bd.SubBookingID,
+			Guest:        bd.Guest,
+			HotelName:    bd.DetailRooms.HotelName,
+			CheckIn:      bd.CheckInDate.Format("02-01-2006"),
+			CheckOut:     bd.CheckOutDate.Format("02-01-2006"),
 		})
 	}
 
 	data := BookingEmailData{
 		AgentName:       booking.AgentName,
 		BookingID:       booking.BookingCode,
-		GuestName:       details[0].Guest, // atau ambil dari booking.Guests[0] jika tersedia
-		BookingLink:     fmt.Sprintf("https://hotelbox.com/booking-history/%s", booking.BookingCode),
+		GuestName:       strings.Join(guests, ", "),
+		BookingLink:     fmt.Sprintf("%s/booking-history", bu.config.URLFEAgent),
 		RejectionReason: rejectionReason,
-		HomePageLink:    "https://hotelbox.com",
+		HomePageLink:    bu.config.URLFEAgent,
 		SubBookings:     subBookings,
+	}
+
+	switch types {
+	case constant.ConstBooking:
+		data.ID = booking.BookingCode
+	case constant.ConstSubBooking:
+		data.ID = details[0].SubBookingID
 	}
 
 	subjectParsed, err := utils.ParseTemplate(emailTemplate.Subject, data)
@@ -118,7 +151,7 @@ func (bu *BookingUsecase) sendEmailNotificationHotel(ctx context.Context, detail
 
 	var templateName string
 	switch statusID {
-	case constant.StatusBookingApprovedID:
+	case constant.StatusBookingConfirmedID:
 		templateName = constant.EmailHotelBookingRequest
 	default:
 		logger.Warn(ctx,
@@ -134,7 +167,7 @@ func (bu *BookingUsecase) sendEmailNotificationHotel(ctx context.Context, detail
 
 	for _, bd := range details {
 
-		hotel, err := bu.hotelRepo.GetHotelByID(ctx, bd.RoomType.HotelID, constant.RoleAdmin)
+		hotel, err := bu.hotelRepo.GetHotelByID(ctx, bd.RoomPrice.RoomType.HotelID, constant.RoleAdmin)
 		if err != nil || hotel == nil {
 			logger.Error(ctx, "Failed to get hotel by Id:", err)
 			continue
@@ -182,13 +215,15 @@ func (bu *BookingUsecase) assignSignatureEmail(emailSignature string) string {
 }
 
 type SubBookingData struct {
-	Index     int
-	HotelName string
-	CheckIn   string // Format: "02-01-2025"
-	CheckOut  string
+	SubBookingID string
+	Guest        string
+	HotelName    string
+	CheckIn      string // Format: "02-01-2025"
+	CheckOut     string
 }
 
 type BookingEmailData struct {
+	ID              string
 	AgentName       string
 	BookingID       string
 	GuestName       string

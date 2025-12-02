@@ -4,6 +4,7 @@ import (
 	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"mime/multipart"
+	"wtm-backend/pkg/utils"
 )
 
 type UpsertBannerRequest struct {
@@ -14,7 +15,7 @@ type UpsertBannerRequest struct {
 
 func (r *UpsertBannerRequest) ValidateCreate() error {
 	if err := validation.ValidateStruct(r,
-		validation.Field(&r.Title, validation.Required.Error("Title is required")),
+		validation.Field(&r.Title, validation.Required.Error("Title is required"), utils.NotEmptyAfterTrim("Title")),
 		validation.Field(&r.Image, validation.Required.Error("Image is required")),
 	); err != nil {
 		return err

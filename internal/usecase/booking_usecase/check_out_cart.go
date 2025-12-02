@@ -3,13 +3,18 @@ package booking_usecase
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
+	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 )
 
-func (bu *BookingUsecase) CheckOutCart(ctx context.Context, req *bookingdto.CheckOutCartRequest) error {
-	return bu.dbTrx.WithTransaction(ctx, func(txCtx context.Context) error {
+func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOutCartResponse, error) {
+	var invoices []entity.Invoice
+
+	err := bu.dbTrx.WithTransaction(ctx, func(txCtx context.Context) error {
 		// Get agent Id from context
 		userCtx, err := bu.middleware.GenerateUserFromContext(txCtx)
 		if err != nil {
@@ -24,6 +29,12 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context, req *bookingdto.Chec
 
 		agentID := userCtx.ID
 
+		user, err := bu.userRepo.GetUserByID(txCtx, agentID)
+		if err != nil {
+			logger.Error(ctx, "failed to get user", err.Error())
+			return fmt.Errorf("failed to get user: %s", err.Error())
+		}
+
 		booking, err := bu.bookingRepo.GetCartBooking(txCtx, agentID)
 		if err != nil {
 			logger.Error(ctx, "failed to get card booking", err.Error())
@@ -34,26 +45,142 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context, req *bookingdto.Chec
 			return fmt.Errorf("no cart found")
 		}
 
-		// 1. Update guests in booking
-		if err := bu.bookingRepo.UpdateBookingGuests(txCtx, booking.ID, req.Guests); err != nil {
-			logger.Error(ctx, "failed to update booking", err.Error())
-			return fmt.Errorf("failed to update booking guests: %s", err.Error())
-		}
-
-		// 2. Update guest per booking detail
-		for _, d := range req.Details {
-			if err := bu.bookingRepo.UpdateBookingDetailGuest(txCtx, d.BookingDetailID, d.Guest); err != nil {
-				logger.Error(ctx, "failed to update booking detail", err.Error())
-				return fmt.Errorf("failed to update guest in detail: %s", err.Error())
-			}
-		}
-
 		// 3. Update status to "in review"
-		if err := bu.bookingRepo.UpdateBookingStatus(txCtx, booking.ID, constant.StatusBookingInReviewID); err != nil {
+		if err := bu.bookingRepo.UpdateBookingStatus(txCtx, booking.ID, constant.StatusBookingWaitingApprovalID); err != nil {
 			logger.Error(ctx, "failed to update booking status", err.Error())
 			return fmt.Errorf("failed to update booking status: %s", err.Error())
 		}
 
+		// 4. Create Invoice Data
+		for _, detail := range booking.BookingDetails {
+			cancellationDate := detail.CheckInDate.AddDate(0, 0, detail.RoomPrice.RoomType.Hotel.CancellationPeriod)
+			detailRoom := entity.DetailRoom{
+				HotelName:     detail.RoomPrice.RoomType.Hotel.Name,
+				RoomTypeName:  detail.RoomPrice.RoomType.Name,
+				Capacity:      detail.RoomPrice.RoomType.MaxOccupancy,
+				IsAPI:         detail.RoomPrice.RoomType.Hotel.IsAPI,
+				CancelledDate: cancellationDate.Format(time.DateOnly),
+			}
+			detail.DetailRooms = detailRoom
+
+			invoiceCode, err := bu.bookingRepo.GenerateCode(ctx, "invoice_codes", "INV")
+			if err != nil {
+				logger.Error(ctx, "failed to generate invoice code", "error", err)
+				return err
+			}
+
+			if strings.TrimSpace(detail.Guest) == "" {
+				logger.Error(ctx, fmt.Sprintf("guest in room %s is empty", detail.DetailRooms.RoomTypeName))
+				return fmt.Errorf("guest in room %s is empty", detail.DetailRooms.RoomTypeName)
+			}
+			invoiceData := entity.Invoice{
+				BookingDetailID: detail.ID,
+				InvoiceCode:     invoiceCode,
+				DetailInvoice: entity.DetailInvoice{
+					CompanyAgent: user.AgentCompanyName,
+					Agent:        user.FullName,
+					Email:        user.Email,
+					Hotel:        detail.DetailRooms.HotelName,
+					Guest:        detail.Guest,
+					CheckIn:      detail.CheckInDate.Format(time.DateOnly),
+					CheckOut:     detail.CheckOutDate.Format(time.DateOnly),
+					SubBookingID: detail.SubBookingID,
+				},
+			}
+			var totalPrice float64
+			var descriptionItems []entity.DescriptionInvoice
+			var detailPromo entity.DetailPromo
+			nights := int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24)
+			oriPrice := detail.RoomPrice.Price
+			priceRoom := float64(nights) * oriPrice
+			roomPrice := oriPrice
+
+			if detail.Promo != nil {
+				promo := detail.Promo
+				detailPromo, err = bu.generateDetailPromo(promo)
+				if err != nil {
+					logger.Error(ctx, "failed to generate detail promo", err.Error())
+				}
+				detail.DetailPromos = detailPromo
+				nights := int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24)
+				switch detail.Promo.PromoTypeID {
+				case constant.PromoTypeFixedPriceID:
+					roomPrice = promo.Detail.FixedPrice
+					if promo.Duration > nights {
+						roomPrice += float64(nights-promo.Duration) * oriPrice
+					}
+				case constant.PromoTypeDiscountID:
+					roomPrice = (100 - promo.Detail.DiscountPercentage) / 100 * oriPrice * float64(nights)
+					if promo.Duration > nights {
+						roomPrice += float64(nights-promo.Duration) * oriPrice
+					}
+				default:
+					roomPrice = roomPrice * float64(nights)
+				}
+			}
+			detail.Price = roomPrice
+			itemRoom := entity.DescriptionInvoice{
+				Description:      detail.DetailRooms.RoomTypeName,
+				Quantity:         nights,
+				Unit:             constant.UnitNight,
+				Price:            oriPrice,
+				TotalBeforePromo: priceRoom,
+				Total:            detail.Price,
+			}
+			totalPrice += itemRoom.Total
+			descriptionItems = append(descriptionItems, itemRoom)
+
+			for _, additional := range detail.BookingDetailsAdditional {
+				quantity := 1
+				price := additional.Price
+				priceAdditional := float64(quantity) * price
+				itemAdditional := entity.DescriptionInvoice{
+					Description: additional.NameAdditional,
+					Quantity:    quantity,
+					Unit:        constant.UnitPax,
+					Price:       additional.Price,
+					Total:       priceAdditional,
+				}
+				totalPrice += priceAdditional
+				descriptionItems = append(descriptionItems, itemAdditional)
+			}
+			//invoiceData.DetailInvoice.Promo = detail.Promo
+			invoiceData.DetailInvoice.DescriptionInvoice = descriptionItems
+			invoiceData.DetailInvoice.TotalPrice = totalPrice
+			invoices = append(invoices, invoiceData)
+
+			//Update Detail Booking Detail
+			if err = bu.bookingRepo.UpdateDetailBookingDetail(txCtx, detail.ID, &detailRoom, &detailPromo, detail.Price); err != nil {
+				logger.Error(ctx, "failed to update booking", err.Error())
+				return fmt.Errorf("failed to update booking: %s", err.Error())
+			}
+		}
+
+		// Create Invoice
+		if err = bu.bookingRepo.CreateInvoice(txCtx, invoices); err != nil {
+			logger.Error(ctx, "failed to create invoice", err.Error())
+			return fmt.Errorf("failed to create invoice: %s", err.Error())
+		}
+
 		return nil
 	})
+
+	if err != nil {
+		logger.Error(ctx, "transaction failed in check out cart", err.Error())
+		return nil, err
+	}
+
+	// sekarang invoices sudah terisi
+	resp := &bookingdto.CheckOutCartResponse{
+		Invoice: make([]bookingdto.DataInvoice, 0, len(invoices)),
+	}
+	for _, invoice := range invoices {
+
+		resp.Invoice = append(resp.Invoice, bookingdto.DataInvoice{
+			InvoiceNumber: invoice.InvoiceCode,
+			DetailInvoice: invoice.DetailInvoice,
+			InvoiceDate:   time.Now().Format(time.DateOnly),
+		})
+	}
+	return resp, nil
 }

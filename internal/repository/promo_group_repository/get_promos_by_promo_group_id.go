@@ -23,7 +23,7 @@ func (pgr *PromoGroupRepository) GetPromosByPromoGroupID(ctx context.Context, pr
 
 	if strings.TrimSpace(search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(search)
-		query = query.Where("promos.name ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%")
+		query = query.Where("promos.name ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	if err := query.Count(&total).Error; err != nil {

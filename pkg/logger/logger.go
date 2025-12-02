@@ -78,7 +78,11 @@ func Error(ctx context.Context, message string, args ...interface{}) {
 }
 
 // Fatal logs fatal errors and exits.
-func Fatal(message string, args ...interface{}) {
+func Fatal(ctx context.Context, message string, args ...interface{}) {
+	traceID := ctx.Value("traceID")
+	if traceID == nil {
+		traceID = "unknown"
+	}
 	log.WithFields(logrus.Fields{
 		"func": getCallerFuncName(),
 		"data": args,

@@ -3,7 +3,7 @@ package hoteldto
 import "wtm-backend/internal/dto"
 
 type ListAdditionalRoomsRequest struct {
-	dto.PaginationRequest `json:"_inline"`
+	dto.PaginationRequest `json:",inline"`
 }
 
 type ListAdditionalRoomsResponse struct {

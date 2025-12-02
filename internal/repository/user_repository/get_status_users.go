@@ -18,7 +18,7 @@ func (ur *UserRepository) GetStatusUsers(ctx context.Context, filter *filter.Def
 	// Apply search filter
 	if strings.TrimSpace(filter.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		query = query.Where("LOWER(status) ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%")
+		query = query.Where("LOWER(status) ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	// Apply filter for active banners

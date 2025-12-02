@@ -24,7 +24,8 @@ func (dr *DatabaseTransaction) WithTransaction(ctx context.Context, fn func(ctx 
 	defer func() {
 		if r := recover(); r != nil {
 			_ = dr.db.RollbackTrx(txCtx, tx)
-			panic(r)
+			logger.Error(ctx, "Panic recovered in transaction", r)
+			return
 		}
 	}()
 

@@ -19,13 +19,14 @@ type Booking struct {
 	AgentCompanyName string
 	AgentEmail       string
 	AgentPhoneNumber string
+	PromoGroupAgent  string
 }
 
 type BookingDetail struct {
 	ID                          uint
 	SubBookingID                string
 	BookingID                   uint
-	RoomTypeID                  uint
+	RoomPriceID                 uint
 	CheckInDate                 time.Time
 	CheckOutDate                time.Time
 	Quantity                    int
@@ -34,19 +35,22 @@ type BookingDetail struct {
 	DetailRooms                 DetailRoom
 	Price                       float64
 	Guest                       string
-	BookingDetailAdditional     []BookingDetailAdditional
+	BookingDetailsAdditional    []BookingDetailAdditional
 	RoomPrice                   RoomPrice
 	StatusBookingID             uint
 	StatusPaymentID             uint
 	BookingDetailAdditionalName []string
 	BookingStatus               string
 	PaymentStatus               string
-	UpdatedAt                   time.Time
+	ApprovedAt                  time.Time
 	Booking                     Booking
-	RoomType                    RoomType
+	Invoice                     *Invoice
+	ReceiptUrl                  string
+	Promo                       *Promo
 }
 
 type DetailPromo struct {
+	Name            string  `json:"name,omitempty"`
 	PromoCode       string  `json:"promo_code,omitempty"`
 	Type            string  `json:"type,omitempty"`
 	DiscountPercent float64 `json:"discount_percent,omitempty"`
@@ -57,12 +61,9 @@ type DetailPromo struct {
 
 type DetailRoom struct {
 	HotelName     string `json:"hotel_name,omitempty"`
-	HotelPhoto    string `json:"hotel_photo,omitempty"`
-	HotelRating   int    `json:"hotel_rating,omitempty"`
 	RoomTypeName  string `json:"room_type_name,omitempty"`
-	IsBreakfast   bool   `json:"is_breakfast,omitempty"`
 	CancelledDate string `json:"cancelled_period,omitempty"`
-	Capacity      string `json:"capacity,omitempty"`
+	Capacity      int    `json:"capacity,omitempty"`
 	IsAPI         bool   `json:"is_api,omitempty"`
 }
 
@@ -113,11 +114,42 @@ type ReportForGraph struct {
 }
 
 type StatusBooking struct {
-	ID     uint
-	Status string
+	ID     uint   `json:"id"`
+	Status string `json:"status"`
 }
 
 type StatusPayment struct {
-	ID     uint
-	Status string
+	ID     uint   `json:"id"`
+	Status string `json:"status"`
+}
+
+type Invoice struct {
+	BookingDetailID uint          `json:"booking_detail_id"`
+	InvoiceCode     string        `json:"invoice_code"`
+	DetailInvoice   DetailInvoice `json:"detail_invoice"`
+	CreatedAt       time.Time     `json:"created_at"`
+}
+
+type DetailInvoice struct {
+	CompanyAgent       string               `json:"company_agent"`
+	Agent              string               `json:"agent"`
+	Email              string               `json:"email"`
+	Hotel              string               `json:"hotel"`
+	Guest              string               `json:"guest"`
+	CheckIn            string               `json:"check_in"`
+	CheckOut           string               `json:"check_out"`
+	SubBookingID       string               `json:"sub_booking_id"`
+	DescriptionInvoice []DescriptionInvoice `json:"description_invoice"`
+	Promo              DetailPromo          `json:"promo"`
+	Description        string               `json:"description"`
+	TotalPrice         float64              `json:"total_price"`
+}
+
+type DescriptionInvoice struct {
+	Description      string  `json:"description"`
+	Quantity         int     `json:"quantity"`
+	Unit             string  `json:"unit"`
+	Price            float64 `json:"price"`
+	Total            float64 `json:"total"`
+	TotalBeforePromo float64 `json:"total_before_promo,omitempty"`
 }

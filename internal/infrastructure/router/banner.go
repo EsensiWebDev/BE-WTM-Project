@@ -10,14 +10,15 @@ func BannerRoutes(app *bootstrap.Application, middlewareMap MiddlewareMap, route
 
 	bannerHandler := banner_handler.NewBannerHandler(app.Usecases.BannerUsecase)
 
-	banners := routerGroup.Group("/banners", middlewareMap.Auth, middlewareMap.TimeoutFast)
+	banners := routerGroup.Group("/banners", middlewareMap.TimeoutFast)
 	{
-		banners.GET("/", bannerHandler.ListBanners)
-		banners.POST("", bannerHandler.CreateBanner, middlewareMap.TimeoutFile)
+		banners.GET("/", middlewareMap.Auth, bannerHandler.ListBanners)
+		banners.GET("/active", bannerHandler.ListActiveBanners)
 		banners.GET("/:id", bannerHandler.DetailBanner)
-		banners.PUT("/:id", bannerHandler.UpdateBanner, middlewareMap.TimeoutFile)
-		banners.DELETE("/:id", bannerHandler.RemoveBanner)
-		banners.POST("/status", bannerHandler.UpdateStatusBanner)
-		banners.POST("/order", bannerHandler.UpdateOrderBanner)
+		banners.POST("", middlewareMap.Auth, bannerHandler.CreateBanner, middlewareMap.TimeoutFile)
+		banners.PUT("/:id", middlewareMap.Auth, bannerHandler.UpdateBanner, middlewareMap.TimeoutFile)
+		banners.DELETE("/:id", middlewareMap.Auth, bannerHandler.RemoveBanner)
+		banners.POST("/status", middlewareMap.Auth, bannerHandler.UpdateStatusBanner)
+		banners.POST("/order", middlewareMap.Auth, bannerHandler.UpdateOrderBanner)
 	}
 }

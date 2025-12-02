@@ -10,23 +10,22 @@ import (
 func (ar *AuthRepository) UsedTokenResetPassword(ctx context.Context, token string) (uint, error) {
 	db := ar.db.GetTx(ctx)
 
-	var userId uint
 	var trp model.PasswordResetToken
-	if err := db.Select("user_id").Where("token = ? AND used = FALSE", token).First(&trp).Error; err != nil {
+	// Ambil semua kolom supaya ID ikut terisi
+	if err := db.Where("token = ? AND used = FALSE", token).First(&trp).Error; err != nil {
 		if ar.db.ErrRecordNotFound(ctx, err) {
 			logger.Error(ctx, "Password reset token not found", "token", token, "err", err.Error())
-			return userId, errors.New("invalid or expired token")
+			return 0, errors.New("invalid or expired token")
 		}
 		logger.Error(ctx, "Error finding password reset token", "token", token, "err", err.Error())
-		return userId, err
+		return 0, err
 	}
-	trp.Used = true
-	if err := db.Save(&trp).Error; err != nil {
+
+	// Update langsung kolom used = true
+	if err := db.Model(&trp).Update("used", true).Error; err != nil {
 		logger.Error(ctx, "Error updating password reset token as used", "token", token, "err", err.Error())
-		return userId, err
+		return 0, err
 	}
 
-	userId = trp.UserID
-
-	return userId, nil
+	return trp.UserID, nil
 }

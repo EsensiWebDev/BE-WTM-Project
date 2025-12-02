@@ -30,6 +30,9 @@ func (er *EmailRepository) GetEmailLogs(ctx context.Context, filter filter.Defau
 		query = query.Limit(filter.Limit).Offset(offset)
 	}
 
+	// Apply sorting
+	query = query.Order("created_at DESC")
+
 	// Fetch results
 	var emailLogs []model.EmailLog
 	if err := query.Find(&emailLogs).Error; err != nil {

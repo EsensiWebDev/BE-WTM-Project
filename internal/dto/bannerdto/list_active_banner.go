@@ -1,16 +1,13 @@
 package bannerdto
 
-import (
-	"wtm-backend/internal/domain/entity"
-	"wtm-backend/internal/dto"
-)
-
-type ListBannerRequest struct {
-	dto.PaginationRequest `json:",inline"`
-	IsActive              bool `json:"is_active"`
+type ListActiveBannerResponse struct {
+	Banners []ActiveBanner
 }
 
-type ListBannerResponse struct {
-	Banners []entity.Banner `json:"banners"`
-	Total   int64           `json:"total"`
+// ActiveBanner is a struct that represents an active banner
+type ActiveBanner struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	ImageURL    string `json:"image_url"`
+	Description string `json:"description"`
 }

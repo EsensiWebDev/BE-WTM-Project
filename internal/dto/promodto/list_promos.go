@@ -11,6 +11,7 @@ type ListPromosRequest struct {
 
 type ListPromosResponse struct {
 	Promos []PromoResponse `json:"promos"`
+	Total  int64           `json:"total"`
 }
 
 type PromoResponse struct {

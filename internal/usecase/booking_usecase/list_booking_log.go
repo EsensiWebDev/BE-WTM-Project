@@ -2,6 +2,7 @@ package booking_usecase
 
 import (
 	"context"
+	"fmt"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/internal/repository/filter"
 	"wtm-backend/pkg/logger"
@@ -10,8 +11,16 @@ import (
 func (bu *BookingUsecase) ListBookingLog(ctx context.Context, req *bookingdto.ListBookingLogRequest) (*bookingdto.ListBookingLogResponse, error) {
 	filterReq := filter.BookingFilter{}
 	filterReq.PaginationRequest = req.PaginationRequest
+	filterReq.ConfirmDateFrom = req.ConfirmDateFrom
+	filterReq.ConfirmDateTo = req.ConfirmDateTo
+	filterReq.CheckInDateFrom = req.CheckInDateFrom
+	filterReq.CheckInDateTo = req.CheckInDateTo
+	filterReq.CheckOutDateFrom = req.CheckOutDateFrom
+	filterReq.CheckOutDateTo = req.CheckOutDateTo
+	filterReq.BookingStatusID = req.BookingStatusID
+	filterReq.PaymentStatusID = req.PaymentStatusID
 
-	bookings, total, err := bu.bookingRepo.GetBookings(ctx, &filterReq)
+	subBookings, total, err := bu.bookingRepo.GetListBookingLog(ctx, &filterReq)
 	if err != nil {
 		logger.Error(ctx, "failed to get bookings", err.Error())
 		return nil, err
@@ -22,23 +31,24 @@ func (bu *BookingUsecase) ListBookingLog(ctx context.Context, req *bookingdto.Li
 		Data:  make([]bookingdto.BookingLog, 0),
 	}
 
-	for _, booking := range bookings {
-		for _, detail := range booking.BookingDetails {
-			bookingLog := bookingdto.BookingLog{
-				BookingCode:   booking.BookingCode,
-				ConfirmDate:   detail.UpdatedAt.Format("2006-01-02"),
-				AgentName:     booking.AgentName,
-				BookingStatus: booking.BookingStatus,
-				PaymentStatus: booking.PaymentStatus,
-				CheckInDate:   detail.CheckInDate.Format("2006-01-02"),
-				CheckOutDate:  detail.CheckOutDate.Format("2006-01-02"),
-				HotelName:     detail.DetailRooms.HotelName,
-				RoomTypeName:  detail.DetailRooms.RoomTypeName,
-				RoomNights:    int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24),
-				Capacity:      detail.DetailRooms.Capacity,
-			}
-			resp.Data = append(resp.Data, bookingLog)
+	for _, detail := range subBookings {
+		bookingLog := bookingdto.BookingLog{
+			SubBookingID:  detail.SubBookingID,
+			BookingID:     detail.Booking.BookingCode,
+			AgentName:     detail.Booking.AgentName,
+			BookingStatus: detail.BookingStatus,
+			PaymentStatus: detail.PaymentStatus,
+			CheckInDate:   detail.CheckInDate.Format("2006-01-02"),
+			CheckOutDate:  detail.CheckOutDate.Format("2006-01-02"),
+			HotelName:     detail.DetailRooms.HotelName,
+			RoomTypeName:  detail.DetailRooms.RoomTypeName,
+			RoomNights:    int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24),
+			Capacity:      fmt.Sprintf("%d Adult", detail.DetailRooms.Capacity),
 		}
+		if detail.ApprovedAt.IsZero() {
+			bookingLog.ConfirmDate = "N/A"
+		}
+		resp.Data = append(resp.Data, bookingLog)
 	}
 
 	return resp, nil

@@ -11,9 +11,11 @@ const (
 )
 
 const (
-	ConstBooking = "booking"
-	ConstReject  = "reject"
-	ConstAll     = "all"
+	ConstBooking    = "booking"
+	ConstSubBooking = "sub_booking"
+	ConstPayment    = "payment"
+	ConstReject     = "reject"
+	ConstAll        = "all"
 )
 
 const (
@@ -28,25 +30,31 @@ const (
 )
 
 const (
-	RoleAdmin        = "admin"
-	RoleSupport      = "support"
-	RoleAgent        = "agent"
-	RoleSuperAdmin   = "super_admin"
-	RoleSuperAdminID = 1
-	RoleAdminID      = 2
-	RoleAgentID      = 3
-	RoleSupportID    = 4
+	RoleAdmin         = "admin"
+	RoleSupport       = "support"
+	RoleAgent         = "agent"
+	RoleSuperAdmin    = "super_admin"
+	RoleSuperAdminID  = 1
+	RoleAdminID       = 2
+	RoleAgentID       = 3
+	RoleSupportID     = 4
+	RoleAdminCap      = "Admin"
+	RoleSupportCap    = "Support"
+	RoleSuperAdminCap = "Super Admin"
+	RoleAgentCap      = "Agent"
 )
 
 const (
-	StatusBookingInCart     = "In Cart"
-	StatusBookingInReview   = "In Review"
-	StatusBookingApproved   = "Approved"
-	StatusBookingRejected   = "Rejected"
-	StatusBookingInCartID   = 1
-	StatusBookingInReviewID = 2
-	StatusBookingApprovedID = 3
-	StatusBookingRejectedID = 4
+	StatusBookingInCart            = "In Cart"
+	StatusBookingWaitingApproval   = "Waiting Approval"
+	StatusBookingConfirmed         = "Confirmed"
+	StatusBookingRejected          = "Rejected"
+	StatusBookingCanceled          = "Canceled"
+	StatusBookingInCartID          = 1
+	StatusBookingWaitingApprovalID = 2
+	StatusBookingConfirmedID       = 3
+	StatusBookingRejectedID        = 4
+	StatusBookingCanceledID        = 5
 )
 
 const (
@@ -115,4 +123,10 @@ const (
 	StatusEmailPendingID = 1
 	StatusEmailSuccessID = 2
 	StatusEmailFailedID  = 3
+)
+
+const (
+	RoomPrice = "Room Price"
+	UnitNight = "night"
+	UnitPax   = "pax"
 )

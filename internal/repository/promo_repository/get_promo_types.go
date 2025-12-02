@@ -21,7 +21,7 @@ func (pr *PromoRepository) GetPromoTypes(ctx context.Context, filter *filter.Def
 
 	if filter.Search != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		query = query.Where("name ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%")
+		query = query.Where("name ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	if err := query.Count(&total).Error; err != nil {

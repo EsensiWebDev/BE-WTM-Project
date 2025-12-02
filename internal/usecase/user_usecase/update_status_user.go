@@ -2,6 +2,7 @@ package user_usecase
 
 import (
 	"context"
+	"fmt"
 	"wtm-backend/internal/dto/userdto"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
@@ -33,8 +34,8 @@ func (uu *UserUsecase) UpdateStatusUser(ctx context.Context, req *userdto.Update
 
 func (uu *UserUsecase) sendEmailNotification(ctx context.Context, req *userdto.UpdateStatusUserRequest, name, email string) {
 	var statusEmail string
-	var loginLink = "https://hotelbox.com/login"
-	var reRegisterLink = "https://hotelbox.com/re-register"
+	var loginLink = fmt.Sprintf("%s/login", uu.config.URLFEAgent)
+	var reRegisterLink = fmt.Sprintf("%s/register", uu.config.URLFEAgent)
 
 	if req.IsActive {
 		statusEmail = constant.EmailAgentApproved

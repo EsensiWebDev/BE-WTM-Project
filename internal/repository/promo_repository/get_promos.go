@@ -18,11 +18,12 @@ func (pr *PromoRepository) GetPromos(ctx context.Context, filterReq *filter.Defa
 
 	query := db.WithContext(ctx).
 		Model(&model.Promo{}).
-		Preload("PromoType")
+		Preload("PromoType").
+		Preload("PromoRoomTypes")
 
 	if filterReq.Search != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filterReq.Search)
-		query = query.Where("promos.name ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%")
+		query = query.Where("promos.name ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	if err := query.Count(&total).Error; err != nil {
@@ -37,6 +38,8 @@ func (pr *PromoRepository) GetPromos(ctx context.Context, filterReq *filter.Defa
 		offset := (filterReq.Page - 1) * filterReq.Limit
 		query = query.Limit(filterReq.Limit).Offset(offset)
 	}
+
+	query = query.Order("promos.created_at DESC")
 
 	if err := query.Find(&promos).Error; err != nil {
 		logger.Error(ctx, "Error finding promos", err.Error())
@@ -56,6 +59,7 @@ func (pr *PromoRepository) GetPromos(ctx context.Context, filterReq *filter.Defa
 			logger.Error(ctx, "Error marshalling promo detail to JSON", err.Error())
 		}
 		promoEntities[i].Detail = detailPromo
+		promoEntities[i].ExternalID = promo.ExternalID.ExternalID
 	}
 
 	return promoEntities, total, nil

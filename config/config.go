@@ -30,7 +30,9 @@ type Config struct {
 	JWTSecret     string
 	RefreshSecret string
 
-	URL string
+	URL        string
+	URLFEAgent string
+	URLFEAdmin string
 
 	HostRedis     string
 	PortRedis     string
@@ -68,7 +70,8 @@ type Config struct {
 
 	SupportEmail string
 
-	AWSConfig AWSConfig
+	AWSConfig   AWSConfig
+	AutoMigrate bool
 }
 
 func LoadConfig() *Config {
@@ -88,7 +91,9 @@ func LoadConfig() *Config {
 		JWTSecret:     utils.GetStringEnv("JWT_SECRET", "yoursecretkey"),
 		RefreshSecret: utils.GetStringEnv("REFRESH_SECRET", "yourrefreshkey"),
 
-		URL: utils.GetStringEnv("URL", ""),
+		URL:        utils.GetStringEnv("URL", ""),
+		URLFEAgent: utils.GetStringEnv("URL_FE_AGENT", ""),
+		URLFEAdmin: utils.GetStringEnv("URL_FE_ADMIN", ""),
 
 		HostRedis:     utils.GetStringEnv("REDIS_HOST", "localhost"),
 		PortRedis:     utils.GetStringEnv("REDIS_PORT", "6379"),

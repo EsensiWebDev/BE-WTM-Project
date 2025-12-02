@@ -1,12 +1,14 @@
 package bookingdto
 
-type CheckOutCartRequest struct {
-	BookingID uint             `json:"booking_id"`
-	Guests    []string         `json:"guests"`
-	Details   []CheckOutDetail `json:"detail"`
+import "wtm-backend/internal/domain/entity"
+
+type CheckOutCartResponse struct {
+	Invoice []DataInvoice `json:"invoice"`
 }
 
-type CheckOutDetail struct {
-	BookingDetailID uint   `json:"booking_detail_id"`
-	Guest           string `json:"guest"`
+type DataInvoice struct {
+	entity.DetailInvoice `json:",inline"`
+	InvoiceNumber        string `json:"invoice_number"`
+	InvoiceDate          string `json:"invoice_date"`
+	Receipt              string `json:"receipt"`
 }

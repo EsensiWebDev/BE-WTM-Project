@@ -53,6 +53,18 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "Sort order for banners",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort direction for banners",
+                        "name": "dir",
+                        "in": "query"
+                    },
+                    {
                         "type": "boolean",
                         "description": "Filter by active status of banners",
                         "name": "is_active",
@@ -73,7 +85,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/entity.Banner"
+                                                "$ref": "#/definitions/bannerdto.BannerData"
                                             }
                                         }
                                     }
@@ -127,6 +139,44 @@ const docTemplate = `{
                         "description": "Successfully created banner",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/banners/active": {
+            "get": {
+                "description": "List all active banners",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Banner"
+                ],
+                "summary": "List Active Banners",
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved active banners",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/bannerdto.ActiveBanner"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -249,7 +299,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/entity.Banner"
+                                            "$ref": "#/definitions/bannerdto.BannerData"
                                         }
                                     }
                                 }
@@ -368,6 +418,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Page number for pagination",
                         "name": "page",
                         "in": "query"
@@ -389,6 +440,12 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Filter by booking status Id",
                         "name": "booking_status_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by payment status Id",
+                        "name": "payment_status_id",
                         "in": "query"
                     }
                 ],
@@ -412,6 +469,86 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/bookings/booking-status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve a list of booking statuses.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "List Booking Statuses",
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved list of booking statuses",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ResponseWithData"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/entity.StatusBooking"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update the status of a booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Update booking status",
+                "parameters": [
+                    {
+                        "description": "Update status booking request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bookingdto.UpdateStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully updated booking status",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -494,6 +631,121 @@ const docTemplate = `{
                 }
             }
         },
+        "/bookings/cart/guests": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add guests to a booking cart",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Add Guests to Cart",
+                "parameters": [
+                    {
+                        "description": "Add Guests to Cart Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bookingdto.AddGuestsToCartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully added guests to cart",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove guests from a booking cart",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Remove Guests from Cart",
+                "parameters": [
+                    {
+                        "description": "Remove Guests from Cart Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bookingdto.RemoveGuestsFromCartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully removed guests from cart",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/bookings/cart/sub-guest": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add or change a guest to a specific sub cart within a booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Add/Change Guest to Sub Cart",
+                "parameters": [
+                    {
+                        "description": "Add / Change Guest to Sub Cart Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bookingdto.AddGuestToSubCartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully added / changed guest to sub cart",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/bookings/cart/{id}": {
             "delete": {
                 "security": [
@@ -549,34 +801,26 @@ const docTemplate = `{
                     "Booking"
                 ],
                 "summary": "Checkout cart",
-                "parameters": [
-                    {
-                        "description": "Checkout cart request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/bookingdto.CheckOutCartRequest"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Successfully checked out cart",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/bookingdto.DataInvoice"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -669,6 +913,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/bookings/ids": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List booking IDs with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "List Booking IDs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number for pagination",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved booking IDs",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ResponseWithPagination"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/bookings/logs": {
             "get": {
                 "security": [
@@ -706,6 +1009,54 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Search by booking code or guest name",
                         "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by booking status ID",
+                        "name": "booking_status_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by payment status ID",
+                        "name": "payment_status_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by confirm date from (YYYY-MM-DD)",
+                        "name": "confirm_date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by confirm date to (YYYY-MM-DD)",
+                        "name": "confirm_date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by check-in date from (YYYY-MM-DD)",
+                        "name": "check_in_date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by check-in date to (YYYY-MM-DD)",
+                        "name": "check_in_date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by check-out date from (YYYY-MM-DD)",
+                        "name": "check_out_date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by check-out date to (YYYY-MM-DD)",
+                        "name": "check_out_date_to",
                         "in": "query"
                     }
                 ],
@@ -775,6 +1126,43 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update the status of a payment",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Update payment status",
+                "parameters": [
+                    {
+                        "description": "Update status payment request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bookingdto.UpdateStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully updated payment status",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
             }
         },
         "/bookings/receipt": {
@@ -786,7 +1174,7 @@ const docTemplate = `{
                 ],
                 "description": "Upload a receipt for a booking",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -797,13 +1185,23 @@ const docTemplate = `{
                 "summary": "Upload Receipt",
                 "parameters": [
                     {
-                        "description": "Upload receipt request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/bookingdto.UploadReceiptRequest"
-                        }
+                        "type": "file",
+                        "description": "Receipt File",
+                        "name": "receipt",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "booking_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sub Booking ID",
+                        "name": "sub_booking_id",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -816,53 +1214,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/bookings/status": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update the status of a booking",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Booking"
-                ],
-                "summary": "Update booking status",
-                "parameters": [
-                    {
-                        "description": "Update status booking request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/bookingdto.UpdateStatusBookingRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully updated booking status",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/bookings/statuses": {
+        "/bookings/{booking_id}/sub-ids": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve a list of booking statuses.",
+                "description": "List sub booking IDs for a given booking ID associated with the authenticated agent",
                 "consumes": [
                     "application/json"
                 ],
@@ -872,14 +1231,23 @@ const docTemplate = `{
                 "tags": [
                     "Booking"
                 ],
-                "summary": "List Booking Statuses",
+                "summary": "List Sub Booking IDs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "booking_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Successfully retrieved list of booking statuses",
+                        "description": "Successfully retrieved sub booking IDs",
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/response.ResponseWithData"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -887,12 +1255,49 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/entity.StatusBooking"
+                                                "type": "string"
                                             }
                                         }
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/bookings/{sub_booking_id}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancel an existing booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Cancel Booking",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "sub_booking_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully cancelled booking",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -913,62 +1318,13 @@ const docTemplate = `{
                 "summary": "Send Contact Us Email",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Name",
-                        "name": "name",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Email",
-                        "name": "email",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Subject",
-                        "name": "subject",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Department",
-                        "name": "department",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "general",
-                            "booking"
-                        ],
-                        "type": "string",
-                        "description": "Type",
-                        "name": "type",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Booking Code",
-                        "name": "booking_code",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Sub Booking Code",
-                        "name": "sub_booking_code",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Message",
-                        "name": "message",
-                        "in": "query",
-                        "required": true
+                        "description": "Contact Us Email Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/emaildto.SendContactUsEmailRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -1357,7 +1713,11 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
                         "description": "Filter hotels by region",
                         "name": "region",
                         "in": "query"
@@ -1513,7 +1873,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Successfully created hotel",
                         "schema": {
-                            "$ref": "#/definitions/response.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ResponseWithData"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/hoteldto.CreateHotelResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -1584,11 +1956,6 @@ const docTemplate = `{
         },
         "/hotels/agent": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Retrieve a list of hotels for a specific agent with pagination and filtering options.",
                 "consumes": [
                     "application/json"
@@ -1620,15 +1987,29 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "array",
-                        "description": "Filter hotels by rating (e.g., 1,2,3,4,5)",
-                        "name": "rating",
+                        "type": "string",
+                        "description": "Filter hotels by province",
+                        "name": "province",
                         "in": "query"
                     },
                     {
                         "type": "array",
-                        "description": "Filter hotels by district (e.g., 'Jakarta', 'Bandung')",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Filter hotels by district",
                         "name": "district",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Filter hotels by rating (e.g., 0,1,2,3,4,5)",
+                        "name": "rating",
                         "in": "query"
                     },
                     {
@@ -1645,12 +2026,38 @@ const docTemplate = `{
                     },
                     {
                         "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "multi",
+                        "description": "Filter hotels by total number of bedrooms (e.g., 1,2,3,4,5)",
+                        "name": "total_bedrooms",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
                         "description": "Filter hotels by total number of rooms (e.g., 1,2,3,4,5)",
                         "name": "total_rooms",
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "Filter hotels by total number of guests (e.g., 1,2,3,4,5)",
+                        "name": "total_quests",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter hotels by promo id",
+                        "name": "promo_id",
+                        "in": "query"
+                    },
+                    {
                         "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "multi",
                         "description": "Filter hotels by bed type Id (e.g., 1,2,3)",
                         "name": "bed_type_id",
                         "in": "query"
@@ -1855,11 +2262,6 @@ const docTemplate = `{
         },
         "/hotels/provinces": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Retrieve a list of provinces where hotels are located.",
                 "consumes": [
                     "application/json"
@@ -2736,12 +3138,6 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Number of items per page",
                         "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by User Id",
-                        "name": "user_id",
                         "in": "query"
                     }
                 ],
@@ -3623,6 +4019,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/promos/agent": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List promos for agent",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Promo"
+                ],
+                "summary": "List promos for agent",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number for pagination",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search keyword to filter promos by name,description, and code",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved list of promos",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.ResponseWithPagination"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/promodto.PromosForAgent"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/promos/status": {
             "put": {
                 "security": [
@@ -4028,13 +4487,21 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "multi",
                         "description": "Filter by Hotel Id",
                         "name": "hotel_id",
                         "in": "query"
                     },
                     {
-                        "type": "integer",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "multi",
                         "description": "Filter by Agent Company Id",
                         "name": "agent_company_id",
                         "in": "query"
@@ -4457,6 +4924,9 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Update a user with the provided details",
+                "consumes": [
+                    "multipart/form-data"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -4466,13 +4936,95 @@ const docTemplate = `{
                 "summary": "Update a user by admin",
                 "parameters": [
                     {
-                        "description": "Update user request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/userdto.UpdateUserByAdminRequest"
-                        }
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Full Name",
+                        "name": "full_name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role (e.g., admin, agent, customer)",
+                        "name": "role",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email",
+                        "name": "email",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Phone",
+                        "name": "phone",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Kakao Talk Id",
+                        "name": "kakao_talk_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Promo Group ID (required if role is agent)",
+                        "name": "promo_group_id",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Agent Company (required if role is agent)",
+                        "name": "agent_company",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Certificate (optional)",
+                        "name": "certificate",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "File Selfie",
+                        "name": "photo_selfie",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "File Id Card",
+                        "name": "photo_id_card",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Name Card",
+                        "name": "name_card",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Is Active",
+                        "name": "is_active",
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -4511,7 +5063,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Role (e.g., admin, agent, customer)",
+                        "description": "Role (e.g., admin, agent, support)",
                         "name": "role",
                         "in": "formData",
                         "required": true
@@ -4820,6 +5372,29 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "authdto.DataUser": {
+            "type": "object",
+            "properties": {
+                "full_name": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "photo_url": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "role_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "authdto.ForgotPasswordRequest": {
             "type": "object",
             "properties": {
@@ -4854,7 +5429,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/entity.UserMin"
+                    "$ref": "#/definitions/authdto.DataUser"
                 }
             }
         },
@@ -4885,46 +5460,96 @@ const docTemplate = `{
                 }
             }
         },
-        "bannerdto.OrderBanner": {
+        "bannerdto.ActiveBanner": {
             "type": "object",
             "properties": {
-                "id": {
-                    "type": "integer"
+                "description": {
+                    "type": "string"
                 },
-                "order": {
-                    "type": "integer"
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "bannerdto.BannerData": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
         "bannerdto.UpdateOrderBannerRequest": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/bannerdto.OrderBanner"
-                    }
+                "id": {
+                    "type": "string"
+                },
+                "order": {
+                    "type": "string"
                 }
             }
         },
         "bannerdto.UpdateStatusBannerRequest": {
             "type": "object",
-            "required": [
-                "id",
-                "status"
-            ],
             "properties": {
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "status": {
                     "type": "boolean"
                 }
             }
         },
+        "bookingdto.AddGuestToSubCartRequest": {
+            "type": "object",
+            "properties": {
+                "guest": {
+                    "type": "string"
+                },
+                "sub_cart_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "bookingdto.AddGuestsToCartRequest": {
+            "type": "object",
+            "properties": {
+                "cart_id": {
+                    "type": "integer"
+                },
+                "guests": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "bookingdto.AddToCartRequest": {
             "type": "object",
             "properties": {
+                "capacity_guest": {
+                    "type": "string"
+                },
                 "check_in_date": {
                     "type": "string"
                 },
@@ -4954,7 +5579,7 @@ const docTemplate = `{
                 "agent_name": {
                     "type": "string"
                 },
-                "booking_code": {
+                "booking_id": {
                     "type": "string"
                 },
                 "booking_status": {
@@ -4983,6 +5608,9 @@ const docTemplate = `{
                 },
                 "room_type_name": {
                     "type": "string"
+                },
+                "sub_booking_id": {
+                    "type": "string"
                 }
             }
         },
@@ -4994,6 +5622,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/bookingdto.CartDetailAdditional"
                     }
+                },
+                "cancellation_date": {
+                    "type": "string"
                 },
                 "check_in_date": {
                     "type": "string"
@@ -5010,14 +5641,23 @@ const docTemplate = `{
                 "hotel_rating": {
                     "type": "integer"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "is_breakfast": {
                     "type": "boolean"
+                },
+                "photo": {
+                    "type": "string"
                 },
                 "price": {
                     "type": "number"
                 },
+                "price_before_promo": {
+                    "type": "number"
+                },
                 "promo": {
-                    "$ref": "#/definitions/bookingdto.CartDetailPromo"
+                    "$ref": "#/definitions/entity.DetailPromo"
                 },
                 "room_type_name": {
                     "type": "string"
@@ -5041,60 +5681,6 @@ const docTemplate = `{
                 }
             }
         },
-        "bookingdto.CartDetailPromo": {
-            "type": "object",
-            "properties": {
-                "benefit": {
-                    "type": "string"
-                },
-                "code": {
-                    "type": "string"
-                },
-                "discount_percent": {
-                    "type": "number"
-                },
-                "fixed_price": {
-                    "type": "number"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "upgraded_to_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "bookingdto.CheckOutCartRequest": {
-            "type": "object",
-            "properties": {
-                "booking_id": {
-                    "type": "integer"
-                },
-                "detail": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/bookingdto.CheckOutDetail"
-                    }
-                },
-                "guests": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "bookingdto.CheckOutDetail": {
-            "type": "object",
-            "properties": {
-                "booking_detail_id": {
-                    "type": "integer"
-                },
-                "guest": {
-                    "type": "string"
-                }
-            }
-        },
         "bookingdto.DataBooking": {
             "type": "object",
             "properties": {
@@ -5104,11 +5690,8 @@ const docTemplate = `{
                 "agent_name": {
                     "type": "string"
                 },
-                "booking_code": {
-                    "type": "string"
-                },
                 "booking_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "booking_status": {
                     "type": "string"
@@ -5130,6 +5713,12 @@ const docTemplate = `{
                 },
                 "payment_status": {
                     "type": "string"
+                },
+                "receipts": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -5157,8 +5746,73 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "invoices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/bookingdto.DataInvoice"
+                    }
+                },
                 "payment_status": {
                     "type": "string"
+                },
+                "receipts": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "bookingdto.DataInvoice": {
+            "type": "object",
+            "properties": {
+                "agent": {
+                    "type": "string"
+                },
+                "check_in": {
+                    "type": "string"
+                },
+                "check_out": {
+                    "type": "string"
+                },
+                "company_agent": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "description_invoice": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.DescriptionInvoice"
+                    }
+                },
+                "email": {
+                    "type": "string"
+                },
+                "guest": {
+                    "type": "string"
+                },
+                "hotel": {
+                    "type": "string"
+                },
+                "invoice_date": {
+                    "type": "string"
+                },
+                "invoice_number": {
+                    "type": "string"
+                },
+                "promo": {
+                    "$ref": "#/definitions/entity.DetailPromo"
+                },
+                "receipt": {
+                    "type": "string"
+                },
+                "sub_booking_id": {
+                    "type": "string"
+                },
+                "total_price": {
+                    "type": "number"
                 }
             }
         },
@@ -5183,6 +5837,9 @@ const docTemplate = `{
                 "hotel_name": {
                     "type": "string"
                 },
+                "invoice": {
+                    "$ref": "#/definitions/bookingdto.DataInvoice"
+                },
                 "is_api": {
                     "type": "boolean"
                 },
@@ -5192,8 +5849,8 @@ const docTemplate = `{
                 "promo_code": {
                     "type": "string"
                 },
-                "promo_id": {
-                    "type": "integer"
+                "receipt_url": {
+                    "type": "string"
                 },
                 "sub_booking_id": {
                     "type": "string"
@@ -5224,7 +5881,13 @@ const docTemplate = `{
                 "hotel_name": {
                     "type": "string"
                 },
+                "invoice": {
+                    "$ref": "#/definitions/bookingdto.DataInvoice"
+                },
                 "payment_status": {
+                    "type": "string"
+                },
+                "receipt": {
                     "type": "string"
                 },
                 "sub_booking_id": {
@@ -5242,7 +5905,7 @@ const docTemplate = `{
                     }
                 },
                 "grand_total": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "guest": {
                     "type": "array",
@@ -5255,25 +5918,36 @@ const docTemplate = `{
                 }
             }
         },
-        "bookingdto.UpdateStatusBookingRequest": {
+        "bookingdto.RemoveGuestsFromCartRequest": {
             "type": "object",
             "properties": {
-                "booking_detail_id": {
+                "cart_id": {
                     "type": "integer"
                 },
+                "guest": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "bookingdto.UpdateStatusRequest": {
+            "type": "object",
+            "properties": {
                 "booking_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "reason": {
                     "type": "string"
                 },
                 "status_id": {
                     "type": "integer"
+                },
+                "sub_booking_id": {
+                    "type": "string"
                 }
             }
-        },
-        "bookingdto.UploadReceiptRequest": {
-            "type": "object"
         },
         "emaildto.EmailLogResponse": {
             "type": "object",
@@ -5306,6 +5980,32 @@ const docTemplate = `{
                 }
             }
         },
+        "emaildto.SendContactUsEmailRequest": {
+            "type": "object",
+            "properties": {
+                "booking_code": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sub_booking_code": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "entity.AgentCompany": {
             "type": "object",
             "properties": {
@@ -5313,29 +6013,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "entity.Banner": {
-            "type": "object",
-            "properties": {
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "image_url": {
-                    "type": "string"
-                },
-                "is_active": {
-                    "type": "boolean"
-                },
-                "order": {
-                    "type": "integer"
-                },
-                "title": {
                     "type": "string"
                 }
             }
@@ -5382,6 +6059,55 @@ const docTemplate = `{
                 },
                 "price": {
                     "type": "number"
+                }
+            }
+        },
+        "entity.DescriptionInvoice": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "number"
+                },
+                "total_before_promo": {
+                    "type": "number"
+                },
+                "unit": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.DetailPromo": {
+            "type": "object",
+            "properties": {
+                "benefit_note": {
+                    "type": "string"
+                },
+                "discount_percent": {
+                    "type": "number"
+                },
+                "fixed_price": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "promo_code": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "upgraded_to_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -5490,6 +6216,9 @@ const docTemplate = `{
                 "end_date": {
                     "type": "string"
                 },
+                "external_id": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -5563,6 +6292,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "hotel_name": {
+                    "type": "string"
+                },
+                "province": {
                     "type": "string"
                 },
                 "room_type_id": {
@@ -5683,35 +6415,6 @@ const docTemplate = `{
                 }
             }
         },
-        "entity.UserMin": {
-            "type": "object",
-            "properties": {
-                "full_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "permissions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "photo_url": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "role_id": {
-                    "type": "integer"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
         "hoteldto.BreakfastBase": {
             "type": "object",
             "properties": {
@@ -5734,6 +6437,14 @@ const docTemplate = `{
                 },
                 "price": {
                     "type": "number"
+                }
+            }
+        },
+        "hoteldto.CreateHotelResponse": {
+            "type": "object",
+            "properties": {
+                "hotel_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -5784,7 +6495,7 @@ const docTemplate = `{
                 "nearby_place": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/entity.NearbyPlace"
+                        "$ref": "#/definitions/hoteldto.NearbyPlaceForAgent"
                     }
                 },
                 "photos": {
@@ -6096,6 +6807,17 @@ const docTemplate = `{
                 }
             }
         },
+        "hoteldto.NearbyPlaceForAgent": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "radius": {
+                    "type": "number"
+                }
+            }
+        },
         "hoteldto.PromoDetailRoom": {
             "type": "object",
             "properties": {
@@ -6225,7 +6947,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "is_active": {
                     "type": "boolean"
@@ -6249,6 +6971,29 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "promo_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "promodto.PromosForAgent": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "hotel": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -6552,6 +7297,9 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },
@@ -6583,6 +7331,9 @@ const docTemplate = `{
         "userdto.ProfileResponse": {
             "type": "object",
             "properties": {
+                "agent_company": {
+                    "type": "string"
+                },
                 "certificate": {
                     "type": "string"
                 },
@@ -6683,26 +7434,6 @@ const docTemplate = `{
                 },
                 "reason": {
                     "type": "string"
-                }
-            }
-        },
-        "userdto.UpdateUserByAdminRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "full_name": {
-                    "type": "string"
-                },
-                "is_active": {
-                    "type": "boolean"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "integer"
                 }
             }
         }

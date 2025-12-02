@@ -18,11 +18,13 @@ func (br *BannerRepository) GetBanners(ctx context.Context, filter *filter.Banne
 	// Apply search filter
 	if strings.TrimSpace(filter.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		query = query.Where("LOWER(title) ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%")
+		query = query.Where("LOWER(title) ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	// Apply filter for active banners
-	query = query.Where("is_active = ?", filter.IsActive)
+	if filter.IsActive != nil {
+		query = query.Where("is_active = ?", *filter.IsActive)
+	}
 
 	// Count total records
 	var total int64
@@ -37,11 +39,11 @@ func (br *BannerRepository) GetBanners(ctx context.Context, filter *filter.Banne
 			filter.Page = 1
 		}
 		offset := (filter.Page - 1) * filter.Limit
-		query = query.Limit(filter.Limit).Offset(offset)
+		query = query.Offset(offset).Limit(filter.Limit)
 	}
 
 	//Apply sorting
-	query = query.Order("display_order ASC")
+	query = query.Order("display_order DESC")
 
 	// Execute the query to fetch active banners
 	var banners []model.Banner
@@ -55,6 +57,9 @@ func (br *BannerRepository) GetBanners(ctx context.Context, filter *filter.Banne
 	if err := utils.CopyStrict(&activeBanners, &banners); err != nil {
 		logger.Error(ctx, "Error copying banners to entity", err.Error())
 		return nil, total, err
+	}
+	for i, banner := range banners {
+		activeBanners[i].ExternalID = banner.ExternalID.ExternalID
 	}
 
 	return activeBanners, total, nil

@@ -15,7 +15,7 @@ func (br *BookingRepository) GetOrCreateCartID(ctx context.Context, agentID uint
 		Where("agent_id = ? AND status_booking_id = ?", agentID, 1).
 		First(&booking).Error; err != nil {
 		if br.db.ErrRecordNotFound(ctx, err) {
-			bookingCode, err := br.generateCode(ctx, "booking_codes", "BK")
+			bookingCode, err := br.GenerateCode(ctx, "booking_codes", "BK")
 			if err != nil {
 				logger.Error(ctx, "failed to generate booking code", "error", err)
 				return 0, err

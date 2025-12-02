@@ -1,23 +1,24 @@
 package hoteldto
 
 import (
-	"time"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto"
 )
 
 type ListHotelForAgentRequest struct {
 	dto.PaginationRequest `json:",inline"`
-	Province              *string    `json:"province" form:"province"`
-	Rating                []int      `json:"rating" form:"rating"`
-	BedTypeID             []uint     `json:"bed_type_id" form:"bed_type_id"`
-	RangePriceMin         *int       `json:"range_price_min" form:"range_price_min"`
-	RangePriceMax         *int       `json:"range_price_max" form:"range_price_max"`
-	District              []string   `json:"district" form:"district"`
-	TotalRooms            []int      `json:"total_rooms" form:"total_rooms"`
-	RangeDateFrom         *time.Time `json:"range_date_from" form:"range_date_from"`
-	RangeDateTo           *time.Time `json:"range_date_to" form:"range_date_to"`
-	TotalGuests           *int       `json:"total_guests" form:"total_guests"`
+	Province              *string  `json:"province" form:"province"`
+	Rating                []int    `json:"rating" form:"rating"`
+	BedTypeID             []int    `json:"bed_type_id" form:"bed_type_id"`
+	RangePriceMin         *int     `json:"range_price_min" form:"range_price_min"`
+	RangePriceMax         *int     `json:"range_price_max" form:"range_price_max"`
+	District              []string `json:"district" form:"district"`
+	TotalBedrooms         []int    `json:"total_bedrooms" form:"total_bedrooms"`
+	TotalRooms            int      `json:"total_rooms" form:"total_rooms"`
+	RangeDateFrom         string   `json:"from" form:"from"`
+	RangeDateTo           string   `json:"to" form:"to"`
+	TotalGuests           int      `json:"total_guests" form:"total_guests"`
+	PromoID               int64    `json:"promo_id" form:"promo_id"`
 }
 
 type ListHotelForAgentResponse struct {

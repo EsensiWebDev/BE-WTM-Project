@@ -20,6 +20,7 @@ import (
 // @Security BearerAuth
 // @Router       /bookings/cart [post]
 func (bh *BookingHandler) AddToCart(c *gin.Context) {
+
 	ctx := c.Request.Context()
 
 	var req bookingdto.AddToCartRequest

@@ -13,13 +13,18 @@ type DetailHotelForAgentResponse struct {
 	Rating      int                      `json:"rating"`
 	Email       string                   `json:"email"`
 	Facilities  []string                 `json:"facilities"`
-	NearbyPlace []entity.NearbyPlace     `json:"nearby_place"`
+	NearbyPlace []NearbyPlaceForAgent    `json:"nearby_place"`
 	SocialMedia []SocialMedia            `json:"social_media"`
 	RoomType    []DetailRoomTypeForAgent `json:"room_type"`
 
 	CancellationPeriod int    `json:"cancellation_period"`
 	CheckInHour        string `json:"check_in_hour"`
 	CheckOutHour       string `json:"check_out_hour"`
+}
+
+type NearbyPlaceForAgent struct {
+	Name   string  `json:"name"`
+	Radius float64 `json:"radius"`
 }
 
 type DetailRoomTypeForAgent struct {
@@ -43,5 +48,5 @@ type PromoDetailRoom struct {
 	PriceWithBreakfast    float64 `json:"price_with_breakfast"`
 	PriceWithoutBreakfast float64 `json:"price_without_breakfast"`
 	TotalNights           int     `json:"total_nights"`
-	OtherNotes            string  `json:"other_notes"`
+	OtherNotes            string  `json:"other_notes,omitempty"`
 }

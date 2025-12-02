@@ -5,13 +5,15 @@ import (
 )
 
 type PromoUsecase struct {
-	promoRepo domain.PromoRepository
-	dbTrx     domain.DatabaseTransaction
+	promoRepo  domain.PromoRepository
+	dbTrx      domain.DatabaseTransaction
+	middleware domain.Middleware
 }
 
-func NewPromoUsecase(promoRepo domain.PromoRepository, dbTrx domain.DatabaseTransaction) *PromoUsecase {
+func NewPromoUsecase(promoRepo domain.PromoRepository, dbTrx domain.DatabaseTransaction, middleware domain.Middleware) *PromoUsecase {
 	return &PromoUsecase{
-		promoRepo: promoRepo,
-		dbTrx:     dbTrx,
+		promoRepo:  promoRepo,
+		dbTrx:      dbTrx,
+		middleware: middleware,
 	}
 }

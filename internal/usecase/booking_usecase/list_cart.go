@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"wtm-backend/internal/dto/bookingdto"
+	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 )
 
@@ -29,44 +30,86 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 	}
 
 	result := &bookingdto.ListCartResponse{}
-	grandTotal := int64(0)
 	if cart != nil {
-		details := make([]bookingdto.CartDetail, len(cart.BookingDetails))
-		for i, detail := range cart.BookingDetails {
+		result.ID = cart.ID
+		var details []bookingdto.CartDetail
+		var grandTotal float64
 
-			additionals := make([]bookingdto.CartDetailAdditional, len(detail.BookingDetailAdditional))
-			totalAdditional := 0
-			for j, additional := range detail.BookingDetailAdditional {
-				additionals[j] = bookingdto.CartDetailAdditional{
+		for _, detail := range cart.BookingDetails {
+			var additionals []bookingdto.CartDetailAdditional
+			var totalAdditional float64
+
+			for _, additional := range detail.BookingDetailsAdditional {
+				additionals = append(additionals, bookingdto.CartDetailAdditional{
 					Name:  additional.NameAdditional,
 					Price: additional.Price,
-				}
-				totalAdditional += int(additional.Price)
+				})
+				totalAdditional += additional.Price
 			}
 
-			details[i] = bookingdto.CartDetail{
-				HotelName:    detail.DetailRooms.HotelName,
-				HotelRating:  detail.DetailRooms.HotelRating,
-				CheckInDate:  detail.CheckInDate,
-				CheckOutDate: detail.CheckOutDate,
-				RoomTypeName: detail.DetailRooms.RoomTypeName,
-				IsBreakfast:  detail.DetailRooms.IsBreakfast,
-				Guest:        detail.Guest,
-				Additional:   additionals,
-				Promo: bookingdto.CartDetailPromo{
-					Type:            detail.DetailPromos.Type,
-					DiscountPercent: detail.DetailPromos.DiscountPercent,
-					FixedPrice:      detail.DetailPromos.FixedPrice,
-					UpgradedToID:    detail.DetailPromos.UpgradedToID,
-					Benefit:         detail.DetailPromos.BenefitNote,
-				},
-				Price:                detail.Price,
-				TotalAdditionalPrice: float64(totalAdditional),
-				TotalPrice:           detail.Price + float64(totalAdditional),
+			var cancellationDate string
+			cancellationDate = detail.CheckInDate.AddDate(0, 0, detail.RoomPrice.RoomType.Hotel.CancellationPeriod).Format("2006-01-02")
+
+			nights := int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24)
+			cartDetail := bookingdto.CartDetail{
+				ID:                   detail.ID,
+				HotelName:            detail.RoomPrice.RoomType.Hotel.Name,
+				HotelRating:          detail.RoomPrice.RoomType.Hotel.Rating,
+				CheckInDate:          detail.CheckInDate,
+				CheckOutDate:         detail.CheckOutDate,
+				RoomTypeName:         detail.RoomPrice.RoomType.Name,
+				IsBreakfast:          detail.RoomPrice.IsBreakfast,
+				Guest:                detail.Guest,
+				Additional:           additionals,
+				CancellationDate:     cancellationDate,
+				PriceBeforePromo:     detail.RoomPrice.Price * float64(nights),
+				TotalAdditionalPrice: totalAdditional,
 			}
-			grandTotal += int64(details[i].TotalPrice)
+			basePrice := detail.RoomPrice.Price
+			roomPrice := basePrice
+			if detail.Promo != nil {
+				promo := detail.Promo
+				detailPromo, err := bu.generateDetailPromo(promo)
+				if err != nil {
+					logger.Error(ctx, "failed to generate detail promo", err.Error())
+				}
+				cartDetail.Promo = detailPromo
+				switch detail.Promo.PromoTypeID {
+				case constant.PromoTypeFixedPriceID:
+					roomPrice = promo.Detail.FixedPrice
+					if promo.Duration > nights {
+						roomPrice += float64(nights-promo.Duration) * basePrice
+					}
+				case constant.PromoTypeDiscountID:
+					roomPrice = (100 - promo.Detail.DiscountPercentage) / 100 * basePrice * float64(nights)
+					if promo.Duration > nights {
+						roomPrice += float64(nights-promo.Duration) * basePrice
+					}
+				default:
+					roomPrice = basePrice * float64(nights)
+				}
+			}
+			cartDetail.Price = roomPrice
+			cartDetail.TotalPrice = cartDetail.Price + cartDetail.TotalAdditionalPrice
+			for _, photo := range detail.RoomPrice.RoomType.Photos {
+				if photo != "" {
+					bucketName := fmt.Sprintf("%s-%s", constant.ConstHotel, constant.ConstPublic)
+					photoUrl, err := bu.fileStorage.GetFile(ctx, bucketName, photo)
+					if err != nil {
+						logger.Error(ctx, "ListHotelsForAgent", err.Error())
+						continue
+					}
+					cartDetail.Photo = photoUrl
+					break
+				}
+			}
+
+			grandTotal += cartDetail.TotalPrice
+			details = append(details, cartDetail)
 		}
+
 		result.Detail = details
+
 		result.Guest = cart.Guests
 		result.GrandTotal = grandTotal
 	}

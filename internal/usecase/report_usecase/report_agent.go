@@ -45,11 +45,11 @@ func (ru *ReportUsecase) ReportAgent(ctx context.Context, req *reportdto.ReportR
 		DateTo:   dateTo,
 	}
 
-	if req.HotelID > 0 {
-		filterReq.HotelID = &req.HotelID
+	if len(req.HotelID) > 0 {
+		filterReq.HotelID = req.HotelID
 	}
-	if req.AgentCompanyID > 0 {
-		filterReq.AgentCompanyID = &req.AgentCompanyID
+	if len(req.AgentCompanyID) > 0 {
+		filterReq.AgentCompanyID = req.AgentCompanyID
 	}
 
 	if isDateFromSet || isDateToSet {

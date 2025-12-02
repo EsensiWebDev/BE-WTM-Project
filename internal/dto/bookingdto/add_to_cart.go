@@ -11,6 +11,7 @@ type AddToCartRequest struct {
 	Quantity              int    `json:"quantity"`
 	RoomTypeAdditionalIDs []uint `json:"room_type_additional_ids"`
 	PromoID               uint   `json:"promo_id"`
+	CapacityGuest         string `json:"capacity_guest"`
 }
 
 func (r *AddToCartRequest) Validate() error {

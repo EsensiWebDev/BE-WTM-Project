@@ -6,8 +6,8 @@ import (
 	"strings"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/repository/filter"
+	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
-	"wtm-backend/pkg/utils"
 )
 
 func (hr *HotelRepository) GetFilterTotalBedrooms(ctx context.Context, filter filter.HotelFilterForAgent) ([]entity.FilterTotalBedroom, error) {
@@ -18,42 +18,52 @@ func (hr *HotelRepository) GetFilterTotalBedrooms(ctx context.Context, filter fi
 	var roomConditions []string
 	var priceHaving string
 
-	// 🔍 Filter kota
-	if len(filter.Cities) > 0 {
-		hotelConditions = append(hotelConditions, "h.addr_city IN (?)")
-		args = append(args, filter.Cities)
-	}
-
-	// 🔍 Filter rating
-	if len(filter.Ratings) > 0 {
-		hotelConditions = append(hotelConditions, "h.rating IN (?)")
-		args = append(args, filter.Ratings)
-	}
-
-	// 🔍 Filter nama hotel
-	if strings.TrimSpace(filter.Search) != "" {
-		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		hotelConditions = append(hotelConditions, "LOWER(h.name) ILIKE ? ESCAPE '\\'")
-		args = append(args, "%"+safeSearch+"%")
-	}
-
-	// 🔍 Filter bed type
-	if len(filter.BedTypeIDs) > 0 {
-		roomConditions = append(roomConditions, "bt.id IN (?)")
-		args = append(args, filter.BedTypeIDs)
-	}
-
 	// 🔍 Filter harga
 	if filter.PriceMin != nil && filter.PriceMax != nil {
 		priceHaving = "HAVING MIN(rp.price) BETWEEN ? AND ?"
 		args = append(args, *filter.PriceMin, *filter.PriceMax)
 	} else if filter.PriceMin != nil {
-		priceHaving = "HAVING MIN(rp.price) > ?"
+		priceHaving = "HAVING MIN(rp.price) >= ?"
 		args = append(args, *filter.PriceMin)
 	} else if filter.PriceMax != nil {
-		priceHaving = "HAVING MIN(rp.price) < ?"
+		priceHaving = "HAVING MIN(rp.price) <= ?"
 		args = append(args, *filter.PriceMax)
 	}
+
+	// 🔍 Filter bed type
+	if len(filter.BedTypeIDs) > 0 {
+		roomConditions = append(roomConditions, "bt.id IN ?")
+		args = append(args, filter.BedTypeIDs)
+	}
+
+	// 🔍 Filter availability
+	if filter.DateFrom != nil && filter.DateTo != nil {
+		roomConditions = append(roomConditions,
+			"NOT EXISTS (SELECT 1 FROM room_unavailables ru WHERE ru.room_type_id = rt.id AND ru.date BETWEEN ? AND ?)")
+		args = append(args, *filter.DateFrom, *filter.DateTo)
+	}
+
+	// 🔍 Filter province
+	if filter.Province != nil && strings.TrimSpace(*filter.Province) != "" {
+		hotelConditions = append(hotelConditions, "h.addr_province = ?")
+		args = append(args, *filter.Province)
+	}
+
+	// 🔍 Filter kota
+	if len(filter.Cities) > 0 {
+		hotelConditions = append(hotelConditions, "h.addr_city IN ?")
+		args = append(args, filter.Cities)
+	}
+
+	// 🔍 Filter rating
+	if len(filter.Ratings) > 0 {
+		hotelConditions = append(hotelConditions, "h.rating IN ?")
+		args = append(args, filter.Ratings)
+	}
+
+	// 🔍 Filter status hotel
+	hotelConditions = append(hotelConditions, "h.status_id = ?")
+	args = append(args, constant.StatusHotelApprovedID)
 
 	// 🧩 WHERE clause hotel
 	hotelWhere := ""

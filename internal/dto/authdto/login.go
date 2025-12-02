@@ -2,7 +2,6 @@ package authdto
 
 import (
 	validation "github.com/go-ozzo/ozzo-validation"
-	"wtm-backend/internal/domain/entity"
 	"wtm-backend/pkg/utils"
 )
 
@@ -13,8 +12,16 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Token string          `json:"token"`
-	User  *entity.UserMin `json:"user"`
+	Token string   `json:"token"`
+	User  DataUser `json:"user"`
+}
+
+type DataUser struct {
+	RoleID      uint     `json:"role_id"`
+	Role        string   `json:"role"`
+	Permissions []string `json:"permissions"`
+	PhotoURL    string   `json:"photo_url"`
+	FullName    string   `json:"full_name"`
 }
 
 func (r *LoginRequest) Validate() error {

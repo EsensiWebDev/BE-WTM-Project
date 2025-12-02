@@ -17,7 +17,7 @@ func (hr *HotelRepository) GetFacilities(ctx context.Context, filter *filter.Def
 	// Apply search filter
 	if strings.TrimSpace(filter.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		query = query.Where("name ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%")
+		query = query.Where("name ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	// Count total records

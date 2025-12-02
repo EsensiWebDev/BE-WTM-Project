@@ -15,20 +15,26 @@ func (bu *BannerUsecase) ListBanners(ctx context.Context, req *bannerdto.ListBan
 	filterRepo.PaginationRequest = req.PaginationRequest
 	filterRepo.IsActive = req.IsActive
 
-	banners, total, err := bu.bannerRepo.GetBanners(ctx, filterRepo)
+	dataBanners, total, err := bu.bannerRepo.GetBanners(ctx, filterRepo)
 	if err != nil {
 		logger.Error(ctx, "Error getting banners", err.Error())
 		return nil, err
 	}
 
-	for i := range banners {
+	var banners []bannerdto.BannerData
+	for _, banner := range dataBanners {
 		bucketName := fmt.Sprintf("%s-%s", constant.ConstBanner, constant.ConstPublic)
-		bannerUrl, err := bu.fileStorage.GetFile(ctx, bucketName, banners[i].ImageURL)
+		bannerUrl, err := bu.fileStorage.GetFile(ctx, bucketName, banner.ImageURL)
 		if err != nil {
 			logger.Error(ctx, "Error getting banner image", err.Error())
-			continue
 		}
-		banners[i].ImageURL = bannerUrl
+		banners = append(banners, bannerdto.BannerData{
+			ID:          banner.ExternalID,
+			Title:       banner.Title,
+			Description: banner.Description,
+			ImageURL:    bannerUrl,
+			IsActive:    banner.IsActive,
+		})
 	}
 
 	response := &bannerdto.ListBannerResponse{

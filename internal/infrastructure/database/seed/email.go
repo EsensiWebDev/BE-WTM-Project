@@ -56,8 +56,9 @@ func (s *Seed) SeedEmailTemplate() {
 <h3>Itinerary:</h3>
 {{range .SubBookings}}
 <div style="margin-bottom: 1em;">
-    <p><strong>Sub-booking {{.Index}}</strong></p>
+    <p><strong>Sub-booking {{.SubBookingID}}</strong></p>
     <ul>
+		<li><strong>Guest:</strong> {{.Guest}}</li>
         <li><strong>Hotel:</strong> {{.HotelName}}</li>
         <li><strong>Check-in:</strong> {{.CheckIn}}</li>
         <li><strong>Check-out:</strong> {{.CheckOut}}</li>
@@ -74,7 +75,7 @@ func (s *Seed) SeedEmailTemplate() {
 	bodyBookingRejected := `
 <p>Dear {{.AgentName}},</p>
 
-<p>Unfortunately, your booking request <strong>{{.BookingID}}</strong> could not be confirmed due to the following reason(s):</p>
+<p>Unfortunately, your booking request <strong>{{.ID}}</strong> could not be confirmed due to the following reason(s):</p>
 
 <p><strong>{{.RejectionReason}}</strong></p>
 
@@ -87,8 +88,9 @@ func (s *Seed) SeedEmailTemplate() {
 <h3>Itinerary Attempted:</h3>
 {{range .SubBookings}}
 <div style="margin-bottom: 1em;">
-    <p><strong>Sub-booking {{.Index}}</strong></p>
+    <p><strong>Sub-booking {{.SubBookingID}}</strong></p>
     <ul>
+		<li><strong>Guest:</strong> {{.Guest}}</li>
         <li><strong>Hotel:</strong> {{.HotelName}}</li>
         <li><strong>Check-in:</strong> {{.CheckIn}}</li>
         <li><strong>Check-out:</strong> {{.CheckOut}}</li>
@@ -163,7 +165,8 @@ Guest Name: {{.GuestName}}</p>
 
 <p><strong>Itinerary:</strong><br>
 {{range $index, $sb := .SubBookings}}
-<strong>Sub-booking {{$index | add1}}</strong><br>
+<strong>Sub-booking {{$sb.SubBookingCode}}</strong><br>
+Guest: {{$sb.GuestName}}<br>
 Hotel: {{$sb.Hotel}}<br>
 Check-in: {{$sb.CheckIn}}<br>
 Check-out: {{$sb.CheckOut}}<br><br>
@@ -218,8 +221,8 @@ World Travel Management</p>
 	templates := []model.EmailTemplate{
 		{Subject: `🎉 Welcome to The HotelBox – Your Agent Account is Approved!`, Body: bodyAgentApproval, Name: constant.EmailAgentApproved, IsSignatureImage: false},
 		{Subject: `Your The HotelBox Registration – Action Required`, Body: bodyAgentRejection, Name: constant.EmailAgentRejected, IsSignatureImage: false},
-		{Subject: `Booking Confirmation – {{.BookingID}}`, Body: bodyBookingConfirmed, Name: constant.EmailBookingConfirmed, IsSignatureImage: false},
-		{Subject: `Booking Request Update – {{.BookingID}}`, Body: bodyBookingRejected, Name: constant.EmailBookingRejected, IsSignatureImage: false},
+		{Subject: `Booking Confirmation – {{.ID}}`, Body: bodyBookingConfirmed, Name: constant.EmailBookingConfirmed, IsSignatureImage: false},
+		{Subject: `Booking Request Update – {{.ID}}`, Body: bodyBookingRejected, Name: constant.EmailBookingRejected, IsSignatureImage: false},
 		{Subject: `New Booking Request – {{.BookingCode}}`, Body: bodyHotelBookingRequest, Name: constant.EmailHotelBookingRequest, IsSignatureImage: false},
 		{Subject: `New Contact Us Submission – The HotelBox - {{.UserName}}`, Body: bodyContactUsGeneral, Name: constant.EmailContactUsGeneral, IsSignatureImage: false},
 		{Subject: `Help Request for Booking – {{.BookingID}}`, Body: bodyContactUsBooking, Name: constant.EmailContactUsBooking, IsSignatureImage: false},

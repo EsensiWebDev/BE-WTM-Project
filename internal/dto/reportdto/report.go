@@ -8,9 +8,9 @@ import (
 type ReportRequest struct {
 	DateFrom              string `json:"date_from" form:"date_from"`
 	DateTo                string `json:"date_to" form:"date_to"`
-	HotelID               uint   `json:"hotel_id" form:"hotel_id"`
-	AgentCompanyID        uint   `json:"agent_company_id" form:"agent_company_id"`
-	dto.PaginationRequest `json:"_inline"`
+	HotelID               []uint `json:"hotel_id" form:"hotel_id"`
+	AgentCompanyID        []uint `json:"agent_company_id" form:"agent_company_id"`
+	dto.PaginationRequest `json:",inline"`
 }
 
 type ReportSummaryResponse struct {
@@ -38,7 +38,7 @@ type DataTotalWithPercentage struct {
 type ReportAgentDetailRequest struct {
 	HotelID               uint `json:"hotel_id" form:"hotel_id"`
 	AgentID               uint `json:"agent_id" form:"agent_id"`
-	dto.PaginationRequest `json:"_inline"`
+	dto.PaginationRequest `json:",inline"`
 }
 
 type ReportAgentDetailResponse struct {

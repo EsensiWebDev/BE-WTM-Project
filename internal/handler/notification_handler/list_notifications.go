@@ -17,7 +17,6 @@ import (
 // @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param limit query int false "Number of items per page"
-// @Param user_id query string false "Filter by User Id"
 // @Success 200 {object} response.ResponseWithPagination{data=[]entity.Notification} "Successfully retrieved notifications"
 // @Security BearerAuth
 // @Router /notifications [get]

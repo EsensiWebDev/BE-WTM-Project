@@ -23,12 +23,13 @@ func (rr *ReportRepository) ReportAgentBooking(ctx context.Context, filter filte
 		"u.id AS agent_id",
 		"u.full_name AS agent_name",
 		"SUM(CASE WHEN bd.status_booking_id = 3 THEN 1 END) AS confirmed_booking",
-		"SUM(CASE WHEN bd.status_booking_id = 4 THEN 1 END) AS cancelled_booking",
+		"SUM(CASE WHEN bd.status_booking_id = 5 THEN 1 END) AS cancelled_booking",
 	).From("booking_details bd").
 		Join("bookings b ON bd.booking_id = b.id").
 		Join("users u ON b.agent_id = u.id").
 		LeftJoin("agent_companies ac ON u.agent_company_id = ac.id").
-		Join("room_types rt ON bd.room_type_id = rt.id").
+		Join("room_prices rp ON rp.id = bd.room_price_id").
+		Join("room_types rt ON rp.room_type_id = rt.id").
 		Join("hotels h ON rt.hotel_id = h.id").
 		Where("TRUE").
 		GroupBy("h.name, ac.name, u.full_name, h.id, u.id ")
@@ -38,7 +39,7 @@ func (rr *ReportRepository) ReportAgentBooking(ctx context.Context, filter filte
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
 		builder = builder.Where(
 			squirrel.Or{
-				squirrel.Expr("u.full_name ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%"),
+				squirrel.Expr("u.full_name ILIKE ? ", "%"+safeSearch+"%"),
 			},
 		)
 	}
@@ -50,11 +51,13 @@ func (rr *ReportRepository) ReportAgentBooking(ctx context.Context, filter filte
 	if filter.DateTo != nil {
 		builder = builder.Where(squirrel.LtOrEq{"b.approved_at": filter.DateTo.Format("2006-01-02")})
 	}
-	if filter.HotelID != nil {
-		builder = builder.Where(squirrel.Eq{"h.id": *filter.HotelID})
+
+	if len(filter.HotelID) > 0 {
+		builder = builder.Where(squirrel.Eq{"h.id": filter.HotelID})
 	}
-	if filter.AgentCompanyID != nil {
-		builder = builder.Where(squirrel.Eq{"ac.id": *filter.AgentCompanyID})
+
+	if len(filter.AgentCompanyID) > 0 {
+		builder = builder.Where(squirrel.Eq{"ac.id": filter.AgentCompanyID})
 	}
 
 	// Count total records
@@ -82,7 +85,7 @@ func (rr *ReportRepository) ReportAgentBooking(ctx context.Context, filter filte
 
 	// Execute final query
 	var reports []entity.ReportAgentBooking
-	if err := db.WithContext(ctx).Raw(query, args...).Scan(&reports).Error; err != nil {
+	if err := db.WithContext(ctx).Raw(query, args...).Debug().Scan(&reports).Error; err != nil {
 		logger.Error(ctx, "Error fetching report agent bookings", err.Error())
 		return nil, 0, err
 	}

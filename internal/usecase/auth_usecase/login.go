@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/authdto"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/jwt"
@@ -34,9 +33,8 @@ func (au *AuthUsecase) Login(ctx context.Context, req *authdto.LoginRequest) (*a
 
 	// Verifikasi password
 	if !utils.ComparePassword(ctx, user.Password, req.Password) {
-		logger.Warn(ctx,
-			"Password is invalid")
-		return nil, "", errors.New("invalid password")
+		logger.Warn(ctx, "Password is invalid")
+		return nil, "", errors.New("invalid Password")
 	}
 
 	if user.PhotoSelfie != "" {
@@ -72,9 +70,7 @@ func (au *AuthUsecase) Login(ctx context.Context, req *authdto.LoginRequest) (*a
 
 	resp := &authdto.LoginResponse{
 		Token: token,
-		User: &entity.UserMin{
-			ID:          user.ID,
-			Username:    user.Username,
+		User: authdto.DataUser{
 			RoleID:      user.RoleID,
 			Role:        user.RoleName,
 			Permissions: user.Permissions,

@@ -16,7 +16,7 @@ func NewSeed(db *gorm.DB) *Seed {
 	}
 }
 
-func Seeding(db *gorm.DB) {
+func Seeding(db *gorm.DB) error {
 	ctx := context.Background()
 	logger.Info(ctx, "Start Seeding database...")
 
@@ -29,5 +29,7 @@ func Seeding(db *gorm.DB) {
 	seed.SeedingEmailLog()
 
 	logger.Info(ctx, "Finished Seeding database")
+
+	return nil
 
 }

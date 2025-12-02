@@ -27,16 +27,6 @@ func (rr *ReportRepository) ReportForGraph(ctx context.Context, filter filter.Re
 	if filter.DateTo != nil {
 		builder = builder.Where(squirrel.LtOrEq{"bd.approved_at": filter.DateTo})
 	}
-	if filter.HotelID != nil {
-		builder = builder.Where(
-			squirrel.Expr("bd.room_type_id IN (SELECT id FROM room_types WHERE hotel_id = ?)", *filter.HotelID),
-		)
-	}
-	if filter.AgentCompanyID != nil {
-		builder = builder.Where(
-			squirrel.Expr("bd.booking_id IN (SELECT id FROM bookings WHERE agent_id IN (SELECT id FROM users WHERE agent_company_id = ?))", *filter.AgentCompanyID),
-		)
-	}
 
 	builder = builder.GroupBy("bd.approved_at").OrderBy("bd.approved_at")
 
@@ -48,7 +38,7 @@ func (rr *ReportRepository) ReportForGraph(ctx context.Context, filter filter.Re
 	}
 
 	// Execute query
-	if err := db.WithContext(ctx).Raw(query, args...).Scan(&reports).Error; err != nil {
+	if err := db.WithContext(ctx).Raw(query, args...).Debug().Scan(&reports).Error; err != nil {
 		logger.Error(ctx, "Error executing report for graph query", err.Error())
 		return nil, err
 	}

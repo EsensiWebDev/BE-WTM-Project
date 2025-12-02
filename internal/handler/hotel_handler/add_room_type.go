@@ -6,6 +6,7 @@ import (
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
+	"wtm-backend/pkg/utils"
 )
 
 // AddRoomType godoc
@@ -35,6 +36,16 @@ func (hh *HotelHandler) AddRoomType(c *gin.Context) {
 	if err := c.ShouldBind(&req); err != nil {
 		logger.Error(ctx, "Failed to bind AddRoomTypeRequest", err.Error())
 		response.Error(c, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		logger.Error(ctx, "Validation error", err.Error())
+		if ve := utils.ParseValidationErrors(err); ve != nil {
+			response.ValidationError(c, ve)
+			return
+		}
+		response.Error(c, http.StatusBadRequest, "Invalid request")
 		return
 	}
 

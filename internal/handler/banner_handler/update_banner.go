@@ -6,7 +6,6 @@ import (
 	"wtm-backend/internal/dto/bannerdto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
-	"wtm-backend/pkg/utils"
 )
 
 // UpdateBanner godoc
@@ -25,26 +24,21 @@ import (
 func (bh *BannerHandler) UpdateBanner(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	bannerID := c.Param("id")
-	if bannerID == "" {
-		logger.Error(ctx, "Banner Id is required")
-		response.Error(c, http.StatusBadRequest, "Banner Id is required")
+	var reqID bannerdto.DetailBannerRequest
+	if err := c.ShouldBindUri(&reqID); err != nil {
+		logger.Error(ctx, "Error binding query parameters:", err.Error())
+		response.Error(c, http.StatusBadRequest, "Invalid query parameters")
+		return
 	}
 
-	bannerIDUint, err := utils.StringToUint(bannerID)
-	if err != nil {
-		logger.Error(ctx, "Invalid banner Id:", err.Error())
-		response.Error(c, http.StatusBadRequest, "Invalid banner Id format")
-	}
-
-	var req *bannerdto.UpsertBannerRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var req bannerdto.UpsertBannerRequest
+	if err := c.ShouldBind(&req); err != nil {
 		logger.Error(ctx, "Error binding request:", err.Error())
 		response.Error(c, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
-	err = bh.bannerUsecase.UpsertBanner(ctx, req, &bannerIDUint)
+	err := bh.bannerUsecase.UpsertBanner(ctx, &req, &reqID)
 	if err != nil {
 		logger.Error(ctx, "Error updating banner:", err.Error())
 		response.Error(c, http.StatusInternalServerError, "Error updating banner")

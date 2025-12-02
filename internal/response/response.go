@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"math"
 	"net/http"
+	"wtm-backend/pkg/utils"
 )
 
 // Response represents a standard error response
@@ -83,7 +84,7 @@ func EmptyList(c *gin.Context, message string, pagination *Pagination) {
 func Error(c *gin.Context, status int, message string) {
 	c.JSON(status, Response{
 		Status:  status,
-		Message: message,
+		Message: utils.CapitalizeWords(message),
 	})
 }
 

@@ -28,22 +28,24 @@ func (ph *PromoHandler) ListPromos(c *gin.Context) {
 		return
 	}
 
-	resp, total, err := ph.promoUsecase.ListPromos(ctx, &req)
+	resp, err := ph.promoUsecase.ListPromos(ctx, &req)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Failed to get list of promos")
 		return
 	}
 
-	pagination := response.NewPagination(req.Limit, req.Page, int(total))
+	pagination := &response.Pagination{}
 	message := "Successfully retrieved list of promos"
 
 	var promos []promodto.PromoResponse
 	if resp != nil {
 		promos = resp.Promos
-		if len(resp.Promos) == 0 {
+		if len(promos) == 0 {
 			message = "No promos found"
 		}
+		pagination = response.NewPagination(req.Limit, req.Page, int(resp.Total))
 	}
 
 	response.SuccessWithPagination(c, promos, message, pagination)
+
 }

@@ -18,8 +18,8 @@ import (
 // @Param page query int false "Page number for pagination"
 // @Param limit query int false "Number of items per page"
 // @Param search query string false "Search term"
-// @Param hotel_id query int false "Filter by Hotel Id"
-// @Param agent_company_id query int false "Filter by Agent Company Id"
+// @Param hotel_id query []int false "Filter by Hotel Id" collectionFormat(multi)
+// @Param agent_company_id query []int false "Filter by Agent Company Id" collectionFormat(multi)
 // @Param date_from query string false "Start date for the report in YYYY-MM-DD format"
 // @Param date_to query string false "End date for the report in YYYY-MM-DD format"
 // @Success 200 {object} response.ResponseWithPagination{data=[]entity.ReportAgentBooking} "Successfully generated report for agent bookings"

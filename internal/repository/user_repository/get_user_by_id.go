@@ -15,6 +15,7 @@ func (ur *UserRepository) GetUserByID(ctx context.Context, userID uint) (*entity
 	err := db.WithContext(ctx).
 		Where("id = ?", userID).
 		Preload("UserNotificationSettings").
+		Preload("AgentCompany").
 		First(&user).Error
 
 	if err != nil {
@@ -30,6 +31,10 @@ func (ur *UserRepository) GetUserByID(ctx context.Context, userID uint) (*entity
 	if err := utils.CopyPatch(&entityUser, user); err != nil {
 		logger.Error(ctx, "Error copying user model to entity", err.Error())
 		return nil, err
+	}
+
+	if user.AgentCompany != nil {
+		entityUser.AgentCompanyName = user.AgentCompany.Name
 	}
 
 	return &entityUser, nil

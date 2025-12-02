@@ -18,7 +18,8 @@ func (bu *BookingUsecase) ListStatusPayment(ctx context.Context) (*bookingdto.Li
 		return resp, nil
 	}
 
-	for id, status := range statuses {
+	for _, id := range constant.StatusPaymentOrder {
+		status := statuses[id]
 		resp.Data = append(resp.Data, entity.StatusPayment{
 			ID:     uint(id),
 			Status: status,

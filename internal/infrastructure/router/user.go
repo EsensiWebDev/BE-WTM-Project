@@ -4,38 +4,38 @@ import (
 	"github.com/gin-gonic/gin"
 	"wtm-backend/internal/bootstrap"
 	"wtm-backend/internal/handler/user_handler"
+	"wtm-backend/pkg/constant"
 )
 
-func UserRoutes(app *bootstrap.Application, middlewareMap MiddlewareMap, routerGroup *gin.RouterGroup) {
+func UserRoutes(app *bootstrap.Application, mm MiddlewareMap, routerGroup *gin.RouterGroup) {
 	userHandler := user_handler.NewUserHandler(app.Usecases.UserUsecase, app.Config)
 
-	routerGroup.POST("/register", middlewareMap.TimeoutFile, userHandler.Register)
+	routerGroup.POST("/register", mm.TimeoutFile, userHandler.Register)
 
-	roleAccess := routerGroup.Group("/role-access", middlewareMap.Auth)
+	roleAccess := routerGroup.Group("/role-access", mm.Auth, mm.RequireRole(constant.RoleSuperAdminCap))
 	{
 		roleAccess.GET("", userHandler.ListRoleAccess)
 		roleAccess.PUT("", userHandler.UpdateRoleAccess)
 	}
 
-	profile := routerGroup.Group("/profile", middlewareMap.Auth)
+	profile := routerGroup.Group("/profile", mm.Auth)
 	{
 		profile.GET("", userHandler.Profile)
-		profile.PUT("", middlewareMap.TimeoutSlow, userHandler.UpdateProfile)
+		profile.PUT("", mm.TimeoutSlow, userHandler.UpdateProfile)
 		profile.PUT("/setting", userHandler.UpdateSetting)
 		profile.PUT("/file", userHandler.UpdateFile)
 	}
 
-	users := routerGroup.Group("/users", middlewareMap.Auth)
+	users := routerGroup.Group("/users", mm.Auth)
 	{
-		users.GET("", userHandler.ListUsers)
-		users.GET("/control", userHandler.ListControlUsers)
-		users.PUT("", userHandler.UpdateUserByAdmin)
-		users.POST("", userHandler.CreateUserByAdmin)
+		users.GET("/control", mm.RequireRole(constant.RoleAdmin), userHandler.ListControlUsers)
+		users.GET("", mm.RequirePermission("account:view"), userHandler.ListUsers)
+		users.PUT("", mm.RequirePermission("account:edit"), userHandler.UpdateUserByAdmin)
+		users.POST("", mm.RequirePermission("account:create"), userHandler.CreateUserByAdmin)
 		users.GET("/agent-companies", userHandler.ListAgentCompanies)
 		users.GET("/by-agent-company/:id", userHandler.ListUsersByAgentCompany)
-		//users.GET("/by-role/:role", userHandler.ListUsersByRole)
 		users.GET("/status", userHandler.ListStatusUsers)
-		users.POST("/status", userHandler.UpdateStatusUser)
+		users.POST("/status", mm.RequireRole(constant.RoleAdmin), userHandler.UpdateStatusUser)
 	}
 
 }

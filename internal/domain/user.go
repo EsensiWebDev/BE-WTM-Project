@@ -45,4 +45,5 @@ type UserRepository interface {
 	GetStatusUsers(ctx context.Context, filter *filter.DefaultFilter) ([]entity.StatusUser, int64, error)
 	UpdateStatusUser(ctx context.Context, id uint, status uint) (*entity.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*entity.User, error)
+	GetUserByPhone(ctx context.Context, phone string) (*entity.User, error)
 }

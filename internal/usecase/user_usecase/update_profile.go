@@ -33,8 +33,8 @@ func (uu *UserUsecase) UpdateProfile(ctx context.Context, user *userdto.UpdatePr
 		return errors.New("user not found in database")
 	}
 
-	if user.FullName == userDB.FullName && user.Phone == userDB.Phone && user.Email == userDB.Email {
-		logger.Info(ctx, "No changes detected in user profile")
+	if user.FullName == userDB.FullName && user.Phone == userDB.Phone && user.Email == userDB.Email && user.KakaoTalkID == userDB.KakaoTalkID {
+		logger.Info(ctx, "No changes detected in user profile", nil)
 		return errors.New("no changes detected in user profile")
 	}
 
@@ -42,11 +42,6 @@ func (uu *UserUsecase) UpdateProfile(ctx context.Context, user *userdto.UpdatePr
 		if user.KakaoTalkID == "" {
 			logger.Warn(ctx, "KakaoTalk ID is required for agents")
 			return errors.New("kakaotalk ID is required for agents")
-		}
-
-		if user.KakaoTalkID == userDB.KakaoTalkID {
-			logger.Info(ctx, "No changes detected in user profile")
-			return errors.New("no changes detected in user profile")
 		}
 
 		userDB.KakaoTalkID = user.KakaoTalkID

@@ -21,7 +21,7 @@ func (ur *UserRepository) GetUsersByAgentCompany(ctx context.Context, agentCompa
 
 	if strings.TrimSpace(search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(search)
-		query = query.Where("LOWER(full_name) ILIKE ? ESCAPE '\\' ", "%"+safeSearch+"%")
+		query = query.Where("LOWER(full_name) ILIKE ?", "%"+safeSearch+"%")
 	}
 
 	if err := query.Count(&total).Error; err != nil {

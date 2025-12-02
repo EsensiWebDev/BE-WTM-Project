@@ -13,7 +13,7 @@ type HotelUsecase interface {
 	ListHotelsForAgent(ctx context.Context, req *hoteldto.ListHotelForAgentRequest) (*hoteldto.ListHotelForAgentResponse, error)
 	ListRoomTypes(ctx context.Context, hotelID uint) (*hoteldto.ListRoomTypeResponse, error)
 	ListBedTypes(ctx context.Context, roomTypeID uint) (*hoteldto.ListBedTypeResponse, error)
-	CreateHotel(ctx context.Context, req *hoteldto.CreateHotelRequest) error
+	CreateHotel(ctx context.Context, req *hoteldto.CreateHotelRequest) (*hoteldto.CreateHotelResponse, error)
 	ListFacilities(ctx context.Context, req *hoteldto.ListFacilitiesRequest) (*hoteldto.ListFacilitiesResponse, error)
 	ListAdditionalRooms(ctx context.Context, req *hoteldto.ListAdditionalRoomsRequest) (*hoteldto.ListAdditionalRoomsResponse, error)
 	ListAllBedTypes(ctx context.Context, req *hoteldto.ListAllBedTypesRequest) (*hoteldto.ListAllBedTypesResponse, error)

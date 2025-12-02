@@ -7,11 +7,9 @@ import (
 )
 
 type UpdateUserByAdminRequest struct {
-	UserID   uint   `json:"user_id" form:"user_id"`
-	FullName string `json:"full_name" form:"full_name"`
-	Email    string `json:"email" form:"email"`
-	Phone    string `json:"phone" form:"phone"`
-	IsActive bool   `json:"is_active" form:"is_active"`
+	UserID                   uint `json:"user_id" form:"user_id"`
+	CreateUserByAdminRequest `json:",inline"`
+	IsActive                 bool `json:"is_active" form:"is_active"`
 }
 
 func (r *UpdateUserByAdminRequest) Validate() error {

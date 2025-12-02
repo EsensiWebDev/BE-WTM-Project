@@ -13,16 +13,16 @@ import (
 func (hu *HotelUsecase) UpdateHotel(ctx context.Context, req *hoteldto.UpdateHotelRequest) error {
 	return hu.dbTransaction.WithTransaction(ctx, func(txCtx context.Context) error {
 		var nearbyPlaces []hoteldto.NearbyPlace
-		if req.CreateHotel.NearbyPlaces != "" {
-			if err := json.Unmarshal([]byte(req.CreateHotel.NearbyPlaces), &nearbyPlaces); err != nil {
+		if req.NearbyPlaces != "" {
+			if err := json.Unmarshal([]byte(req.NearbyPlaces), &nearbyPlaces); err != nil {
 				logger.Error(ctx, "Failed to unmarshal UpdateHotel-NearbyPlaces", err.Error())
 				return err
 			}
 		}
 
 		var socialMedias []hoteldto.SocialMedia
-		if req.CreateHotel.SocialMedias != "" {
-			if err := json.Unmarshal([]byte(req.CreateHotel.SocialMedias), &socialMedias); err != nil {
+		if req.SocialMedias != "" {
+			if err := json.Unmarshal([]byte(req.SocialMedias), &socialMedias); err != nil {
 				logger.Error(ctx, "Failed to unmarshal UpdateHotel-SocialMedias", err.Error())
 				return err
 			}
@@ -33,14 +33,31 @@ func (hu *HotelUsecase) UpdateHotel(ctx context.Context, req *hoteldto.UpdateHot
 			return fmt.Errorf("failed to get hotel by ID: %w", err)
 		}
 
-		hotel.Name = req.CreateHotel.Name
-		hotel.AddrSubDistrict = req.CreateHotel.SubDistrict
-		hotel.AddrCity = req.CreateHotel.District
-		hotel.AddrProvince = req.CreateHotel.Province
-		hotel.Description = req.CreateHotel.Description
-		hotel.Rating = req.CreateHotel.Rating
-		hotel.Email = req.CreateHotel.Email
-		hotel.Photos = req.UnchangedHotelPhotos
+		var photoHotel []string
+		for _, photoOri := range hotel.Photos {
+			for _, photo := range req.UnchangedHotelPhotos {
+				if photo != "" {
+					_, photoURL, err := hu.fileStorage.ExtractBucketAndObject(txCtx, photo)
+					if err != nil {
+						logger.Error(ctx, "failed to extract bucket and object from unchanged hotel photo", err.Error())
+						continue
+					}
+					if photoURL == photoOri {
+						photoHotel = append(photoHotel, photoURL)
+						break
+					}
+				}
+			}
+		}
+		hotel.Photos = photoHotel
+
+		hotel.Name = req.Name
+		hotel.AddrSubDistrict = req.SubDistrict
+		hotel.AddrCity = req.District
+		hotel.AddrProvince = req.Province
+		hotel.Description = req.Description
+		hotel.Rating = req.Rating
+		hotel.Email = req.Email
 
 		socialMediasMap := hotel.SocialMedia
 		for _, sosmed := range socialMedias {
@@ -60,9 +77,9 @@ func (hu *HotelUsecase) UpdateHotel(ctx context.Context, req *hoteldto.UpdateHot
 		hotel.NearbyPlaces = nearbyPlacesEntity
 
 		// File hotel upload and attachment
-		if len(req.CreateHotel.Photos) > 0 {
+		if len(req.Photos) > 0 {
 			// Upload photos
-			photoURLs, err := hu.uploadMultiple(txCtx, req.CreateHotel.Photos, constant.ConstPublic, "hotel", fmt.Sprintf("%d", hotel.ID), "gallery")
+			photoURLs, err := hu.uploadMultiple(txCtx, req.Photos, constant.ConstPublic, "hotel", fmt.Sprintf("%d", hotel.ID), "gallery")
 			if err != nil {
 				logger.Error(ctx, "Error uploading hotel photos", err.Error())
 				return err
@@ -77,7 +94,7 @@ func (hu *HotelUsecase) UpdateHotel(ctx context.Context, req *hoteldto.UpdateHot
 		}
 
 		// Facilities
-		if err := hu.hotelRepo.AttachFacilities(txCtx, hotel.ID, req.CreateHotel.Facilities); err != nil {
+		if err := hu.hotelRepo.AttachFacilities(txCtx, hotel.ID, req.Facilities); err != nil {
 			logger.Error(ctx, "Failed to attach facilities", err.Error())
 			return err
 		}

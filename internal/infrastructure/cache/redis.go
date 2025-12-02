@@ -16,7 +16,7 @@ type RedisClient struct {
 }
 
 func NewRedisClient(config *config.Config) (*RedisClient, error) {
-
+	ctx := context.Background()
 	addressRedis := fmt.Sprintf("%s:%s", config.HostRedis, config.PortRedis)
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     addressRedis,
@@ -24,7 +24,7 @@ func NewRedisClient(config *config.Config) (*RedisClient, error) {
 	})
 
 	if err := rdb.Ping(context.Background()).Err(); err != nil {
-		logger.Fatal("Failed to initialize Redis client", err.Error())
+		logger.Fatal(ctx, "Failed to initialize Redis client", err.Error())
 		return nil, err
 	}
 

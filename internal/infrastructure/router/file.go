@@ -11,6 +11,6 @@ func FileRouter(app *bootstrap.Application, routerGroup *gin.RouterGroup) {
 
 	fileRouterGroup := routerGroup.Group("/files")
 	{
-		fileRouterGroup.GET("/:bucket/:object", fileHandler.GetFile)
+		fileRouterGroup.GET("/:bucket/*object", fileHandler.GetFile)
 	}
 }

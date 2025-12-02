@@ -1,4 +1,19 @@
 definitions:
+  authdto.DataUser:
+    properties:
+      full_name:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      photo_url:
+        type: string
+      role:
+        type: string
+      role_id:
+        type: integer
+    type: object
   authdto.ForgotPasswordRequest:
     properties:
       email:
@@ -21,7 +36,7 @@ definitions:
       token:
         type: string
       user:
-        $ref: '#/definitions/entity.UserMin'
+        $ref: '#/definitions/authdto.DataUser'
     type: object
   authdto.ResetPasswordRequest:
     properties:
@@ -40,32 +55,64 @@ definitions:
       email:
         type: string
     type: object
-  bannerdto.OrderBanner:
+  bannerdto.ActiveBanner:
     properties:
+      description:
+        type: string
       id:
-        type: integer
-      order:
-        type: integer
+        type: string
+      image_url:
+        type: string
+      title:
+        type: string
+    type: object
+  bannerdto.BannerData:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      title:
+        type: string
     type: object
   bannerdto.UpdateOrderBannerRequest:
     properties:
-      data:
-        items:
-          $ref: '#/definitions/bannerdto.OrderBanner'
-        type: array
+      id:
+        type: string
+      order:
+        type: string
     type: object
   bannerdto.UpdateStatusBannerRequest:
     properties:
       id:
-        type: integer
+        type: string
       status:
         type: boolean
-    required:
-    - id
-    - status
+    type: object
+  bookingdto.AddGuestToSubCartRequest:
+    properties:
+      guest:
+        type: string
+      sub_cart_id:
+        type: integer
+    type: object
+  bookingdto.AddGuestsToCartRequest:
+    properties:
+      cart_id:
+        type: integer
+      guests:
+        items:
+          type: string
+        type: array
     type: object
   bookingdto.AddToCartRequest:
     properties:
+      capacity_guest:
+        type: string
       check_in_date:
         type: string
       check_out_date:
@@ -85,7 +132,7 @@ definitions:
     properties:
       agent_name:
         type: string
-      booking_code:
+      booking_id:
         type: string
       booking_status:
         type: string
@@ -105,6 +152,8 @@ definitions:
         type: integer
       room_type_name:
         type: string
+      sub_booking_id:
+        type: string
     type: object
   bookingdto.CartDetail:
     properties:
@@ -112,6 +161,8 @@ definitions:
         items:
           $ref: '#/definitions/bookingdto.CartDetailAdditional'
         type: array
+      cancellation_date:
+        type: string
       check_in_date:
         type: string
       check_out_date:
@@ -122,12 +173,18 @@ definitions:
         type: string
       hotel_rating:
         type: integer
+      id:
+        type: integer
       is_breakfast:
         type: boolean
+      photo:
+        type: string
       price:
         type: number
+      price_before_promo:
+        type: number
       promo:
-        $ref: '#/definitions/bookingdto.CartDetailPromo'
+        $ref: '#/definitions/entity.DetailPromo'
       room_type_name:
         type: string
       total_additional_price:
@@ -142,51 +199,14 @@ definitions:
       price:
         type: number
     type: object
-  bookingdto.CartDetailPromo:
-    properties:
-      benefit:
-        type: string
-      code:
-        type: string
-      discount_percent:
-        type: number
-      fixed_price:
-        type: number
-      type:
-        type: string
-      upgraded_to_id:
-        type: integer
-    type: object
-  bookingdto.CheckOutCartRequest:
-    properties:
-      booking_id:
-        type: integer
-      detail:
-        items:
-          $ref: '#/definitions/bookingdto.CheckOutDetail'
-        type: array
-      guests:
-        items:
-          type: string
-        type: array
-    type: object
-  bookingdto.CheckOutDetail:
-    properties:
-      booking_detail_id:
-        type: integer
-      guest:
-        type: string
-    type: object
   bookingdto.DataBooking:
     properties:
       agent_company:
         type: string
       agent_name:
         type: string
-      booking_code:
-        type: string
       booking_id:
-        type: integer
+        type: string
       booking_status:
         type: string
       detail:
@@ -201,6 +221,10 @@ definitions:
         type: array
       payment_status:
         type: string
+      receipts:
+        items:
+          type: string
+        type: array
     type: object
   bookingdto.DataBookingHistory:
     properties:
@@ -218,8 +242,51 @@ definitions:
         items:
           type: string
         type: array
+      invoices:
+        items:
+          $ref: '#/definitions/bookingdto.DataInvoice'
+        type: array
       payment_status:
         type: string
+      receipts:
+        items:
+          type: string
+        type: array
+    type: object
+  bookingdto.DataInvoice:
+    properties:
+      agent:
+        type: string
+      check_in:
+        type: string
+      check_out:
+        type: string
+      company_agent:
+        type: string
+      description:
+        type: string
+      description_invoice:
+        items:
+          $ref: '#/definitions/entity.DescriptionInvoice'
+        type: array
+      email:
+        type: string
+      guest:
+        type: string
+      hotel:
+        type: string
+      invoice_date:
+        type: string
+      invoice_number:
+        type: string
+      promo:
+        $ref: '#/definitions/entity.DetailPromo'
+      receipt:
+        type: string
+      sub_booking_id:
+        type: string
+      total_price:
+        type: number
     type: object
   bookingdto.DetailBooking:
     properties:
@@ -235,14 +302,16 @@ definitions:
         type: string
       hotel_name:
         type: string
+      invoice:
+        $ref: '#/definitions/bookingdto.DataInvoice'
       is_api:
         type: boolean
       payment_status:
         type: string
       promo_code:
         type: string
-      promo_id:
-        type: integer
+      receipt_url:
+        type: string
       sub_booking_id:
         type: string
     type: object
@@ -262,7 +331,11 @@ definitions:
         type: string
       hotel_name:
         type: string
+      invoice:
+        $ref: '#/definitions/bookingdto.DataInvoice'
       payment_status:
+        type: string
+      receipt:
         type: string
       sub_booking_id:
         type: string
@@ -274,7 +347,7 @@ definitions:
           $ref: '#/definitions/bookingdto.CartDetail'
         type: array
       grand_total:
-        type: integer
+        type: number
       guest:
         items:
           type: string
@@ -282,18 +355,25 @@ definitions:
       id:
         type: integer
     type: object
-  bookingdto.UpdateStatusBookingRequest:
+  bookingdto.RemoveGuestsFromCartRequest:
     properties:
-      booking_detail_id:
+      cart_id:
         type: integer
+      guest:
+        items:
+          type: string
+        type: array
+    type: object
+  bookingdto.UpdateStatusRequest:
+    properties:
       booking_id:
-        type: integer
+        type: string
       reason:
         type: string
       status_id:
         type: integer
-    type: object
-  bookingdto.UploadReceiptRequest:
+      sub_booking_id:
+        type: string
     type: object
   emaildto.EmailLogResponse:
     properties:
@@ -315,26 +395,28 @@ definitions:
       subject:
         type: string
     type: object
+  emaildto.SendContactUsEmailRequest:
+    properties:
+      booking_code:
+        type: string
+      email:
+        type: string
+      message:
+        type: string
+      name:
+        type: string
+      sub_booking_code:
+        type: string
+      subject:
+        type: string
+      type:
+        type: string
+    type: object
   entity.AgentCompany:
     properties:
       id:
         type: integer
       name:
-        type: string
-    type: object
-  entity.Banner:
-    properties:
-      description:
-        type: string
-      id:
-        type: integer
-      image_url:
-        type: string
-      is_active:
-        type: boolean
-      order:
-        type: integer
-      title:
         type: string
     type: object
   entity.CustomBreakfast:
@@ -365,6 +447,38 @@ definitions:
         type: string
       price:
         type: number
+    type: object
+  entity.DescriptionInvoice:
+    properties:
+      description:
+        type: string
+      price:
+        type: number
+      quantity:
+        type: integer
+      total:
+        type: number
+      total_before_promo:
+        type: number
+      unit:
+        type: string
+    type: object
+  entity.DetailPromo:
+    properties:
+      benefit_note:
+        type: string
+      discount_percent:
+        type: number
+      fixed_price:
+        type: number
+      name:
+        type: string
+      promo_code:
+        type: string
+      type:
+        type: string
+      upgraded_to_id:
+        type: integer
     type: object
   entity.FilterBedTypeHotel:
     properties:
@@ -434,6 +548,8 @@ definitions:
         type: integer
       end_date:
         type: string
+      external_id:
+        type: string
       id:
         type: integer
       is_active:
@@ -482,6 +598,8 @@ definitions:
       hotel_id:
         type: integer
       hotel_name:
+        type: string
+      province:
         type: string
       room_type_id:
         type: integer
@@ -559,25 +677,6 @@ definitions:
       status:
         type: string
     type: object
-  entity.UserMin:
-    properties:
-      full_name:
-        type: string
-      id:
-        type: integer
-      permissions:
-        items:
-          type: string
-        type: array
-      photo_url:
-        type: string
-      role:
-        type: string
-      role_id:
-        type: integer
-      username:
-        type: string
-    type: object
   hoteldto.BreakfastBase:
     properties:
       is_show:
@@ -593,6 +692,11 @@ definitions:
         type: integer
       price:
         type: number
+    type: object
+  hoteldto.CreateHotelResponse:
+    properties:
+      hotel_id:
+        type: integer
     type: object
   hoteldto.DataAvailable:
     properties:
@@ -625,7 +729,7 @@ definitions:
         type: string
       nearby_place:
         items:
-          $ref: '#/definitions/entity.NearbyPlace'
+          $ref: '#/definitions/hoteldto.NearbyPlaceForAgent'
         type: array
       photos:
         items:
@@ -830,6 +934,13 @@ definitions:
       name:
         type: string
     type: object
+  hoteldto.NearbyPlaceForAgent:
+    properties:
+      name:
+        type: string
+      radius:
+        type: number
+    type: object
   hoteldto.PromoDetailRoom:
     properties:
       code_promo:
@@ -914,7 +1025,7 @@ definitions:
       duration:
         type: integer
       id:
-        type: integer
+        type: string
       is_active:
         type: boolean
       promo_code:
@@ -930,6 +1041,21 @@ definitions:
       promo_start_date:
         type: string
       promo_type:
+        type: string
+    type: object
+  promodto.PromosForAgent:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      hotel:
+        items:
+          type: string
+        type: array
+      id:
+        type: integer
+      name:
         type: string
     type: object
   promodto.RoomType:
@@ -1127,6 +1253,8 @@ definitions:
         type: string
       status:
         type: string
+      username:
+        type: string
     type: object
   userdto.ListUsersByAgentCompanyData:
     properties:
@@ -1146,6 +1274,8 @@ definitions:
     type: object
   userdto.ProfileResponse:
     properties:
+      agent_company:
+        type: string
       certificate:
         type: string
       email:
@@ -1213,19 +1343,6 @@ definitions:
       reason:
         type: string
     type: object
-  userdto.UpdateUserByAdminRequest:
-    properties:
-      email:
-        type: string
-      full_name:
-        type: string
-      is_active:
-        type: boolean
-      phone:
-        type: string
-      user_id:
-        type: integer
-    type: object
 info:
   contact: {}
   description: This is a group of API for WTM Service
@@ -1250,6 +1367,14 @@ paths:
         in: query
         name: search
         type: string
+      - description: Sort order for banners
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction for banners
+        in: query
+        name: dir
+        type: string
       - description: Filter by active status of banners
         in: query
         name: is_active
@@ -1265,7 +1390,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/entity.Banner'
+                    $ref: '#/definitions/bannerdto.BannerData'
                   type: array
               type: object
       security:
@@ -1347,7 +1472,7 @@ paths:
             - $ref: '#/definitions/response.ResponseWithData'
             - properties:
                 data:
-                  $ref: '#/definitions/entity.Banner'
+                  $ref: '#/definitions/bannerdto.BannerData'
               type: object
       security:
       - BearerAuth: []
@@ -1386,6 +1511,28 @@ paths:
       security:
       - BearerAuth: []
       summary: Update Banner
+      tags:
+      - Banner
+  /banners/active:
+    get:
+      consumes:
+      - application/json
+      description: List all active banners
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved active banners
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/bannerdto.ActiveBanner'
+                  type: array
+              type: object
+      summary: List Active Banners
       tags:
       - Banner
   /banners/order:
@@ -1442,7 +1589,8 @@ paths:
       - application/json
       description: List bookings with pagination and filtering options
       parameters:
-      - description: Page number for pagination
+      - default: 1
+        description: Page number for pagination
         in: query
         name: page
         type: integer
@@ -1458,6 +1606,10 @@ paths:
       - description: Filter by booking status Id
         in: query
         name: booking_status_id
+        type: integer
+      - description: Filter by payment status Id
+        in: query
+        name: payment_status_id
         type: integer
       produces:
       - application/json
@@ -1476,6 +1628,107 @@ paths:
       security:
       - BearerAuth: []
       summary: List Bookings
+      tags:
+      - Booking
+  /bookings/{booking_id}/sub-ids:
+    get:
+      consumes:
+      - application/json
+      description: List sub booking IDs for a given booking ID associated with the
+        authenticated agent
+      parameters:
+      - description: Booking ID
+        in: path
+        name: booking_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved sub booking IDs
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Sub Booking IDs
+      tags:
+      - Booking
+  /bookings/{sub_booking_id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancel an existing booking
+      parameters:
+      - description: Booking ID
+        in: path
+        name: sub_booking_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully cancelled booking
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Cancel Booking
+      tags:
+      - Booking
+  /bookings/booking-status:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of booking statuses.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of booking statuses
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/entity.StatusBooking'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Booking Statuses
+      tags:
+      - Booking
+    post:
+      consumes:
+      - application/json
+      description: Update the status of a booking
+      parameters:
+      - description: Update status booking request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bookingdto.UpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated booking status
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update booking status
       tags:
       - Booking
   /bookings/cart:
@@ -1546,34 +1799,97 @@ paths:
       summary: Remove item from cart
       tags:
       - Booking
+  /bookings/cart/guests:
+    delete:
+      consumes:
+      - application/json
+      description: Remove guests from a booking cart
+      parameters:
+      - description: Remove Guests from Cart Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bookingdto.RemoveGuestsFromCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully removed guests from cart
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Remove Guests from Cart
+      tags:
+      - Booking
+    post:
+      consumes:
+      - application/json
+      description: Add guests to a booking cart
+      parameters:
+      - description: Add Guests to Cart Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bookingdto.AddGuestsToCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully added guests to cart
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Add Guests to Cart
+      tags:
+      - Booking
+  /bookings/cart/sub-guest:
+    post:
+      consumes:
+      - application/json
+      description: Add or change a guest to a specific sub cart within a booking
+      parameters:
+      - description: Add / Change Guest to Sub Cart Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bookingdto.AddGuestToSubCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully added / changed guest to sub cart
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Add/Change Guest to Sub Cart
+      tags:
+      - Booking
   /bookings/checkout:
     post:
       consumes:
       - application/json
       description: Finalize the cart by submitting guest data and changing booking
         status to "in review"
-      parameters:
-      - description: Checkout cart request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/bookingdto.CheckOutCartRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Successfully checked out cart
           schema:
-            $ref: '#/definitions/response.Response'
-        "400":
-          description: Invalid request payload
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/bookingdto.DataInvoice'
+                  type: array
+              type: object
       security:
       - BearerAuth: []
       summary: Checkout cart
@@ -1633,6 +1949,41 @@ paths:
       summary: List Booking History
       tags:
       - Booking
+  /bookings/ids:
+    get:
+      consumes:
+      - application/json
+      description: List booking IDs with pagination
+      parameters:
+      - default: 1
+        description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved booking IDs
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List Booking IDs
+      tags:
+      - Booking
   /bookings/logs:
     get:
       consumes:
@@ -1652,6 +2003,38 @@ paths:
       - description: Search by booking code or guest name
         in: query
         name: search
+        type: string
+      - description: Filter by booking status ID
+        in: query
+        name: booking_status_id
+        type: integer
+      - description: Filter by payment status ID
+        in: query
+        name: payment_status_id
+        type: integer
+      - description: Filter by confirm date from (YYYY-MM-DD)
+        in: query
+        name: confirm_date_from
+        type: string
+      - description: Filter by confirm date to (YYYY-MM-DD)
+        in: query
+        name: confirm_date_to
+        type: string
+      - description: Filter by check-in date from (YYYY-MM-DD)
+        in: query
+        name: check_in_date_from
+        type: string
+      - description: Filter by check-in date to (YYYY-MM-DD)
+        in: query
+        name: check_in_date_to
+        type: string
+      - description: Filter by check-out date from (YYYY-MM-DD)
+        in: query
+        name: check_out_date_from
+        type: string
+      - description: Filter by check-out date to (YYYY-MM-DD)
+        in: query
+        name: check_out_date_to
         type: string
       produces:
       - application/json
@@ -1696,18 +2079,48 @@ paths:
       summary: List Payment Statuses
       tags:
       - Booking
-  /bookings/receipt:
     post:
       consumes:
       - application/json
-      description: Upload a receipt for a booking
+      description: Update the status of a payment
       parameters:
-      - description: Upload receipt request
+      - description: Update status payment request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/bookingdto.UploadReceiptRequest'
+          $ref: '#/definitions/bookingdto.UpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated payment status
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Update payment status
+      tags:
+      - Booking
+  /bookings/receipt:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a receipt for a booking
+      parameters:
+      - description: Receipt File
+        in: formData
+        name: receipt
+        required: true
+        type: file
+      - description: Booking ID
+        in: formData
+        name: booking_id
+        type: string
+      - description: Sub Booking ID
+        in: formData
+        name: sub_booking_id
+        type: string
       produces:
       - application/json
       responses:
@@ -1720,101 +2133,18 @@ paths:
       summary: Upload Receipt
       tags:
       - Booking
-  /bookings/status:
-    post:
-      consumes:
-      - application/json
-      description: Update the status of a booking
-      parameters:
-      - description: Update status booking request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/bookingdto.UpdateStatusBookingRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully updated booking status
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - BearerAuth: []
-      summary: Update booking status
-      tags:
-      - Booking
-  /bookings/statuses:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve a list of booking statuses.
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved list of booking statuses
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.ResponseWithData'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/entity.StatusBooking'
-                  type: array
-              type: object
-      security:
-      - BearerAuth: []
-      summary: List Booking Statuses
-      tags:
-      - Booking
   /email/contact-us:
     post:
       consumes:
       - application/json
       description: Send a contact us email
       parameters:
-      - description: Name
-        in: query
-        name: name
+      - description: Contact Us Email Request
+        in: body
+        name: request
         required: true
-        type: string
-      - description: Email
-        in: query
-        name: email
-        required: true
-        type: string
-      - description: Subject
-        in: query
-        name: subject
-        required: true
-        type: string
-      - description: Department
-        in: query
-        name: department
-        required: true
-        type: string
-      - description: Type
-        enum:
-        - general
-        - booking
-        in: query
-        name: type
-        required: true
-        type: string
-      - description: Booking Code
-        in: query
-        name: booking_code
-        type: string
-      - description: Sub Booking Code
-        in: query
-        name: sub_booking_code
-        type: string
-      - description: Message
-        in: query
-        name: message
-        required: true
-        type: string
+        schema:
+          $ref: '#/definitions/emaildto.SendContactUsEmailRequest'
       produces:
       - application/json
       responses:
@@ -2054,10 +2384,13 @@ paths:
         in: query
         name: is_api
         type: boolean
-      - description: Filter hotels by region
+      - collectionFormat: multi
+        description: Filter hotels by region
         in: query
+        items:
+          type: string
         name: region
-        type: string
+        type: array
       - description: Filter hotels by status_id
         in: query
         name: status_id
@@ -2159,7 +2492,12 @@ paths:
         "200":
           description: Successfully created hotel
           schema:
-            $ref: '#/definitions/response.Response'
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithData'
+            - properties:
+                data:
+                  $ref: '#/definitions/hoteldto.CreateHotelResponse'
+              type: object
       security:
       - BearerAuth: []
       summary: Create Hotel
@@ -2362,13 +2700,23 @@ paths:
         in: query
         name: search
         type: string
-      - description: Filter hotels by rating (e.g., 1,2,3,4,5)
+      - description: Filter hotels by province
         in: query
-        name: rating
-        type: array
-      - description: Filter hotels by district (e.g., 'Jakarta', 'Bandung')
+        name: province
+        type: string
+      - collectionFormat: multi
+        description: Filter hotels by district
         in: query
+        items:
+          type: string
         name: district
+        type: array
+      - collectionFormat: multi
+        description: Filter hotels by rating (e.g., 0,1,2,3,4,5)
+        in: query
+        items:
+          type: integer
+        name: rating
         type: array
       - description: Minimum price range for filtering hotels
         in: query
@@ -2378,12 +2726,30 @@ paths:
         in: query
         name: range_price_max
         type: number
+      - collectionFormat: multi
+        description: Filter hotels by total number of bedrooms (e.g., 1,2,3,4,5)
+        in: query
+        items:
+          type: integer
+        name: total_bedrooms
+        type: array
       - description: Filter hotels by total number of rooms (e.g., 1,2,3,4,5)
         in: query
         name: total_rooms
-        type: array
-      - description: Filter hotels by bed type Id (e.g., 1,2,3)
+        type: integer
+      - description: Filter hotels by total number of guests (e.g., 1,2,3,4,5)
         in: query
+        name: total_quests
+        type: integer
+      - description: Filter hotels by promo id
+        in: query
+        name: promo_id
+        type: integer
+      - collectionFormat: multi
+        description: Filter hotels by bed type Id (e.g., 1,2,3)
+        in: query
+        items:
+          type: integer
         name: bed_type_id
         type: array
       produces:
@@ -2398,8 +2764,6 @@ paths:
                 data:
                   $ref: '#/definitions/hoteldto.ListHotelForAgentResponse'
               type: object
-      security:
-      - BearerAuth: []
       summary: List Hotels for Agent
       tags:
       - Hotel
@@ -2535,8 +2899,6 @@ paths:
                     type: string
                   type: array
               type: object
-      security:
-      - BearerAuth: []
       summary: List Provinces
       tags:
       - Hotel
@@ -2918,10 +3280,6 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: Filter by User Id
-        in: query
-        name: user_id
-        type: string
       produces:
       - application/json
       responses:
@@ -3543,6 +3901,43 @@ paths:
       summary: Update Promo
       tags:
       - Promo
+  /promos/agent:
+    get:
+      consumes:
+      - application/json
+      description: List promos for agent
+      parameters:
+      - description: Page number for pagination
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search keyword to filter promos by name,description, and code
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved list of promos
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseWithPagination'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/promodto.PromosForAgent'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List promos for agent
+      tags:
+      - Promo
   /promos/status:
     put:
       consumes:
@@ -3715,14 +4110,20 @@ paths:
         in: query
         name: search
         type: string
-      - description: Filter by Hotel Id
+      - collectionFormat: multi
+        description: Filter by Hotel Id
         in: query
+        items:
+          type: integer
         name: hotel_id
-        type: integer
-      - description: Filter by Agent Company Id
+        type: array
+      - collectionFormat: multi
+        description: Filter by Agent Company Id
         in: query
+        items:
+          type: integer
         name: agent_company_id
-        type: integer
+        type: array
       - description: Start date for the report in YYYY-MM-DD format
         in: query
         name: date_from
@@ -3985,7 +4386,7 @@ paths:
         name: full_name
         required: true
         type: string
-      - description: Role (e.g., admin, agent, customer)
+      - description: Role (e.g., admin, agent, support)
         in: formData
         name: role
         required: true
@@ -4041,14 +4442,73 @@ paths:
       tags:
       - User
     put:
+      consumes:
+      - multipart/form-data
       description: Update a user with the provided details
       parameters:
-      - description: Update user request payload
-        in: body
-        name: request
+      - description: User ID
+        in: formData
+        name: user_id
         required: true
-        schema:
-          $ref: '#/definitions/userdto.UpdateUserByAdminRequest'
+        type: integer
+      - description: Full Name
+        in: formData
+        name: full_name
+        required: true
+        type: string
+      - description: Role (e.g., admin, agent, customer)
+        in: formData
+        name: role
+        required: true
+        type: string
+      - description: Email
+        in: formData
+        name: email
+        required: true
+        type: string
+      - description: Username
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: Phone
+        in: formData
+        name: phone
+        required: true
+        type: string
+      - description: Kakao Talk Id
+        in: formData
+        name: kakao_talk_id
+        type: string
+      - description: Promo Group ID (required if role is agent)
+        in: formData
+        name: promo_group_id
+        type: integer
+      - description: Agent Company (required if role is agent)
+        in: formData
+        name: agent_company
+        type: string
+      - description: Certificate (optional)
+        in: formData
+        name: certificate
+        type: file
+      - description: File Selfie
+        in: formData
+        name: photo_selfie
+        type: file
+      - description: File Id Card
+        in: formData
+        name: photo_id_card
+        type: file
+      - description: Name Card
+        in: formData
+        name: name_card
+        type: file
+      - description: Is Active
+        in: formData
+        name: is_active
+        required: true
+        type: boolean
       produces:
       - application/json
       responses:

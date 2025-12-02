@@ -8,11 +8,13 @@ import (
 
 type PromoType struct {
 	gorm.Model
-	Name string `json:"name"`
+	ExternalID ExternalID `gorm:"embedded"`
+	Name       string     `json:"name"`
 }
 
 type Promo struct {
 	gorm.Model
+	ExternalID  ExternalID     `gorm:"embedded"`
 	Name        string         `json:"name"`
 	StartDate   *time.Time     `json:"start_date"`
 	EndDate     *time.Time     `json:"end_date"`
@@ -27,12 +29,21 @@ type Promo struct {
 	PromoRoomTypes []PromoRoomType `gorm:"foreignkey:PromoID"`
 }
 
+func (b *Promo) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type PromoRoomType struct {
 	gorm.Model
-	PromoID     uint `json:"promo_id" gorm:"index"`
-	RoomTypeID  uint `json:"room_type_id" gorm:"index"`
-	TotalNights int  `json:"total_nights"`
+	ExternalID  ExternalID `gorm:"embedded"`
+	PromoID     uint       `json:"promo_id" gorm:"index"`
+	RoomTypeID  uint       `json:"room_type_id" gorm:"index"`
+	TotalNights int        `json:"total_nights"`
 
 	Promo    Promo    `json:"promo" gorm:"foreignkey:PromoID"`
 	RoomType RoomType `json:"room_type" gorm:"foreignkey:RoomTypeID"`
+}
+
+func (b *PromoRoomType) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
 }

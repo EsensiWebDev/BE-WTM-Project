@@ -8,6 +8,7 @@ import (
 
 type RoomType struct {
 	gorm.Model
+	ExternalID       ExternalID     `gorm:"embedded"`
 	HotelID          uint           `json:"hotel_id" gorm:"index"`
 	Name             string         `json:"name"`
 	IsSmokingAllowed bool           `json:"is_smoking_allowed"`
@@ -26,46 +27,75 @@ type RoomType struct {
 	PromoRoomTypes      []PromoRoomType      `gorm:"foreignkey:RoomTypeID"`
 }
 
+func (b *RoomType) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type RoomPrice struct {
 	gorm.Model
-	RoomTypeID  uint    `json:"room_type_id_id" gorm:"index"`
-	IsBreakfast bool    `json:"is_breakfast"`
-	Pax         int     `json:"pax"`
-	Price       float64 `json:"price"`
-	IsShow      bool    `json:"is_show"`
+	ExternalID  ExternalID `gorm:"embedded"`
+	RoomTypeID  uint       `json:"room_type_id_id" gorm:"index"`
+	IsBreakfast bool       `json:"is_breakfast"`
+	Pax         int        `json:"pax"`
+	Price       float64    `json:"price"`
+	IsShow      bool       `json:"is_show"`
 
 	RoomType RoomType `gorm:"foreignKey:RoomTypeID"`
 }
 
+func (b *RoomPrice) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type RoomAdditional struct {
 	gorm.Model
-	Name string `json:"name"`
+	ExternalID ExternalID `gorm:"embedded"`
+	Name       string     `json:"name"`
 
 	RoomTypeAdditionals []RoomTypeAdditional `gorm:"foreignKey:RoomAdditionalID"`
 }
 
+func (b *RoomAdditional) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type RoomTypeAdditional struct {
 	gorm.Model
-	RoomTypeID       uint    `json:"room_type_id" gorm:"index"`
-	RoomAdditionalID uint    `json:"room_additional_id" gorm:"index"`
-	Price            float64 `json:"price"`
+	ExternalID       ExternalID `gorm:"embedded"`
+	RoomTypeID       uint       `json:"room_type_id" gorm:"index"`
+	RoomAdditionalID uint       `json:"room_additional_id" gorm:"index"`
+	Price            float64    `json:"price"`
 
 	RoomType       RoomType       `json:"room_type" gorm:"foreignkey:RoomTypeID"`
 	RoomAdditional RoomAdditional `json:"room_additional" gorm:"foreignkey:RoomAdditionalID"`
 }
 
+func (b *RoomTypeAdditional) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type BedType struct {
 	gorm.Model
-	Name string `json:"name"`
+	ExternalID ExternalID `gorm:"embedded"`
+	Name       string     `json:"name"`
 
 	RoomType []RoomType `json:"variants" gorm:"many2many:BedTypeRoom"`
 }
 
+func (b *BedType) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type RoomUnavailable struct {
 	gorm.Model
+	ExternalID ExternalID `gorm:"embedded"`
 	RoomTypeID uint       `json:"room_type_id" gorm:"index"`
 	Date       *time.Time `json:"date"` // Date with format "2006-01-02"
 	Reason     string     `json:"reason"`
 	Source     string     `json:"source"`
 	RoomType   RoomType   `gorm:"foreignkey:RoomTypeID"`
+}
+
+func (b *RoomUnavailable) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
 }

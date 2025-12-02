@@ -6,10 +6,10 @@ import (
 	"wtm-backend/internal/handler/hotel_handler"
 )
 
-func HotelRoute(app *bootstrap.Application, middlewareMap MiddlewareMap, routerGroup *gin.RouterGroup) {
+func HotelRoute(app *bootstrap.Application, mm MiddlewareMap, routerGroup *gin.RouterGroup) {
 	hotelHandler := hotel_handler.NewHotelHandler(app.Usecases.HotelUsecase, app.Config)
 
-	group := routerGroup.Group("", middlewareMap.TimeoutFast)
+	group := routerGroup.Group("", mm.TimeoutFast)
 	{
 		//group.GET("/example_hotel_data", hotelHandler.HotelDataDummy)
 		//group.GET("/example_room_type_data", hotelHandler.RoomTypeDataDummy)
@@ -18,13 +18,13 @@ func HotelRoute(app *bootstrap.Application, middlewareMap MiddlewareMap, routerG
 		group.GET("/example_additional_features", hotelHandler.ExampleDataAdditionalFeatures)
 		group.GET("/example_room_options", hotelHandler.ExampleRoomOptions)
 
-		hotels := group.Group("/hotels", middlewareMap.Auth)
+		hotels := group.Group("/hotels")
 		{
-			hotels.GET("", hotelHandler.ListHotels)
-			hotels.POST("", hotelHandler.CreateHotel, middlewareMap.TimeoutFile)
-			hotels.PUT("/:id", hotelHandler.UpdateHotel, middlewareMap.TimeoutFile)
-			hotels.GET("/:id", hotelHandler.DetailHotel)
-			hotels.DELETE("/:id", hotelHandler.RemoveHotel)
+			hotels.GET("", mm.Auth, mm.RequirePermission("hotel:view"), hotelHandler.ListHotels)
+			hotels.POST("", mm.Auth, mm.RequirePermission("hotel:create"), mm.TimeoutFile, hotelHandler.CreateHotel)
+			hotels.PUT("/:id", mm.Auth, mm.RequirePermission("hotel:edit"), mm.TimeoutFile, hotelHandler.UpdateHotel)
+			hotels.GET("/:id", mm.Auth, mm.RequirePermission("hotel:view"), hotelHandler.DetailHotel)
+			hotels.DELETE("/:id", mm.Auth, mm.RequirePermission("hotel:delete"), hotelHandler.RemoveHotel)
 
 			agents := hotels.Group("/agent")
 			{
@@ -32,21 +32,21 @@ func HotelRoute(app *bootstrap.Application, middlewareMap MiddlewareMap, routerG
 				agents.GET("/:id", hotelHandler.DetailHotelForAgent)
 			}
 
-			roomTypes := hotels.Group("/room-types")
+			roomTypes := hotels.Group("/room-types", mm.Auth)
 			{
-				roomTypes.GET("", hotelHandler.ListRoomTypes)
-				roomTypes.POST("", hotelHandler.AddRoomType, middlewareMap.TimeoutFile)
-				roomTypes.PUT("/:id", hotelHandler.UpdateRoomType, middlewareMap.TimeoutFile)
-				roomTypes.DELETE("/:id", hotelHandler.RemoveRoomType)
+				roomTypes.GET("", mm.RequirePermission("hotel:view"), hotelHandler.ListRoomTypes)
+				roomTypes.POST("", mm.RequirePermission("hotel:edit"), hotelHandler.AddRoomType, mm.TimeoutFile)
+				roomTypes.PUT("/:id", mm.RequirePermission("hotel:edit"), hotelHandler.UpdateRoomType, mm.TimeoutFile)
+				roomTypes.DELETE("/:id", mm.RequirePermission("hotel:edit"), hotelHandler.RemoveRoomType)
 			}
 
-			hotels.GET("/bed-types", hotelHandler.ListAllBedTypes)
-			hotels.GET("/facilities", hotelHandler.ListFacilities)
-			hotels.GET("/additional-rooms", hotelHandler.ListAdditionalRooms)
-			hotels.GET("/room-available", hotelHandler.ListRoomAvailable)
-			hotels.PUT("/room-available", hotelHandler.UpdateRoomAvailable)
-			hotels.GET("/statuses", hotelHandler.ListStatusHotel)
-			hotels.PUT("/status", hotelHandler.UpdateStatus)
+			hotels.GET("/bed-types", mm.Auth, hotelHandler.ListAllBedTypes)
+			hotels.GET("/facilities", mm.Auth, hotelHandler.ListFacilities)
+			hotels.GET("/additional-rooms", mm.Auth, hotelHandler.ListAdditionalRooms)
+			hotels.GET("/room-available", mm.Auth, hotelHandler.ListRoomAvailable)
+			hotels.PUT("/room-available", mm.Auth, hotelHandler.UpdateRoomAvailable)
+			hotels.GET("/statuses", mm.Auth, hotelHandler.ListStatusHotel)
+			hotels.PUT("/status", mm.Auth, mm.RequirePermission("hotel:edit"), hotelHandler.UpdateStatus)
 			hotels.GET("/provinces", hotelHandler.ListProvinces)
 		}
 	}

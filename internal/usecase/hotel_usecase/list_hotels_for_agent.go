@@ -4,13 +4,33 @@ import (
 	"context"
 	"fmt"
 	"golang.org/x/sync/errgroup"
+	"time"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/internal/repository/filter"
+	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 )
 
 func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.ListHotelForAgentRequest) (*hoteldto.ListHotelForAgentResponse, error) {
+
+	var rangeDateFrom, rangeDateTo time.Time
+	var err error
+	if req.RangeDateFrom != "" {
+		rangeDateFrom, err = time.Parse(time.DateOnly, req.RangeDateFrom)
+		if err != nil {
+			logger.Error(ctx, "ListHotelsForAgent", err.Error())
+			return nil, err
+		}
+	}
+	if req.RangeDateTo != "" {
+		rangeDateTo, err = time.Parse(time.DateOnly, req.RangeDateTo)
+		if err != nil {
+			logger.Error(ctx, "ListHotelsForAgent", err.Error())
+			return nil, err
+		}
+	}
+
 	filterHotel := filter.HotelFilterForAgent{
 		Ratings:           req.Rating,
 		BedTypeIDs:        req.BedTypeID,
@@ -18,11 +38,15 @@ func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.Li
 		PriceMin:          req.RangePriceMin,
 		PriceMax:          req.RangePriceMax,
 		Cities:            req.District,
-		TotalBedrooms:     req.TotalRooms,
+		TotalBedrooms:     req.TotalBedrooms,
 		Province:          req.Province,
-		DateFrom:          req.RangeDateFrom,
-		DateTo:            req.RangeDateTo,
-		TotalGuest:        req.TotalGuests,
+		DateFrom:          &rangeDateFrom,
+		DateTo:            &rangeDateTo,
+		PromoID:           uint(req.PromoID),
+	}
+
+	if req.TotalGuests > 0 && req.TotalRooms > 0 {
+		filterHotel.MinGuest = req.TotalRooms / req.TotalGuests
 	}
 
 	filter.Clean(&filterHotel)
@@ -49,7 +73,12 @@ func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.Li
 			var respPhoto string
 			for _, photo := range hotel.Photos {
 				if photo != "" {
-					respPhoto = photo
+					bucketName := fmt.Sprintf("%s-%s", constant.ConstHotel, constant.ConstPublic)
+					photoUrl, err := hu.fileStorage.GetFile(ctx, bucketName, photo)
+					if err != nil {
+						logger.Error(ctx, "ListHotelsForAgent", err.Error())
+					}
+					respPhoto = photoUrl
 					break
 				}
 			}
@@ -81,8 +110,8 @@ func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.Li
 			return err
 		}
 
-		ratings = make([]entity.FilterRatingHotel, 0, 5)
-		for i := 1; i <= 5; i++ {
+		ratings = make([]entity.FilterRatingHotel, 0, 6)
+		for i := 0; i <= 5; i++ {
 			rate := entity.FilterRatingHotel{
 				Rating: i,
 			}

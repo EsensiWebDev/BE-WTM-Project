@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"io"
 	"mime/multipart"
+	"net/url"
 	"strings"
 	"time"
 	"wtm-backend/config"
@@ -22,6 +23,11 @@ type S3Client struct {
 	bucketURL     string
 	duration      time.Duration
 	presignClient *s3.PresignClient
+}
+
+func (s *S3Client) GetFileObject(ctx context.Context, bucketName, objectName string) (domain.StreamableObject, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 type S3Object struct {
@@ -143,29 +149,31 @@ func (s *S3Client) GetFile(ctx context.Context, bucketName, objectName string) (
 	return presignedReq.URL, nil
 }
 
-func (s *S3Client) GetFileObject(ctx context.Context, bucketName, objectName string) (domain.StreamableObject, error) {
-	output, err := s.s3.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(objectName),
-	})
+func (m *S3Client) ExtractBucketAndObject(ctx context.Context, fullLink string) (bucket, object string, err error) {
+	baseURL := m.bucketURL
+	u, err := url.Parse(fullLink)
 	if err != nil {
-		logger.Error(ctx, "failed to get file object from S3", err.Error())
-		return nil, err
+		return "", "", err
 	}
 
-	if output.ContentLength == nil || *output.ContentLength == 0 {
-		logger.Error(ctx, "file not found or is empty", "objectName", objectName)
-		return nil, errors.New("file not found or is empty")
+	// Hilangkan prefix baseURL kalau ada
+	path := strings.TrimPrefix(u.String(), baseURL)
+	if path == u.String() {
+		// fallback: pakai u.Path
+		path = u.Path
 	}
 
-	return &S3Object{
-		body:        output.Body,
-		contentType: *output.ContentType,
-		contentLen:  *output.ContentLength,
-		filename:    objectName,
-	}, nil
+	// Pecah path jadi segmen
+	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("invalid link: %s", fullLink)
+	}
+
+	bucket = parts[0]
+	object = strings.Join(parts[1:], "/")
+
+	return bucket, object, nil
 }
-
 func (so *S3Object) Read(p []byte) (int, error) { return so.body.Read(p) }
 func (so *S3Object) Close() error               { return so.body.Close() }
 func (so *S3Object) GetContentType() string     { return so.contentType }

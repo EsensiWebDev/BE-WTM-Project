@@ -7,20 +7,23 @@ import (
 )
 
 type StatusBooking struct {
-	ID     uint   `gorm:"primaryKey"` // override default gorm.Model ID
-	Status string `gorm:"type:text"`
+	ID         uint       `gorm:"primaryKey"` // override default gorm.Model ID
+	Status     string     `gorm:"type:text"`
+	ExternalID ExternalID `gorm:"embedded"`
 }
 
 type StatusPayment struct {
-	ID     uint   `gorm:"primaryKey"` // override default gorm.Model ID
-	Status string `gorm:"type:text"`
+	ID         uint       `gorm:"primaryKey"` // override default gorm.Model ID
+	Status     string     `gorm:"type:text"`
+	ExternalID ExternalID `gorm:"embedded"`
 }
 type Booking struct {
 	gorm.Model
-	AgentID         uint   `gorm:"index"`
-	BookingCode     string `gorm:"uniqueIndex;not null"`
-	StatusBookingID uint   `gorm:"index"`
-	StatusPaymentID uint   `gorm:"index"`
+	ExternalID      ExternalID `gorm:"embedded"`
+	AgentID         uint       `gorm:"index"`
+	BookingCode     string     `gorm:"uniqueIndex;not null"`
+	StatusBookingID uint       `gorm:"index"`
+	StatusPaymentID uint       `gorm:"index"`
 	ApprovedAt      time.Time
 
 	StatusBooking  StatusBooking   `gorm:"foreignkey:StatusBookingID"`
@@ -30,15 +33,22 @@ type Booking struct {
 	BookingGuests  []BookingGuest  `gorm:"foreignkey:BookingID"`
 }
 
+func (b *Booking) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type BookingDetail struct {
 	gorm.Model
-	SubBookingID string `gorm:"uniqueIndex;not null"`
-	BookingID    uint   `gorm:"index"`
-	RoomTypeID   uint   `gorm:"index"`
+	ExternalID   ExternalID `gorm:"embedded"`
+	SubBookingID string     `gorm:"uniqueIndex;not null"`
+	BookingID    uint       `gorm:"index"`
+	RoomPriceID  uint       `gorm:"index"`
 	CheckInDate  time.Time
 	CheckOutDate time.Time
 	ApprovedAt   time.Time
 	Quantity     int
+	ReceiptUrl   string `gorm:"type:text"`
+	PaidAt       *time.Time
 
 	// Promo snapshot
 	PromoID     *uint          `gorm:"index"`      // nullable
@@ -56,26 +66,37 @@ type BookingDetail struct {
 	StatusPaymentID uint `gorm:"index"`
 
 	Booking                  Booking                   `gorm:"foreignkey:BookingID"`
-	RoomType                 RoomType                  `gorm:"foreignkey:RoomTypeID"`
-	Promo                    Promo                     `gorm:"foreignkey:PromoID"`
+	Promo                    *Promo                    `gorm:"foreignkey:PromoID"`
 	BookingDetailsAdditional []BookingDetailAdditional `gorm:"foreignkey:BookingDetailID"`
+	RoomPrice                RoomPrice                 `gorm:"foreignkey:RoomPriceID"`
 
 	StatusBooking StatusBooking `gorm:"foreignkey:StatusBookingID"`
 	StatusPayment StatusPayment `gorm:"foreignkey:StatusPaymentID"`
+	Invoice       *Invoice      `gorm:"foreignkey:BookingDetailID"`
+}
+
+func (b *BookingDetail) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
 }
 
 type BookingGuest struct {
 	gorm.Model
-	BookingID uint   `gorm:"index"`
-	Name      string `gorm:"type:text"`
+	ExternalID ExternalID `gorm:"embedded"`
+	BookingID  uint       `gorm:"index"`
+	Name       string     `gorm:"type:text"`
 
 	Booking Booking `gorm:"foreignkey:BookingID"`
 }
 
+func (b *BookingGuest) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type BookingDetailAdditional struct {
 	gorm.Model
-	BookingDetailID      uint `gorm:"index"`
-	RoomTypeAdditionalID uint `gorm:"index"`
+	ExternalID           ExternalID `gorm:"embedded"`
+	BookingDetailID      uint       `gorm:"index"`
+	RoomTypeAdditionalID uint       `gorm:"index"`
 	Price                float64
 	NameAdditional       string `gorm:"type:text"`
 	Quantity             int
@@ -84,11 +105,20 @@ type BookingDetailAdditional struct {
 	RoomTypeAdditional RoomTypeAdditional `gorm:"foreignkey:RoomTypeAdditionalID"`
 }
 
+func (b *BookingDetailAdditional) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type Invoice struct {
 	gorm.Model
+	ExternalID      ExternalID     `gorm:"embedded"`
 	BookingDetailID uint           `gorm:"index;not null"`
 	InvoiceCode     string         `gorm:"uniqueIndex;size:32;not null"`
 	Detail          datatypes.JSON `gorm:"type:jsonb;not null"`
 
 	BookingDetail BookingDetail `gorm:"foreignkey:BookingDetailID"`
+}
+
+func (i *Invoice) BeforeCreate(tx *gorm.DB) error {
+	return i.ExternalID.BeforeCreate(tx)
 }

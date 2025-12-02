@@ -16,20 +16,18 @@ func (ur *UserRepository) GetUsers(ctx context.Context, filter filter.UserFilter
 	query := db.WithContext(ctx).Model(&model.User{}).Debug()
 
 	// Select default fields
-	selectFields := []string{"id", "full_name", "email", "phone", "status_id"}
+	selectFields := []string{"id", "username", "full_name", "email", "phone", "status_id"}
 
 	// Apply filters
 	if filter.RoleID != nil {
 		query = query.Where("role_id = ?", *filter.RoleID).Preload("Status")
 
 		if *filter.RoleID == constant.DefaultRoleAgent {
-			selectFields = append(selectFields, "agent_company_id")
+			selectFields = append(selectFields, "agent_company_id", "kakao_talk_id", "photo_selfie", "certificate", "name_card", "photo_id_card")
 			query = query.Preload("AgentCompany")
 
-			if filter.Scope == constant.ScopeControl {
-				selectFields = append(selectFields, "agent_company_id", "kakao_talk_id", "photo_selfie", "certificate", "name_card", "photo_id_card")
-			} else if filter.Scope == constant.ScopeManagement {
-				selectFields = append(selectFields, "agent_company_id", "promo_group_id")
+			if filter.Scope == constant.ScopeManagement {
+				selectFields = append(selectFields, "promo_group_id")
 				query = query.Where("status_id = ?", constant.StatusUserActiveID).Preload("PromoGroup")
 			}
 
@@ -51,7 +49,7 @@ func (ur *UserRepository) GetUsers(ctx context.Context, filter filter.UserFilter
 	// Search
 	if strings.TrimSpace(filter.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		query = query.Where("LOWER(full_name) ILIKE ? ESCAPE '\\' ", "%"+safeSearch+"%")
+		query = query.Where("LOWER(full_name) ILIKE ?  ", "%"+safeSearch+"%")
 	}
 
 	// Count

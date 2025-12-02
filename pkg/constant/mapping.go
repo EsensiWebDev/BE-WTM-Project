@@ -13,12 +13,25 @@ var MapStatusEmailLog = map[int]string{
 }
 
 var MapStatusBooking = map[int]string{
-	StatusBookingApprovedID: StatusBookingApproved,
-	StatusBookingInReviewID: StatusBookingInReview,
-	StatusBookingRejectedID: StatusBookingRejected,
+	StatusBookingConfirmedID:       StatusBookingConfirmed,
+	StatusBookingWaitingApprovalID: StatusBookingWaitingApproval,
+	StatusBookingRejectedID:        StatusBookingRejected,
+}
+
+// slice untuk urutan
+var StatusBookingOrder = []int{
+	StatusBookingConfirmedID,
+	StatusBookingWaitingApprovalID,
+	StatusBookingRejectedID,
 }
 
 var MapStatusPayment = map[int]string{
 	StatusPaymentUnpaidID: StatusPaymentUnpaid,
 	StatusPaymentPaidID:   StatusPaymentPaid,
+}
+
+// slice untuk urutan
+var StatusPaymentOrder = []int{
+	StatusPaymentUnpaidID,
+	StatusPaymentPaidID,
 }

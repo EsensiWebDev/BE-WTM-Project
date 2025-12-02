@@ -28,7 +28,7 @@ func (pgr *PromoGroupRepository) GetUnassignedPromos(ctx context.Context, filter
 	// 🔍 Filter: search by name
 	if strings.TrimSpace(filterReq.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filterReq.Search)
-		query = query.Where("LOWER(promos.name) ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%")
+		query = query.Where("LOWER(promos.name) ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	// 🔢 Count total

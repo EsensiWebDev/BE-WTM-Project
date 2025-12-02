@@ -10,6 +10,7 @@ type PromoGroup struct {
 
 type Promo struct {
 	ID          uint        `json:"id"`
+	ExternalID  string      `json:"external_id"`
 	Name        string      `json:"name"`
 	StartDate   *time.Time  `json:"start_date,omitempty"`
 	EndDate     *time.Time  `json:"end_date,omitempty"`
@@ -42,6 +43,7 @@ type PromoRoomType struct {
 	TotalNights  int    `json:"total_nights"`
 	HotelID      uint   `json:"hotel_id"`
 	HotelName    string `json:"hotel_name"`
+	Province     string `json:"province"`
 }
 
 type PromoType struct {
@@ -56,4 +58,5 @@ type Banner struct {
 	Description string `json:"description"`
 	IsActive    bool   `json:"is_active"`
 	Order       int    `json:"order"`
+	ExternalID  string `json:"external_id"`
 }

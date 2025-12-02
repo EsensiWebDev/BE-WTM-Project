@@ -60,11 +60,11 @@ func (fh *FileHandler) GetFile(c *gin.Context) {
 	c.Header("Content-Type", file.GetContentType())
 	c.Header("Content-Length", fmt.Sprintf("%d", file.GetContentLength()))
 
-	c.Stream(func(w io.Writer) bool {
-		buf := bufferPool.Get().([]byte)
-		defer bufferPool.Put(buf)
+	buf := bufferPool.Get().([]byte)
+	defer bufferPool.Put(buf)
 
-		_, err := io.CopyBuffer(w, file, buf)
-		return err == nil
-	})
+	if _, err := io.CopyBuffer(c.Writer, file, buf); err != nil {
+		logger.Error(ctx, "Error streaming file:", err.Error())
+		// optional: jangan kirim error ke client setelah sebagian data terkirim
+	}
 }

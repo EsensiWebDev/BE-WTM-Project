@@ -21,9 +21,14 @@ type UserFilter struct {
 
 type HotelFilter struct {
 	IsAPI    *bool
-	Region   string
+	Region   []string
 	StatusID uint
 	dto.PaginationRequest
+}
+
+type PromoFilter struct {
+	dto.PaginationRequest
+	AgentID uint
 }
 
 type DefaultFilter struct {
@@ -32,14 +37,14 @@ type DefaultFilter struct {
 
 type BannerFilter struct {
 	dto.PaginationRequest
-	IsActive bool
+	IsActive *bool
 }
 
 type ReportFilter struct {
 	DateFrom       *time.Time
 	DateTo         *time.Time
-	HotelID        *uint
-	AgentCompanyID *uint
+	HotelID        []uint
+	AgentCompanyID []uint
 	IsRangeDate    bool
 	dto.PaginationRequest
 }
@@ -52,26 +57,33 @@ type ReportDetailFilter struct {
 
 type HotelFilterForAgent struct {
 	Ratings       []int
-	BedTypeIDs    []uint
+	BedTypeIDs    []int
 	PriceMin      *int
 	PriceMax      *int
 	Cities        []string
 	TotalBedrooms []int
+	PromoID       uint
 
-	Province   *string
-	DateFrom   *time.Time
-	DateTo     *time.Time
-	TotalGuest *int
+	Province *string
+	DateFrom *time.Time
+	DateTo   *time.Time
+	MinGuest int
 	dto.PaginationRequest
 }
 
 type BookingFilter struct {
 	dto.PaginationRequest
-	AgentID         uint
-	BookingIDSearch string
-	GuestNameSearch string
-	StatusBookingID uint
-	StatusPaymentID uint
+	AgentID          uint
+	BookingIDSearch  string
+	GuestNameSearch  string
+	BookingStatusID  int
+	PaymentStatusID  int
+	ConfirmDateFrom  string
+	ConfirmDateTo    string
+	CheckInDateFrom  string
+	CheckInDateTo    string
+	CheckOutDateFrom string
+	CheckOutDateTo   string
 }
 
 type NotifFilter struct {
@@ -90,8 +102,8 @@ func Clean[T any](filter *T) *T {
 }
 
 func cleanHotelFilter(f *HotelFilterForAgent) {
-	f.Ratings = cleanIntSlice(f.Ratings)
-	f.BedTypeIDs = cleanUintSlice(f.BedTypeIDs)
+	//f.Ratings = cleanIntSlice(f.Ratings)
+	f.BedTypeIDs = cleanIntSlice(f.BedTypeIDs)
 	if f.PriceMin != nil && *f.PriceMin <= 0 {
 		f.PriceMin = nil
 	}

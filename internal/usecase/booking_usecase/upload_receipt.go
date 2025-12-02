@@ -2,6 +2,7 @@ package booking_usecase
 
 import (
 	"context"
+	"strings"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/pkg/logger"
 )
@@ -11,26 +12,31 @@ func (bu *BookingUsecase) UploadReceipt(ctx context.Context, req *bookingdto.Upl
 	var prefix string
 	var id uint
 
-	if req.BookingID > 0 {
+	if strings.TrimSpace(req.BookingID) != "" {
 		prefix = "booking/receipts/booking"
-		id = req.BookingID
 
-		booking, err := bu.bookingRepo.GetBookingByID(ctx, req.BookingID)
+		booking, err := bu.bookingRepo.GetBookingByCode(ctx, req.BookingID)
 		if err != nil {
 			logger.Error(ctx, "failed to get bookings", err.Error())
 			return err
 		}
+		id = booking.ID
 		bookindDetailIDs = make([]uint, 0, len(booking.BookingDetails))
 		for _, detail := range booking.BookingDetails {
 			bookindDetailIDs = append(bookindDetailIDs, detail.ID)
 		}
 	} else {
-		bookindDetailIDs = append(bookindDetailIDs, req.BookingDetailID)
+		detail, err := bu.bookingRepo.GetSubBookingByCode(ctx, req.BookingDetailID)
+		if err != nil {
+			logger.Error(ctx, "failed to get sub booking by code", err.Error())
+			return err
+		}
+		bookindDetailIDs = append(bookindDetailIDs, detail.ID)
 		prefix = "booking/receipts/booking_detail"
-		id = req.BookingDetailID
+		id = detail.BookingID
 	}
 
-	fileReceiptPath, err := bu.uploadFile(ctx, req.FileReceipt, prefix, id)
+	fileReceiptPath, err := bu.uploadFile(ctx, req.Receipt, prefix, id)
 	if err != nil {
 		logger.Error(ctx, "failed to upload receipt file", err.Error())
 		return err

@@ -23,10 +23,6 @@ func (rr *ReportRepository) ReportNewAgentSummary(ctx context.Context, filter fi
 			Where(squirrel.GtOrEq{"u.created_at": filter.DateFrom}).
 			Where(squirrel.Lt{"u.created_at": filter.DateTo})
 
-		if filter.AgentCompanyID != nil {
-			builder = builder.Where(squirrel.Eq{"u.agent_company_id": *filter.AgentCompanyID})
-		}
-
 		builder = builder.GroupBy("DATE_TRUNC('month', u.created_at)").OrderBy("month")
 
 		query, args, err := builder.ToSql()
@@ -50,10 +46,6 @@ func (rr *ReportRepository) ReportNewAgentSummary(ctx context.Context, filter fi
 		Where(squirrel.GtOrEq{"u.created_at": filter.DateFrom}).
 		Where(squirrel.Lt{"u.created_at": filter.DateTo})
 
-	if filter.AgentCompanyID != nil {
-		builderThisMonth = builderThisMonth.Where(squirrel.Eq{"u.agent_company_id": *filter.AgentCompanyID})
-	}
-
 	queryThisMonth, argsThisMonth, err := builderThisMonth.ToSql()
 	if err != nil {
 		return nil, err
@@ -71,17 +63,13 @@ func (rr *ReportRepository) ReportNewAgentSummary(ctx context.Context, filter fi
 	).From("users u").
 		Where(squirrel.Eq{"u.role_id": constant.RoleAgentID})
 
-	if filter.AgentCompanyID != nil {
-		builderTotal = builderTotal.Where(squirrel.Eq{"u.agent_company_id": *filter.AgentCompanyID})
-	}
-
 	queryTotal, argsTotal, err := builderTotal.ToSql()
 	if err != nil {
 		return nil, err
 	}
 
 	var summaryTotal entity.MonthlyNewAgentSummary
-	if err := db.WithContext(ctx).Raw(queryTotal, argsTotal...).Scan(&summaryTotal).Error; err != nil {
+	if err := db.WithContext(ctx).Raw(queryTotal, argsTotal...).Debug().Scan(&summaryTotal).Error; err != nil {
 		return nil, err
 	}
 

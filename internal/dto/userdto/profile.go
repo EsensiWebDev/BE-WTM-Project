@@ -1,5 +1,6 @@
 package userdto
 
+// ProfileResponse represents the structure of the user profile response.
 type ProfileResponse struct {
 	ID                  uint                  `json:"id"`
 	Username            string                `json:"username"`
@@ -12,6 +13,7 @@ type ProfileResponse struct {
 	NameCard            string                `json:"name_card,omitempty"`
 	KakaoTalkID         string                `json:"kakao_talk_id,omitempty"`
 	Status              string                `json:"status,omitempty"`
+	AgentCompany        string                `json:"agent_company,omitempty"`
 	NotificationSetting []NotificationSetting `json:"notification_settings,omitempty"`
 }
 

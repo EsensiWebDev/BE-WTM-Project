@@ -21,6 +21,11 @@ type CreateHotelRequest struct {
 	SocialMedias string                  `json:"social_medias" form:"social_medias"`
 }
 
+// CreateHotelResponse represents the response create hotels.
+type CreateHotelResponse struct {
+	HotelID uint `json:"hotel_id"`
+}
+
 // NearbyPlace represents the request structure nearby places.
 type NearbyPlace struct {
 	Name     string  `json:"name" form:"name"`
@@ -51,5 +56,6 @@ func (r *CreateHotelRequest) Validate() error {
 	if errs != nil && len(errs) > 0 {
 		return errs
 	}
+
 	return nil
 }

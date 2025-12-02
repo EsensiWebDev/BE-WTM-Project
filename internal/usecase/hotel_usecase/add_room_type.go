@@ -62,14 +62,18 @@ func (hu *HotelUsecase) AddRoomType(ctx context.Context, hotelID uint, req *hote
 			})
 		}
 
-		if err := hu.hotelRepo.AttachRoomAdditions(txCtx, rt.ID, additionalFeaturesEntity); err != nil {
-			logger.Error(ctx, "Failed to attach facilities", err.Error())
-			return err
+		if len(additionalFeaturesEntity) > 0 {
+			if err := hu.hotelRepo.AttachRoomAdditions(txCtx, rt.ID, additionalFeaturesEntity); err != nil {
+				logger.Error(ctx, "Failed to attach facilities", err.Error())
+				return err
+			}
 		}
 
-		if err := hu.hotelRepo.AttachBedTypesToRoomType(txCtx, rt.ID, req.BedTypes); err != nil {
-			logger.Error(ctx, "Failed to attach bed types", err.Error())
-			return err
+		if len(req.BedTypes) > 0 {
+			if err := hu.hotelRepo.AttachBedTypesToRoomType(txCtx, rt.ID, req.BedTypes); err != nil {
+				logger.Error(ctx, "Failed to attach bed types", err.Error())
+				return err
+			}
 		}
 
 		var withoutBreakfast hoteldto.BreakfastBase

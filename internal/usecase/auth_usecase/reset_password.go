@@ -9,7 +9,8 @@ import (
 
 func (au *AuthUsecase) ResetPassword(ctx context.Context, request *authdto.ResetPasswordRequest) error {
 	return au.dbTrx.WithTransaction(ctx, func(nCtx context.Context) error {
-		userID, err := au.authRepo.UsedTokenResetPassword(nCtx, request.Token)
+		hashed := utils.HashToken(request.Token)
+		userID, err := au.authRepo.UsedTokenResetPassword(nCtx, hashed)
 		if err != nil {
 			logger.Error(ctx, "Error marking reset password token as used:", err.Error())
 			return err

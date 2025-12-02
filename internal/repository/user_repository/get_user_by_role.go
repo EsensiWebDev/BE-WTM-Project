@@ -34,7 +34,7 @@ func (ur *UserRepository) GetUserByRole(ctx context.Context, roleID uint, search
 
 	if strings.TrimSpace(search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(search)
-		query = query.Where("full_name ILIKE ? ESCAPE '\\' ", "%"+safeSearch+"%")
+		query = query.Where("full_name ILIKE ?  ", "%"+safeSearch+"%")
 	}
 
 	if err := query.Count(&total).Error; err != nil {

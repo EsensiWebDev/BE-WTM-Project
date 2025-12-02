@@ -2,6 +2,7 @@ package hotel_repository
 
 import (
 	"context"
+	"gorm.io/gorm/clause"
 	"strings"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
@@ -10,6 +11,8 @@ import (
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
 )
+
+var validateColumnSort = map[string]bool{}
 
 func (hr *HotelRepository) GetHotels(ctx context.Context, filter filter.HotelFilter) ([]entity.Hotel, int64, error) {
 	db := hr.db.GetTx(ctx)
@@ -29,8 +32,8 @@ func (hr *HotelRepository) GetHotels(ctx context.Context, filter filter.HotelFil
 		query = query.Where("is_api = ?", isAPI)
 	}
 
-	if filter.Region != "" {
-		query = query.Where("addr_province = ?", filter.Region)
+	if len(filter.Region) > 0 {
+		query = query.Where("addr_province IN ?", filter.Region)
 	}
 
 	if filter.StatusID > 0 {
@@ -40,7 +43,7 @@ func (hr *HotelRepository) GetHotels(ctx context.Context, filter filter.HotelFil
 	// Search
 	if strings.TrimSpace(filter.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		query = query.Where("LOWER(name) ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%")
+		query = query.Where("LOWER(name) ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	// Count
@@ -57,6 +60,21 @@ func (hr *HotelRepository) GetHotels(ctx context.Context, filter filter.HotelFil
 		}
 		offset := (filter.Page - 1) * filter.Limit
 		query = query.Limit(filter.Limit).Offset(offset)
+	}
+
+	// Order
+	if filter.Sort != "" {
+		if validateColumnSort[filter.Sort] {
+			var desc bool
+			if strings.TrimSpace(strings.ToLower(filter.Dir)) == "asc" {
+				desc = false
+			} else {
+				desc = true
+			}
+			query = query.Order(clause.OrderByColumn{Column: clause.Column{Name: filter.Sort}, Desc: desc})
+		}
+	} else {
+		query = query.Order("id desc")
 	}
 
 	// Execute

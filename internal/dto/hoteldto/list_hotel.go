@@ -4,9 +4,9 @@ import "wtm-backend/internal/dto"
 
 type ListHotelRequest struct {
 	dto.PaginationRequest `json:",inline"`
-	IsAPI                 *bool  `json:"is_api,omitempty" form:"is_api,omitempty"`
-	Region                string `json:"region" form:"region"`
-	StatusID              uint   `json:"status_id" form:"status_id"`
+	IsAPI                 *bool    `json:"is_api,omitempty" form:"is_api,omitempty"`
+	Region                []string `json:"region" form:"region"`
+	StatusID              uint     `json:"status_id" form:"status_id"`
 }
 
 type ListHotelResponse struct {

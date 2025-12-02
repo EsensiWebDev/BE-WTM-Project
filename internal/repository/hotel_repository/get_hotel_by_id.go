@@ -3,6 +3,7 @@ package hotel_repository
 import (
 	"context"
 	"encoding/json"
+	"gorm.io/gorm"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/constant"
@@ -20,7 +21,9 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, scope
 		Preload("HotelNearbyPlaces").
 		Preload("HotelNearbyPlaces.NearbyPlace").
 		Preload("Facilities").
-		Preload("RoomTypes").
+		Preload("RoomTypes", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC")
+		}).
 		Preload("RoomTypes.BedTypes").
 		Preload("RoomTypes.RoomTypeAdditionals").
 		Preload("RoomTypes.RoomTypeAdditionals.RoomAdditional").
@@ -49,6 +52,13 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, scope
 	hotelEntity.StatusHotel = hotelModel.Status.Status
 	for _, facility := range hotelModel.Facilities {
 		hotelEntity.FacilityNames = append(hotelEntity.FacilityNames, facility.Name)
+	}
+	for _, nearbyPlace := range hotelModel.HotelNearbyPlaces {
+		hotelEntity.NearbyPlaces = append(hotelEntity.NearbyPlaces, entity.NearbyPlace{
+			ID:     nearbyPlace.NearbyPlaceID,
+			Name:   nearbyPlace.NearbyPlace.Name,
+			Radius: nearbyPlace.Radius,
+		})
 	}
 	for i, roomType := range hotelModel.RoomTypes {
 		for _, bedType := range roomType.BedTypes {
@@ -82,13 +92,6 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, scope
 			} else if !price.IsBreakfast {
 				hotelEntity.RoomTypes[i].WithoutBreakfast = customBreakfast
 			}
-		}
-		for _, nearbyPlace := range hotelModel.HotelNearbyPlaces {
-			hotelEntity.NearbyPlaces = append(hotelEntity.NearbyPlaces, entity.NearbyPlace{
-				ID:     nearbyPlace.NearbyPlaceID,
-				Name:   nearbyPlace.NearbyPlace.Name,
-				Radius: nearbyPlace.Radius,
-			})
 		}
 	}
 

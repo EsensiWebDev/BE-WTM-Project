@@ -17,7 +17,7 @@ func (hr *HotelRepository) GetProvinces(ctx context.Context, filter *filter.Defa
 	// Apply search filter
 	if strings.TrimSpace(filter.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		query = query.Where("LOWER(addr_province) ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%")
+		query = query.Where("LOWER(addr_province) ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	// Count total records
@@ -39,6 +39,7 @@ func (hr *HotelRepository) GetProvinces(ctx context.Context, filter *filter.Defa
 	var provinces []string
 	if err := query.
 		Select("DISTINCT LOWER(addr_province) AS addr_province").
+		Order("addr_province ASC").
 		Pluck("addr_province", &provinces).Error; err != nil {
 		logger.Error(ctx, "Error fetching facilities", err.Error())
 		return nil, total, err

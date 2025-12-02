@@ -3,8 +3,10 @@ package hotel_repository
 import (
 	"context"
 	"gorm.io/gorm"
+	"strings"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/logger"
+	"wtm-backend/pkg/utils"
 )
 
 func (hr *HotelRepository) AttachBedTypesToRoomType(ctx context.Context, roomTypeID uint, bedTypeNames []string) error {
@@ -12,7 +14,11 @@ func (hr *HotelRepository) AttachBedTypesToRoomType(ctx context.Context, roomTyp
 
 	var bedTypes []model.BedType
 	for _, name := range bedTypeNames {
+		if strings.TrimSpace(name) == "" {
+			continue
+		}
 		var bt model.BedType
+		name = utils.CapitalizeWords(name)
 		if err := db.Where("name = ?", name).
 			Attrs(model.BedType{Name: name}).
 			FirstOrCreate(&bt).Error; err != nil {

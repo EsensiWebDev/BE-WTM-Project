@@ -17,7 +17,7 @@ import (
 // @Accept multipart/form-data
 // @Produce json
 // @Param full_name formData string true "Full Name"
-// @Param role formData string true "Role (e.g., admin, agent, customer)"
+// @Param role formData string true "Role (e.g., admin, agent, support)"
 // @Param email formData string true "Email"
 // @Param phone formData string true "Phone"
 // @Param kakao_talk_id formData string false "Kakao Talk Id"

@@ -2,6 +2,7 @@ package banner_usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mime/multipart"
 	"path/filepath"
@@ -12,7 +13,7 @@ import (
 	"wtm-backend/pkg/logger"
 )
 
-func (bu *BannerUsecase) UpsertBanner(ctx context.Context, req *bannerdto.UpsertBannerRequest, bannerId *uint) error {
+func (bu *BannerUsecase) UpsertBanner(ctx context.Context, req *bannerdto.UpsertBannerRequest, reqId *bannerdto.DetailBannerRequest) error {
 
 	var err error
 	banner := &entity.Banner{
@@ -20,7 +21,7 @@ func (bu *BannerUsecase) UpsertBanner(ctx context.Context, req *bannerdto.Upsert
 		Description: req.Description,
 	}
 
-	if bannerId == nil {
+	if reqId == nil {
 
 		banner, err = bu.bannerRepo.CreateBanner(ctx, banner)
 		if err != nil {
@@ -30,18 +31,30 @@ func (bu *BannerUsecase) UpsertBanner(ctx context.Context, req *bannerdto.Upsert
 
 	} else {
 
-		banner.ID = *bannerId
-
-		banner, err = bu.bannerRepo.GetBannerByID(ctx, banner.ID)
+		banner, err = bu.bannerRepo.GetBannerByExternalID(ctx, reqId.BannerID)
 		if err != nil {
 			logger.Error(ctx, "Error getting banner by Id", err.Error())
 			return err
 		}
 
 		if banner == nil {
-			logger.Warn(ctx, "Banner not found", "Id", *bannerId)
-			return fmt.Errorf("banner with Id %d not found", *bannerId)
+			logger.Warn(ctx, "Banner not found", "Id", reqId.BannerID)
+			return fmt.Errorf("banner with Id %s not found", reqId.BannerID)
 		}
+
+		if banner.Title == req.Title && banner.Description == req.Description && req.Image == nil {
+			logger.Warn(ctx, "Banner not updated", "Id", reqId.BannerID)
+			return errors.New("no changes detected on banner")
+		}
+
+		if banner.Title != req.Title {
+			banner.Title = req.Title
+		}
+
+		if banner.Description != req.Description {
+			banner.Description = req.Description
+		}
+
 	}
 
 	if req.Image != nil && req.Image.Size > 0 {

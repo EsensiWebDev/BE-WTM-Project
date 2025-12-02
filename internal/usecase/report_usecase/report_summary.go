@@ -3,6 +3,7 @@ package report_usecase
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/reportdto"
@@ -11,13 +12,120 @@ import (
 )
 
 func (ru *ReportUsecase) ReportSummary(ctx context.Context, req *reportdto.ReportRequest) (*reportdto.ReportSummaryResponse, error) {
+	// Parse dates
+	dateFrom, dateTo, isRangeDate, err := ru.parseDates(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create base filter
+	filterReq := ru.createBaseFilter(dateFrom, dateTo, req, isRangeDate)
+
+	// Create independent filters for each goroutine
+	filterBooking := ru.createFilterCopy(filterReq)
+	filterNewCustomer := ru.createFilterCopy(filterReq)
+	filterGraphic := ru.createFilterCopy(filterReq)
+
+	// Adjust dates for comparison periods
+	if !isRangeDate {
+		ru.adjustComparisonDates(&filterBooking, &filterNewCustomer, dateFrom)
+	}
+
+	// Prepare response and synchronization
+	var (
+		resp     reportdto.ReportSummaryResponse
+		mu       sync.Mutex
+		wg       sync.WaitGroup
+		firstErr error
+	)
+
+	// Goroutine 1: Booking Summary Data
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		if ctx.Err() != nil {
+			return // Context cancelled
+		}
+
+		bookingSummary, err := ru.reportRepo.ReportBookingSummary(ctx, filterBooking)
+		if err != nil {
+			ru.setError(&mu, &firstErr, err)
+			return
+		}
+
+		confirmed, cancelled := ru.processBookingSummary(bookingSummary, isRangeDate)
+
+		mu.Lock()
+		defer mu.Unlock()
+		resp.SummaryData.ConfirmedBooking = confirmed
+		resp.SummaryData.CancellationBooking = cancelled
+	}()
+
+	// Goroutine 2: New Customer Summary Data
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		if ctx.Err() != nil {
+			return // Context cancelled
+		}
+
+		newCustomer, err := ru.reportRepo.ReportNewAgentSummary(ctx, filterNewCustomer)
+		if err != nil {
+			ru.setError(&mu, &firstErr, err)
+			return
+		}
+
+		newUser := ru.processNewCustomerSummary(newCustomer, isRangeDate)
+
+		mu.Lock()
+		defer mu.Unlock()
+		resp.SummaryData.NewCustomer = newUser
+	}()
+
+	// Goroutine 3: Graphic Data
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		if ctx.Err() != nil {
+			return // Context cancelled
+		}
+
+		graphicData, err := ru.reportRepo.ReportForGraph(ctx, filterGraphic)
+		if err != nil {
+			ru.setError(&mu, &firstErr, err)
+			return
+		}
+
+		mu.Lock()
+		defer mu.Unlock()
+		resp.GraphicData = graphicData
+	}()
+
+	// Wait for all goroutines to complete
+	wg.Wait()
+
+	// Check for any errors
+	if firstErr != nil {
+		return nil, firstErr
+	}
+
+	return &resp, nil
+}
+
+// Helper functions
+
+func (ru *ReportUsecase) parseDates(req *reportdto.ReportRequest) (*time.Time, *time.Time, bool, error) {
 	var dateFrom, dateTo *time.Time
 	var isDateFromSet, isDateToSet bool
-	// Parse dates
+
+	// Parse DateFrom
 	if req.DateFrom != "" {
 		dateFromDt, err := time.Parse("2006-01-02", req.DateFrom)
 		if err != nil {
-			return nil, fmt.Errorf("invalid date_from: %s", err.Error())
+			return nil, nil, false, fmt.Errorf("invalid date_from: %s", err.Error())
 		}
 		isDateFromSet = true
 		dateFrom = &dateFromDt
@@ -27,10 +135,11 @@ func (ru *ReportUsecase) ReportSummary(ctx context.Context, req *reportdto.Repor
 		dateFrom = &startOfMonth
 	}
 
+	// Parse DateTo
 	if req.DateTo != "" {
 		dateToDt, err := time.Parse("2006-01-02", req.DateTo)
 		if err != nil {
-			return nil, fmt.Errorf("invalid date_to: %s", err.Error())
+			return nil, nil, false, fmt.Errorf("invalid date_to: %s", err.Error())
 		}
 		isDateToSet = true
 		dateTo = &dateToDt
@@ -40,195 +149,131 @@ func (ru *ReportUsecase) ReportSummary(ctx context.Context, req *reportdto.Repor
 		dateTo = &endOfMonth
 	}
 
+	return dateFrom, dateTo, (isDateFromSet || isDateToSet), nil
+}
+
+func (ru *ReportUsecase) createBaseFilter(dateFrom, dateTo *time.Time, req *reportdto.ReportRequest, isRangeDate bool) filter.ReportFilter {
 	filterReq := filter.ReportFilter{
-		DateFrom: dateFrom,
-		DateTo:   dateTo,
+		DateFrom:    dateFrom,
+		DateTo:      dateTo,
+		IsRangeDate: isRangeDate,
 	}
 
-	if req.HotelID > 0 {
-		filterReq.HotelID = &req.HotelID
-	}
-	if req.AgentCompanyID > 0 {
-		filterReq.AgentCompanyID = &req.AgentCompanyID
-	}
+	return filterReq
+}
 
-	if isDateFromSet || isDateToSet {
-		filterReq.IsRangeDate = true
-	}
+func (ru *ReportUsecase) adjustComparisonDates(filterBooking, filterNewCustomer *filter.ReportFilter, dateFrom *time.Time) {
+	dateFromBooking := dateFrom.AddDate(0, 0, -30)
+	filterBooking.DateFrom = &dateFromBooking
 
-	// Channel sink
-	type result struct {
-		summaryDataBooking reportdto.DataTotalWithPercentage
-		summaryDataCancel  reportdto.DataTotalWithPercentage
-		summaryDataNewUser reportdto.DataTotalWithPercentage
-		graphicData        []entity.ReportForGraph
-		err                error
-	}
-	ch := make(chan result, 3)
+	dateFromNewCustomer := dateFrom.AddDate(0, 0, -30)
+	filterNewCustomer.DateFrom = &dateFromNewCustomer
+}
 
-	// Goroutine 1: SummaryData
-	go func() {
+func (ru *ReportUsecase) processBookingSummary(bookingSummary []entity.MonthlyBookingSummary, isRangeDate bool) (reportdto.DataTotalWithPercentage, reportdto.DataTotalWithPercentage) {
+	summaryDataBooking := reportdto.DataTotalWithPercentage{}
+	summaryDataCancel := reportdto.DataTotalWithPercentage{}
 
-		if !filterReq.IsRangeDate {
-			dateFromDt := dateFrom.AddDate(0, 0, -30)
-			filterReq.DateFrom = &dateFromDt
+	if isRangeDate {
+		// Range date logic
+		if len(bookingSummary) == 2 {
+			summaryDataBooking.Count = bookingSummary[1].ConfirmedBooking
+			summaryDataCancel.Count = bookingSummary[1].CancellationBooking
+
+			summaryDataBooking = ru.calculateBookingPercentage(bookingSummary[0].ConfirmedBooking, bookingSummary[1].ConfirmedBooking, summaryDataBooking, "Contribution for this period")
+			summaryDataCancel = ru.calculateBookingPercentage(bookingSummary[0].CancellationBooking, bookingSummary[1].CancellationBooking, summaryDataCancel, "Contribution for this period")
 		}
+	} else {
+		// Non-range date logic
+		switch len(bookingSummary) {
+		case 1:
+			summaryDataBooking.Count = bookingSummary[0].ConfirmedBooking
+			summaryDataCancel.Count = bookingSummary[0].CancellationBooking
+			summaryDataBooking.Percent = 0
+			summaryDataBooking.Message = "No comparison data available"
+			summaryDataCancel.Percent = 0
+			summaryDataCancel.Message = "No comparison data available"
 
-		bookingSummary, err := ru.reportRepo.ReportBookingSummary(ctx, filterReq)
-		if err != nil {
-			ch <- result{err: err}
-			return
-		}
+		case 2:
+			summaryDataBooking.Count = bookingSummary[1].ConfirmedBooking
+			summaryDataCancel.Count = bookingSummary[1].CancellationBooking
 
-		summaryDataBooking := reportdto.DataTotalWithPercentage{}
-		summaryDataCancel := reportdto.DataTotalWithPercentage{}
-
-		if filterReq.IsRangeDate {
-			// this month and total
-			if len(bookingSummary) == 2 {
-
-				summaryDataBooking.Count = bookingSummary[1].ConfirmedBooking
-				summaryDataCancel.Count = bookingSummary[1].CancellationBooking
-
-				if bookingSummary[0].ConfirmedBooking == 0 {
-					summaryDataBooking.Percent = 0
-					summaryDataBooking.Message = "No confirmed booking for this period"
-				} else {
-					summaryDataBooking.Percent = (float64(bookingSummary[0].ConfirmedBooking) / float64(bookingSummary[1].ConfirmedBooking)) * 100
-					summaryDataBooking.Message = "Contribution for this period"
-				}
-
-				if bookingSummary[0].CancellationBooking == 0 {
-					summaryDataCancel.Percent = 0
-					summaryDataCancel.Message = "No cancellation booking for this period"
-				} else {
-					summaryDataCancel.Percent = (float64(bookingSummary[0].CancellationBooking) / float64(bookingSummary[1].CancellationBooking)) * 100
-					summaryDataCancel.Message = "Contribution for this period"
-				}
-			}
-		} else {
-			// this period only
-			if len(bookingSummary) == 1 {
-
-				summaryDataBooking.Count = bookingSummary[0].ConfirmedBooking
-				summaryDataCancel.Count = bookingSummary[0].CancellationBooking
-				summaryDataBooking.Percent = 0
-				summaryDataBooking.Message = "No comparison data available"
-				summaryDataCancel.Percent = 0
-				summaryDataCancel.Message = "No comparison data available"
-			}
-
-			// this period and last period
-			if len(bookingSummary) == 2 {
-
-				summaryDataBooking.Count = bookingSummary[1].ConfirmedBooking
-				summaryDataCancel.Count = bookingSummary[1].CancellationBooking
-
-				if bookingSummary[0].ConfirmedBooking == 0 {
-					summaryDataBooking.Percent = 0
-					summaryDataBooking.Message = "No confirmed booking for this period"
-				} else {
-					summaryDataBooking.Percent = (float64(bookingSummary[1].ConfirmedBooking) / float64(bookingSummary[0].ConfirmedBooking)) * 100
-					summaryDataBooking.Message = "Comparison with last period"
-				}
-
-				if bookingSummary[0].CancellationBooking == 0 {
-					summaryDataCancel.Percent = 0
-					summaryDataCancel.Message = "No cancellation booking for last period"
-				} else {
-					summaryDataCancel.Percent = (float64(bookingSummary[1].CancellationBooking) / float64(bookingSummary[0].CancellationBooking)) * 100
-					summaryDataCancel.Message = "Comparison with last period"
-				}
-			}
-		}
-
-		ch <- result{summaryDataBooking: summaryDataBooking, summaryDataCancel: summaryDataCancel}
-	}()
-
-	// Goroutine 2: New Customer Summary
-	go func() {
-		if !filterReq.IsRangeDate {
-			dateFromDt := dateFrom.AddDate(0, 0, -30)
-			filterReq.DateFrom = &dateFromDt
-		}
-
-		newCustomer, err := ru.reportRepo.ReportNewAgentSummary(ctx, filterReq)
-		if err != nil {
-			ch <- result{err: err}
-			return
-		}
-
-		summaryDataNewUser := reportdto.DataTotalWithPercentage{}
-
-		if filterReq.IsRangeDate {
-			// this month and total
-			if len(newCustomer) == 2 {
-				summaryDataNewUser.Count = newCustomer[0].NewAgent
-
-				if newCustomer[0].NewAgent == 0 {
-					summaryDataNewUser.Percent = 0
-					summaryDataNewUser.Message = "No new customer for this period"
-				} else {
-					summaryDataNewUser.Percent = (float64(newCustomer[0].NewAgent) / float64(newCustomer[1].NewAgent)) * 100
-					summaryDataNewUser.Message = "Contribution for this period"
-				}
-
-			}
-		} else {
-			// this period only
-			if len(newCustomer) == 1 {
-				summaryDataNewUser.Count = newCustomer[0].NewAgent
-				summaryDataNewUser.Percent = 0
-				summaryDataNewUser.Message = "No comparison data available"
-			}
-
-			// this period and last period
-			if len(newCustomer) == 2 {
-				summaryDataNewUser.Count = newCustomer[1].NewAgent
-
-				if newCustomer[0].NewAgent == 0 {
-					summaryDataNewUser.Percent = 0
-					summaryDataNewUser.Message = "No new customer for this period"
-				} else {
-					summaryDataNewUser.Percent = (float64(newCustomer[1].NewAgent) / float64(newCustomer[0].NewAgent)) * 100
-					summaryDataNewUser.Message = "Comparison with last period"
-				}
-
-			}
-		}
-
-		ch <- result{summaryDataNewUser: summaryDataNewUser}
-
-	}()
-
-	// Goroutine 3: DataGrafik
-	go func() {
-		graphicData, err := ru.reportRepo.ReportForGraph(ctx, filterReq)
-		if err != nil {
-			ch <- result{err: err}
-			return
-		}
-		ch <- result{graphicData: graphicData}
-	}()
-
-	// Collect results
-	var resp reportdto.ReportSummaryResponse
-	for i := 0; i < 3; i++ {
-		r := <-ch
-		if r.err != nil {
-			return nil, r.err
-		}
-		if (r.summaryDataBooking != reportdto.DataTotalWithPercentage{}) || (r.summaryDataCancel != reportdto.DataTotalWithPercentage{}) || (r.summaryDataNewUser != reportdto.DataTotalWithPercentage{}) {
-			resp.SummaryData = reportdto.SummaryData{
-				ConfirmedBooking:    r.summaryDataBooking,
-				CancellationBooking: r.summaryDataCancel,
-				NewCustomer:         r.summaryDataNewUser,
-			}
-		}
-		if len(r.graphicData) > 0 {
-			resp.GraphicData = r.graphicData
+			summaryDataBooking = ru.calculateBookingPercentage(bookingSummary[0].ConfirmedBooking, bookingSummary[1].ConfirmedBooking, summaryDataBooking, "Comparison with last period")
+			summaryDataCancel = ru.calculateBookingPercentage(bookingSummary[0].CancellationBooking, bookingSummary[1].CancellationBooking, summaryDataCancel, "Comparison with last period")
 		}
 	}
 
-	return &resp, nil
+	return summaryDataBooking, summaryDataCancel
+}
+
+func (ru *ReportUsecase) calculateBookingPercentage(previous, current int64, data reportdto.DataTotalWithPercentage, message string) reportdto.DataTotalWithPercentage {
+	if previous == 0 {
+		data.Percent = 0
+		data.Message = "No data for comparison period"
+	} else {
+		data.Percent = (float64(current) / float64(previous)) * 100
+		data.Message = message
+	}
+	return data
+}
+
+func (ru *ReportUsecase) processNewCustomerSummary(newCustomer []entity.MonthlyNewAgentSummary, isRangeDate bool) reportdto.DataTotalWithPercentage {
+	summaryDataNewUser := reportdto.DataTotalWithPercentage{}
+
+	if isRangeDate {
+		// Range date logic
+		if len(newCustomer) == 2 {
+			summaryDataNewUser.Count = newCustomer[0].NewAgent
+			summaryDataNewUser = ru.calculateNewUserPercentage(newCustomer[0].NewAgent, newCustomer[1].NewAgent, summaryDataNewUser, "Contribution for this period")
+		}
+	} else {
+		// Non-range date logic
+		switch len(newCustomer) {
+		case 1:
+			summaryDataNewUser.Count = newCustomer[0].NewAgent
+			summaryDataNewUser.Percent = 0
+			summaryDataNewUser.Message = "No comparison data available"
+
+		case 2:
+			summaryDataNewUser.Count = newCustomer[1].NewAgent
+			summaryDataNewUser = ru.calculateNewUserPercentage(newCustomer[0].NewAgent, newCustomer[1].NewAgent, summaryDataNewUser, "Comparison with last period")
+		}
+	}
+
+	return summaryDataNewUser
+}
+
+func (ru *ReportUsecase) calculateNewUserPercentage(previous, current int64, data reportdto.DataTotalWithPercentage, message string) reportdto.DataTotalWithPercentage {
+	if previous == 0 {
+		data.Percent = 0
+		data.Message = "No data for comparison period"
+	} else {
+		data.Percent = (float64(current) / float64(previous)) * 100
+		data.Message = message
+	}
+	return data
+}
+
+func (ru *ReportUsecase) setError(mu *sync.Mutex, firstErr *error, err error) {
+	mu.Lock()
+	defer mu.Unlock()
+	if *firstErr == nil {
+		*firstErr = err
+	}
+}
+
+func (ru *ReportUsecase) createFilterCopy(filter filter.ReportFilter) filter.ReportFilter {
+	copyFilter := filter
+
+	// Deep copy pointers
+	if filter.DateFrom != nil {
+		dateFromCopy := *filter.DateFrom
+		copyFilter.DateFrom = &dateFromCopy
+	}
+	if filter.DateTo != nil {
+		dateToCopy := *filter.DateTo
+		copyFilter.DateTo = &dateToCopy
+	}
+
+	return copyFilter
 }

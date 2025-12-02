@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 	"wtm-backend/pkg/constant"
 )
 
@@ -68,9 +69,17 @@ func ParseHourString(s string) (*time.Time, error) {
 }
 
 func CapitalizeWords(s string) string {
-	words := strings.Fields(s)
+	str := strings.TrimSpace(s)
+	words := strings.Fields(str)
 	for i, w := range words {
-		words[i] = strings.ToUpper(w[:1]) + strings.ToLower(w[1:])
+		runes := []rune(w)
+		if len(runes) > 0 {
+			runes[0] = unicode.ToUpper(runes[0])
+			for j := 1; j < len(runes); j++ {
+				runes[j] = unicode.ToLower(runes[j])
+			}
+			words[i] = string(runes)
+		}
 	}
 	return strings.Join(words, " ")
 }

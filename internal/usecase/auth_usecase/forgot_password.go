@@ -2,6 +2,7 @@ package auth_usecase
 
 import (
 	"context"
+	"fmt"
 	"time"
 	dtoauth "wtm-backend/internal/dto/authdto"
 	"wtm-backend/pkg/constant"
@@ -57,13 +58,13 @@ func (au *AuthUsecase) ForgotPassword(ctx context.Context, request *dtoauth.Forg
 	go func() {
 		newCtx, cancel := context.WithTimeout(context.Background(), au.config.DurationCtxTOSlow)
 		defer cancel()
-		au.sendEmailNotification(newCtx, user.FullName, user.Email, token, au.config.DurationLinkExpiration)
+		au.sendEmailNotification(newCtx, user.FullName, user.Email, token, user.RoleID, au.config.DurationLinkExpiration)
 	}()
 
 	return nil, nil
 }
 
-func (au *AuthUsecase) sendEmailNotification(ctx context.Context, name, email, token string, expiry time.Duration) {
+func (au *AuthUsecase) sendEmailNotification(ctx context.Context, name, email, token string, roleID uint, expiry time.Duration) {
 	var statusEmail = constant.EmailForgotPassword
 
 	emailTemplate, err := au.emailRepo.GetEmailTemplateByName(ctx, statusEmail)
@@ -77,7 +78,14 @@ func (au *AuthUsecase) sendEmailNotification(ctx context.Context, name, email, t
 		return
 	}
 
-	resetLink := "https://yourdomain.com/reset-password?token=" + token
+	var url string
+	if roleID == constant.RoleAgentID {
+		url = au.config.URLFEAgent
+	} else {
+		url = au.config.URLFEAdmin
+	}
+
+	resetLink := fmt.Sprintf("%s/reset-password?token=%s", url, token)
 
 	// Inject data
 	data := EmailData{

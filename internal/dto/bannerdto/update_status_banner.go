@@ -1,15 +1,17 @@
 package bannerdto
 
-import validation "github.com/go-ozzo/ozzo-validation"
+import (
+	validation "github.com/go-ozzo/ozzo-validation"
+	"wtm-backend/pkg/utils"
+)
 
 type UpdateStatusBannerRequest struct {
-	ID     uint `json:"id" validate:"required"`
-	Status bool `json:"status" validate:"required"`
+	ID     string `json:"id"`
+	Status bool   `json:"status"`
 }
 
 func (r *UpdateStatusBannerRequest) Validate() error {
 	return validation.ValidateStruct(r,
-		validation.Field(&r.ID, validation.Required.Error("Banner Id is required")),
-		validation.Field(&r.Status, validation.Required.Error("IsActive is required")),
+		validation.Field(&r.ID, validation.Required.Error("Banner ID is required"), utils.NotEmptyAfterTrim("Banner ID")),
 	)
 }

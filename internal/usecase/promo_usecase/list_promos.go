@@ -2,17 +2,18 @@ package promo_usecase
 
 import (
 	"context"
+	"time"
 	"wtm-backend/internal/dto/promodto"
 	"wtm-backend/internal/repository/filter"
 )
 
-func (pu *PromoUsecase) ListPromos(ctx context.Context, req *promodto.ListPromosRequest) (*promodto.ListPromosResponse, int64, error) {
+func (pu *PromoUsecase) ListPromos(ctx context.Context, req *promodto.ListPromosRequest) (*promodto.ListPromosResponse, error) {
 	filterReq := &filter.DefaultFilter{}
 	filterReq.PaginationRequest = req.PaginationRequest
 
 	promoEntity, total, err := pu.promoRepo.GetPromos(ctx, filterReq)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	var promos []promodto.PromoResponse
@@ -22,9 +23,9 @@ func (pu *PromoUsecase) ListPromos(ctx context.Context, req *promodto.ListPromos
 			ID:               promo.ID,
 			PromoName:        promo.Name,
 			PromoCode:        promo.Code,
-			Duration:         promo.Duration,
-			PromoStartDate:   promo.StartDate.String(),
-			PromoEndDate:     promo.EndDate.String(),
+			Duration:         promo.PromoRoomTypes[0].TotalNights,
+			PromoStartDate:   promo.StartDate.Format(time.RFC3339),
+			PromoEndDate:     promo.EndDate.Format(time.RFC3339),
 			IsActive:         promo.IsActive,
 			PromoType:        promo.PromoTypeName,
 			PromoDetail:      promo.Detail,
@@ -34,7 +35,8 @@ func (pu *PromoUsecase) ListPromos(ctx context.Context, req *promodto.ListPromos
 
 	resp := &promodto.ListPromosResponse{
 		Promos: promos,
+		Total:  total,
 	}
 
-	return resp, total, nil
+	return resp, nil
 }

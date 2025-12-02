@@ -6,12 +6,12 @@ import (
 	"wtm-backend/pkg/logger"
 )
 
-func (br *BannerRepository) UpdateStatusBanner(ctx context.Context, id uint, isActive bool) error {
+func (br *BannerRepository) UpdateStatusBanner(ctx context.Context, id string, isActive bool) error {
 	db := br.db.GetTx(ctx)
 
 	err := db.WithContext(ctx).
 		Model(&model.Banner{}).
-		Where("id = ?", id).
+		Where("external_id = ?", id).
 		Update("is_active", isActive).Error
 	if err != nil {
 		logger.Error(ctx, "Error updating banner status", err.Error())

@@ -3,6 +3,7 @@ package booking_repository
 import (
 	"context"
 	"fmt"
+	"gorm.io/gorm"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/logger"
 )
@@ -12,7 +13,10 @@ func (br *BookingRepository) UpdateBookingStatus(ctx context.Context, bookingID 
 
 	err := db.Model(&model.Booking{}).
 		Where("id = ?", bookingID).
-		Update("status_booking_id", statusBookingID).Error
+		Updates(map[string]interface{}{
+			"status_booking_id": statusBookingID,
+			"created_at":        gorm.Expr("NOW()"), // override created_at sesuai kebutuhan bisnis
+		}).Error
 	if err != nil {
 		logger.Error(ctx, "failed to update booking status: ", err.Error())
 		return fmt.Errorf("failed to update booking status: %s", err.Error())

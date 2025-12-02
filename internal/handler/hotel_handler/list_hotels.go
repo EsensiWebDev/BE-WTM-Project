@@ -15,7 +15,7 @@ import (
 // @Accept json
 // @Produce json
 // @Param is_api query bool false "Filter hotels by API status"
-// @Param region query string false "Filter hotels by region"
+// @Param region query []string false "Filter hotels by region" collectionFormat(multi)
 // @Param status_id query int false "Filter hotels by status_id"
 // @Param page query int false "Page number for pagination (default: 1)"
 // @Param limit query int false "Number of items per page"

@@ -11,7 +11,7 @@ func EmailRoute(app *bootstrap.Application, middlewareMap MiddlewareMap, routerG
 
 	emailRouter := routerGroup.Group("/email", middlewareMap.TimeoutFast)
 	{
-		emailRouter.POST("/contact-us", emailHandler.SendContactUs, middlewareMap.TimeoutFast)
+		emailRouter.POST("/contact-us", emailHandler.SendContactUs)
 		emailRouter.GET("/template", middlewareMap.Auth, emailHandler.EmailTemplate)
 		emailRouter.PUT("/template", middlewareMap.Auth, emailHandler.UpdateEmailTemplate)
 		emailRouter.GET("/logs", middlewareMap.Auth, emailHandler.ListEmailLogs)

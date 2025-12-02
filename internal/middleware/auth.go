@@ -8,6 +8,7 @@ import (
 	"strings"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/response"
+	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/jwt"
 	"wtm-backend/pkg/logger"
 )
@@ -15,9 +16,8 @@ import (
 type userContextKey struct{}
 
 const (
-	roleKey        = "role"
-	permissionKey  = "permissions"
-	roleSuperAdmin = "Super Admin"
+	roleKey       = "role"
+	permissionKey = "permissions"
 )
 
 func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
@@ -83,6 +83,7 @@ func (m *Middleware) GenerateUserFromClaimToken(claims *jwt.JwtClaims) *entity.U
 		ID:          claims.User.ID,
 		Username:    claims.User.Username,
 		RoleName:    claims.User.Role,
+		RoleID:      claims.User.RoleID,
 		Permissions: claims.User.Permissions,
 		PhotoSelfie: claims.User.PhotoURL,
 		FullName:    claims.User.FullName,
@@ -100,7 +101,7 @@ func (m *Middleware) RequirePermission(required string) gin.HandlerFunc {
 			return
 		}
 
-		if role == roleSuperAdmin {
+		if role == constant.RoleSuperAdminCap {
 			// Superadmin has all permissions, skip check
 			c.Next()
 			return
@@ -129,9 +130,36 @@ func (m *Middleware) RequirePermission(required string) gin.HandlerFunc {
 			}
 		}
 
-		logger.Warn(ctx,
-			"Required permission not found")
-		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Insufficient permission"})
+		logger.Warn(ctx, "Required permission not found")
+		response.Error(c, http.StatusForbidden, "Forbidden")
+		c.Abort()
+		return
+	}
+}
+
+func (m *Middleware) RequireRole(required string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+		role, exists := c.Get(roleKey)
+		if !exists {
+			logger.Warn(ctx, "Role not found in context")
+			response.Error(c, http.StatusUnauthorized, "Unauthorized")
+			c.Abort()
+			return
+		}
+
+		if role == constant.RoleSuperAdmin {
+			c.Next()
+			return
+		}
+
+		if role == required {
+			c.Next()
+			return
+		}
+
+		logger.Warn(ctx, "Required role not found")
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		c.Abort()
 	}
 }

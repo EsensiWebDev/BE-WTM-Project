@@ -5,6 +5,7 @@ import (
 	"strings"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/repository/filter"
+	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
 )
@@ -12,69 +13,109 @@ import (
 func (hr *HotelRepository) GetFilterRatings(ctx context.Context, filter filter.HotelFilterForAgent) ([]entity.FilterRatingHotel, error) {
 	db := hr.db.GetTx(ctx)
 
-	// 1️⃣ Subquery: hotel_id + min_price filtered
-	minPriceSub := db.
-		Select("h.id AS hotel_id, MIN(rp.price) AS min_price").
-		Table("hotels AS h").
-		Joins("JOIN room_types rt ON h.id = rt.hotel_id").
-		Joins("JOIN room_prices rp ON rt.id = rp.room_type_id").
-		Group("h.id")
+	var args []interface{}
+	var hotelConditions []string
+	var roomConditions []string
+	var priceHaving string
 
+	// 🔍 Filter bed type
+	if len(filter.BedTypeIDs) > 0 {
+		roomConditions = append(roomConditions, "bt.id IN ?")
+		args = append(args, filter.BedTypeIDs)
+	}
+
+	// 🔍 Filter total bedrooms
+	if len(filter.TotalBedrooms) > 0 {
+		roomConditions = append(roomConditions, "rt.total_unit IN ?")
+		args = append(args, filter.TotalBedrooms)
+	}
+
+	// 🔍 Filter min guest
+	if filter.MinGuest > 0 {
+		roomConditions = append(roomConditions, "rt.max_occupancy >= ?")
+		args = append(args, filter.MinGuest)
+	}
+
+	// 🔍 Filter promo
+	if filter.PromoID > 0 {
+		roomConditions = append(roomConditions, `
+			EXISTS (
+				SELECT 1 
+				FROM promo_room_types prt
+				JOIN promos p ON prt.promo_id = p.id
+				WHERE prt.room_type_id = rt.id
+				AND prt.promo_id = ?
+				AND p.is_active = true
+			)
+		`)
+		args = append(args, filter.PromoID)
+	}
+
+	// 🔍 Filter availability
+	if filter.DateFrom != nil && filter.DateTo != nil {
+		roomConditions = append(roomConditions,
+			"NOT EXISTS (SELECT 1 FROM room_unavailables ru WHERE ru.room_type_id = rt.id AND ru.date BETWEEN ? AND ?)")
+		args = append(args, *filter.DateFrom, *filter.DateTo)
+	}
+
+	// 🔍 Filter harga
 	if filter.PriceMin != nil && filter.PriceMax != nil {
-		minPriceSub = minPriceSub.
-			Having("MIN(rp.price) BETWEEN ? AND ?", *filter.PriceMin, *filter.PriceMax)
+		priceHaving = "HAVING MIN(rp.price) BETWEEN ? AND ?"
+		args = append(args, *filter.PriceMin, *filter.PriceMax)
 	} else if filter.PriceMin != nil {
-		minPriceSub = minPriceSub.
-			Having("MIN(rp.price) > ?", *filter.PriceMin)
+		priceHaving = "HAVING MIN(rp.price) >= ?"
+		args = append(args, *filter.PriceMin)
 	} else if filter.PriceMax != nil {
-		minPriceSub = minPriceSub.
-			Having("MIN(rp.price) < ?", *filter.PriceMax)
+		priceHaving = "HAVING MIN(rp.price) <= ?"
+		args = append(args, *filter.PriceMax)
 	}
 
-	// 2️⃣ Final Query with EXISTS filter
-	query := db.Table("hotels AS h").
-		Select(`h.rating, count(DISTINCT h.id) AS count`).
-		Joins("JOIN (?) AS mp ON mp.hotel_id = h.id", minPriceSub)
+	// 🔍 Filter province
+	if filter.Province != nil && strings.TrimSpace(*filter.Province) != "" {
+		hotelConditions = append(hotelConditions, "h.addr_province = ?")
+		args = append(args, *filter.Province)
+	}
 
+	// 🔍 Filter kota
 	if len(filter.Cities) > 0 {
-		query = query.Where("h.addr_city IN ?", filter.Cities)
+		hotelConditions = append(hotelConditions, "h.addr_city IN ?")
+		args = append(args, filter.Cities)
 	}
 
-	if len(filter.TotalBedrooms) > 0 || len(filter.BedTypeIDs) > 0 {
-		existsClause := db.
-			Table("room_types rt").
-			Select("1").
-			Joins("JOIN bed_type_rooms btr ON btr.room_type_id = rt.id").
-			Joins("JOIN bed_types bt ON bt.id = btr.bed_type_id").
-			Where("rt.hotel_id = h.id") // <- penting, link ke outer "hotels AS h"
+	// ⚠️ TIDAK include Ratings (karena ini fungsi untuk get available ratings)
 
-		if len(filter.TotalBedrooms) > 0 {
-			existsClause = existsClause.Where("rt.total_unit IN ?", filter.TotalBedrooms)
-		}
-		if len(filter.BedTypeIDs) > 0 {
-			existsClause = existsClause.Where("bt.name IN ?", filter.BedTypeIDs)
-		}
-
-		query = query.Where("EXISTS (?)", existsClause)
-	}
-
-	// Search
+	// 🔍 Filter search
 	if strings.TrimSpace(filter.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		query = query.Where("LOWER(h.name) ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%")
+		hotelConditions = append(hotelConditions, "LOWER(h.name) ILIKE ?")
+		args = append(args, "%"+safeSearch+"%")
 	}
 
-	// Execute
+	// 🔍 Filter status hotel
+	hotelConditions = append(hotelConditions, "h.status_id = ?")
+	args = append(args, constant.StatusHotelApprovedID)
+
+	// Build query
+	query := hr.buildBaseHotelQuery(
+		`SELECT h.rating, COUNT(DISTINCT h.id) AS count`,
+		roomConditions,
+		priceHaving,
+		hotelConditions,
+		"", // no additional joins
+		"GROUP BY h.rating",
+		"ORDER BY h.rating ASC",
+	)
+
+	// 🔍 Execute query
 	var ratings []entity.FilterRatingHotel
-	if err := query.Group("h.rating").Order("h.rating").Find(&ratings).Error; err != nil {
-		logger.Error(ctx, "Error fetching filter ratings", err.Error())
+	if err := db.Raw(query, args...).Debug().Scan(&ratings).Error; err != nil {
+		logger.Error(ctx, "Error fetching filter ratings (raw)", err.Error())
 		return nil, err
 	}
 
-	// Check if no ratings found
 	if len(ratings) == 0 {
 		logger.Info(ctx, "No ratings found for the given filter criteria")
-		return nil, nil
+		return []entity.FilterRatingHotel{}, nil
 	}
 
 	return ratings, nil

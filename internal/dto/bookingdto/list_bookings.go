@@ -4,7 +4,8 @@ import "wtm-backend/internal/dto"
 
 type ListBookingsRequest struct {
 	dto.PaginationRequest `json:",inline"`
-	StatusBookingID       uint `json:"status_booking_id"`
+	BookingStatusID       int `json:"booking_status_id" form:"booking_status_id"`
+	PaymentStatusID       int `json:"payment_status_id" form:"payment_status_id"`
 }
 
 type ListBookingsResponse struct {
@@ -13,26 +14,27 @@ type ListBookingsResponse struct {
 }
 
 type DataBooking struct {
-	BookingID     uint            `json:"booking_id"`
+	BookingID     string          `json:"booking_id"`
 	GuestName     []string        `json:"guest_name"`
 	AgentName     string          `json:"agent_name"`
 	AgentCompany  string          `json:"agent_company"`
 	GroupPromo    string          `json:"group_promo"`
-	BookingCode   string          `json:"booking_code"`
 	BookingStatus string          `json:"booking_status"`
 	PaymentStatus string          `json:"payment_status"`
+	Receipts      []string        `json:"receipts"`
 	Detail        []DetailBooking `json:"detail"`
 }
 
 type DetailBooking struct {
-	GuestName     string   `json:"guest_name"`
-	HotelName     string   `json:"hotel_name"`
-	Additional    []string `json:"additional"`
-	SubBookingID  string   `json:"sub_booking_id"`
-	BookingStatus string   `json:"booking_status"`
-	PaymentStatus string   `json:"payment_status"`
-	IsAPI         bool     `json:"is_api,omitempty"`
-	CancelledDate string   `json:"cancelled_date,omitempty"`
-	PromoID       *uint    `json:"promo_id,omitempty"`
-	PromoCode     string   `json:"promo_code,omitempty"`
+	GuestName     string      `json:"guest_name"`
+	HotelName     string      `json:"hotel_name"`
+	Additional    []string    `json:"additional"`
+	SubBookingID  string      `json:"sub_booking_id"`
+	BookingStatus string      `json:"booking_status"`
+	PaymentStatus string      `json:"payment_status"`
+	IsAPI         bool        `json:"is_api,omitempty"`
+	CancelledDate string      `json:"cancelled_date,omitempty"`
+	PromoCode     string      `json:"promo_code,omitempty"`
+	Receipt       string      `json:"receipt_url,omitempty"`
+	Invoice       DataInvoice `json:"invoice,omitempty"`
 }

@@ -1,15 +1,20 @@
 package bookingdto
 
-import "time"
+import (
+	"time"
+	"wtm-backend/internal/domain/entity"
+)
 
 type ListCartResponse struct {
 	ID         uint         `json:"id"`
 	Detail     []CartDetail `json:"detail"`
 	Guest      []string     `json:"guest"`
-	GrandTotal int64        `json:"grand_total"`
+	GrandTotal float64      `json:"grand_total"`
 }
 
 type CartDetail struct {
+	ID                   uint                   `json:"id"`
+	Photo                string                 `json:"photo"`
 	HotelName            string                 `json:"hotel_name"`
 	HotelRating          int                    `json:"hotel_rating"`
 	CheckInDate          time.Time              `json:"check_in_date"`
@@ -18,8 +23,10 @@ type CartDetail struct {
 	IsBreakfast          bool                   `json:"is_breakfast"`
 	Guest                string                 `json:"guest"`
 	Additional           []CartDetailAdditional `json:"additional"`
-	Promo                CartDetailPromo        `json:"promo"`
+	Promo                entity.DetailPromo     `json:"promo"`
+	CancellationDate     string                 `json:"cancellation_date,omitempty"`
 	Price                float64                `json:"price"`
+	PriceBeforePromo     float64                `json:"price_before_promo"`
 	TotalAdditionalPrice float64                `json:"total_additional_price"`
 	TotalPrice           float64                `json:"total_price"`
 }
@@ -27,13 +34,4 @@ type CartDetail struct {
 type CartDetailAdditional struct {
 	Name  string  `json:"name"`
 	Price float64 `json:"price"`
-}
-
-type CartDetailPromo struct {
-	Type            string  `json:"type,omitempty"`
-	Code            string  `json:"code,omitempty"`
-	DiscountPercent float64 `json:"discount_percent,omitempty"`
-	FixedPrice      float64 `json:"fixed_price,omitempty"`
-	UpgradedToID    uint    `json:"upgraded_to_id,omitempty"`
-	Benefit         string  `json:"benefit,omitempty"`
 }

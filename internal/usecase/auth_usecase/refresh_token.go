@@ -3,7 +3,6 @@ package auth_usecase
 import (
 	"context"
 	"errors"
-	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/authdto"
 	"wtm-backend/pkg/jwt"
 	"wtm-backend/pkg/logger"
@@ -40,9 +39,8 @@ func (au *AuthUsecase) RefreshToken(ctx context.Context, refreshToken string) (*
 
 	resp := &authdto.LoginResponse{
 		Token: token,
-		User: &entity.UserMin{
-			ID:          dataUser.ID,
-			Username:    dataUser.Username,
+		User: authdto.DataUser{
+			RoleID:      dataUser.RoleID,
 			Role:        dataUser.RoleName,
 			Permissions: dataUser.Permissions,
 			PhotoURL:    dataUser.PhotoSelfie,

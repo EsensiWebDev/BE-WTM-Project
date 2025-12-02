@@ -80,6 +80,7 @@ func (uu *UserUsecase) ListUsers(ctx context.Context, req *userdto.ListUsersRequ
 		data := userdto.ListUserData{
 			ID:               u.ID,
 			Name:             u.FullName,
+			Username:         u.Username,
 			Email:            u.Email,
 			PhoneNumber:      u.Phone,
 			Status:           u.StatusName,

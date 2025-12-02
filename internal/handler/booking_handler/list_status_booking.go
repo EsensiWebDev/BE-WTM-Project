@@ -15,7 +15,7 @@ import (
 // @Produce json
 // @Success 200 {object} response.ResponseWithData{data=[]entity.StatusBooking} "Successfully retrieved list of booking statuses"
 // @Security BearerAuth
-// @Router /bookings/statuses [get]
+// @Router /bookings/booking-status [get]
 func (bh *BookingHandler) ListStatusBooking(c *gin.Context) {
 	ctx := c.Request.Context()
 

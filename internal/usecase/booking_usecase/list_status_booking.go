@@ -18,7 +18,9 @@ func (bu *BookingUsecase) ListStatusBooking(ctx context.Context) (*bookingdto.Li
 		return resp, nil
 	}
 
-	for id, status := range statuses {
+	// iterasi sesuai urutan slice
+	for _, id := range constant.StatusBookingOrder {
+		status := statuses[id]
 		resp.Data = append(resp.Data, entity.StatusBooking{
 			ID:     uint(id),
 			Status: status,

@@ -9,10 +9,12 @@ import (
 )
 
 type MiddlewareMap struct {
-	Auth        gin.HandlerFunc
-	TimeoutFast gin.HandlerFunc
-	TimeoutSlow gin.HandlerFunc
-	TimeoutFile gin.HandlerFunc
+	Auth              gin.HandlerFunc
+	TimeoutFast       gin.HandlerFunc
+	TimeoutSlow       gin.HandlerFunc
+	TimeoutFile       gin.HandlerFunc
+	RequirePermission func(required string) gin.HandlerFunc
+	RequireRole       func(required string) gin.HandlerFunc
 }
 
 func SetupRouter(app *bootstrap.Application) *gin.Engine {
@@ -27,13 +29,15 @@ func SetupRouter(app *bootstrap.Application) *gin.Engine {
 	route.Use(middleware.TraceIDMiddleware())
 
 	middlewareMap := MiddlewareMap{
-		Auth:        app.Middleware.AuthMiddleware(),
-		TimeoutFast: middleware.TimeoutMiddleware(app.Config.DurationCtxTOFast),
-		TimeoutSlow: middleware.TimeoutMiddleware(app.Config.DurationCtxTOSlow),
-		TimeoutFile: middleware.TimeoutMiddleware(app.Config.DurationCtxTOFile),
+		Auth:              app.Middleware.AuthMiddleware(),
+		TimeoutFast:       middleware.TimeoutMiddleware(app.Config.DurationCtxTOFast),
+		TimeoutSlow:       middleware.TimeoutMiddleware(app.Config.DurationCtxTOSlow),
+		TimeoutFile:       middleware.TimeoutMiddleware(app.Config.DurationCtxTOFile),
+		RequirePermission: app.Middleware.RequirePermission,
+		RequireRole:       app.Middleware.RequireRole,
 	}
 
-	api := route.Group("/api")
+	api := route.Group("api")
 	{
 		api.GET("/ping", PingHandler)
 		AuthRoutes(app, middlewareMap, api)

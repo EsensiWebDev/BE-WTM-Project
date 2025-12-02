@@ -1,6 +1,9 @@
 package hoteldto
 
 import (
+	"encoding/json"
+	"fmt"
+	validation "github.com/go-ozzo/ozzo-validation"
 	"mime/multipart"
 )
 
@@ -18,6 +21,44 @@ type AddRoomTypeRequest struct {
 	Additional       string                  `json:"additional" form:"additional"`
 	Description      string                  `json:"description" form:"description"`
 	//TotalUnit        int                     `json:"total_unit" form:"total_unit"`
+}
+
+func (r *AddRoomTypeRequest) Validate() error {
+	var errs validation.Errors = make(map[string]error)
+	if err := validation.ValidateStruct(r,
+		validation.Field(&r.HotelID, validation.Required.Error("Hotel ID is required")),
+		validation.Field(&r.Name, validation.Required.Error("Name is required")),
+		validation.Field(&r.RoomSize, validation.Required.Error("Room Size is required")),
+		validation.Field(&r.MaxOccupancy, validation.Required.Error("Max Occupancy is required")),
+		validation.Field(&r.BedTypes, validation.Required.Error("Bed Types is required")),
+	); err != nil {
+		return err
+	}
+
+	if len(r.Photos) == 0 {
+		errs["photos"] = validation.NewInternalError(fmt.Errorf("at least one photo is required"))
+	}
+
+	if r.WithoutBreakfast == "" && r.WithBreakfast == "" {
+		errs["without_breakfast"] = validation.NewInternalError(fmt.Errorf("without_breakfast and with_breakfast cannot be both empty"))
+		errs["with_breakfast"] = validation.NewInternalError(fmt.Errorf("without_breakfast and with_breakfast cannot be both empty"))
+	}
+
+	if !isJSON(r.WithoutBreakfast) && !isJSON(r.WithBreakfast) {
+		errs["without_breakfast"] = validation.NewInternalError(fmt.Errorf("without_breakfast and with_breakfast must be filled"))
+		errs["with_breakfast"] = validation.NewInternalError(fmt.Errorf("without_breakfast and with_breakfast must be filled"))
+	}
+
+	if errs != nil && len(errs) > 0 {
+		return errs
+	}
+
+	return nil
+}
+
+func isJSON(s string) bool {
+	var js interface{}
+	return json.Unmarshal([]byte(s), &js) == nil
 }
 
 type BreakfastBase struct {

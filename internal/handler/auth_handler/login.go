@@ -19,8 +19,8 @@ import (
 // @Router /login [post]
 func (ah *AuthHandler) Login(c *gin.Context) {
 	ctx := c.Request.Context()
-	var req authdto.LoginRequest
 
+	var req authdto.LoginRequest
 	if err := c.ShouldBind(&req); err != nil {
 		logger.Error(ctx, "Error binding request:", err.Error())
 		response.Error(c, http.StatusBadRequest, "Invalid request payload")

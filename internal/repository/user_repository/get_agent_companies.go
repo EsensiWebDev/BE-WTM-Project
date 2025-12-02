@@ -21,7 +21,7 @@ func (ur *UserRepository) GetAgentCompanies(ctx context.Context, search string, 
 
 	if strings.TrimSpace(search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(search)
-		query = query.Where("name ILIKE ? ESCAPE '\\'", "%"+safeSearch+"%")
+		query = query.Where("name ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	if err := query.Count(&total).Error; err != nil {
@@ -36,6 +36,8 @@ func (ur *UserRepository) GetAgentCompanies(ctx context.Context, search string, 
 		offset := (page - 1) * limit
 		query = query.Limit(limit).Offset(offset)
 	}
+
+	query = query.Order("created_at DESC")
 
 	if err := query.Find(&modelAgentCompany).Error; err != nil {
 		logger.Error(ctx, "Error to get agent companies", err.Error())

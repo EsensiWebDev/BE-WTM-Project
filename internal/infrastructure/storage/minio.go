@@ -7,6 +7,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"mime/multipart"
+	"net/url"
 	"strings"
 	"time"
 	"wtm-backend/config"
@@ -40,7 +41,7 @@ func NewMinioClient(config *config.Config) (*MinioClient, error) {
 		Secure: false, // true jika pakai HTTPS
 	})
 	if err != nil {
-		logger.Fatal("Failed to initialize Minio client", err.Error())
+		logger.Fatal(ctx, "Failed to initialize Minio client", err.Error())
 		return nil, err
 	}
 
@@ -90,18 +91,75 @@ func (m *MinioClient) GetFile(ctx context.Context, bucketName, objectName string
 		return "", err
 	}
 
-	// Jika bucket publik
-	if strings.Contains(bucketName, publicString) {
-		return fmt.Sprintf("%s/%s/%s", m.baseURL, bucketName, objectName), nil
+	return fmt.Sprintf("%s/%s/%s", m.baseURL, bucketName, objectName), nil
+
+	//// Jika bucket publik
+	//if strings.Contains(bucketName, publicString) {
+	//	return fmt.Sprintf("%s/%s/%s", m.baseURL, bucketName, objectName), nil
+	//}
+	//
+	//// Jika private, generate presigned URL
+	//url, err := m.client.PresignedGetObject(ctx, bucketName, objectName, m.durationFile, nil)
+	//if err != nil {
+	//	logger.Error(ctx, "Error to generate accessible URL", err.Error())
+	//	return "", err
+	//}
+	//return url.String(), nil
+}
+
+func (m *MinioClient) ExtractBucketAndObject(ctx context.Context, fullLink string) (bucket, object string, err error) {
+	baseURL := m.baseURL
+	logger.Warn(ctx, "Base URL", "baseURL", baseURL)
+
+	// pastikan ada scheme
+	if !strings.HasPrefix(fullLink, "http://") && !strings.HasPrefix(fullLink, "https://") {
+		fullLink = "http://" + fullLink
+	}
+	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+		baseURL = "http://" + baseURL
 	}
 
-	// Jika private, generate presigned URL
-	url, err := m.client.PresignedGetObject(ctx, bucketName, objectName, m.durationFile, nil)
+	u, err := url.Parse(fullLink)
 	if err != nil {
-		logger.Error(ctx, "Error to generate accessible URL", err.Error())
-		return "", err
+		return "", "", err
 	}
-	return url.String(), nil
+	logger.Warn(ctx, "Parsed URL", "URL", u.String())
+
+	// Hilangkan prefix baseURL kalau ada
+	path := strings.TrimPrefix(u.String(), baseURL)
+	if path == u.String() {
+		logger.Warn(ctx, "Invalid link", "Path after trim", path)
+		logger.Warn(ctx, "Invalid link", "fullLink", fullLink)
+		logger.Warn(ctx, "Fallback to use u.Path", "path", u.Path)
+		// fallback: pakai u.Path
+		path = u.Path
+	}
+	logger.Warn(ctx, "Path after fallback", "path", path)
+
+	decodedPath, err := url.PathUnescape(path)
+	if err != nil {
+		logger.Error(ctx, "Failed to unescape path", err.Error())
+		return "", "", err
+	}
+
+	// Pecah path jadi segmen
+	parts := strings.Split(strings.TrimPrefix(decodedPath, "/"), "/")
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("invalid link: %s", fullLink)
+	}
+	logger.Warn(ctx, "Parts after split", "parts", parts)
+
+	bucket = parts[0]
+	object = strings.Join(parts[1:], "/")
+
+	// Cek apakah file ada
+	_, err = m.client.StatObject(ctx, bucket, object, minio.StatObjectOptions{})
+	if err != nil {
+		logger.Error(ctx, "File not found", err.Error())
+		return "", "", err
+	}
+
+	return bucket, object, nil
 }
 
 func (m *MinioClient) GetFileObject(ctx context.Context, bucketName, objectName string) (domain.StreamableObject, error) {

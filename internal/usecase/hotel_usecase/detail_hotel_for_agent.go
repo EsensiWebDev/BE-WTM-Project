@@ -2,6 +2,7 @@ package hotel_usecase
 
 import (
 	"context"
+	"fmt"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/pkg/constant"
@@ -26,13 +27,30 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 		District:           hotel.AddrCity,
 		SubDistrict:        hotel.AddrSubDistrict,
 		Description:        hotel.Description,
-		Photos:             hotel.Photos,
 		Rating:             hotel.Rating,
 		Email:              hotel.Email,
 		Facilities:         hotel.FacilityNames,
-		NearbyPlace:        hotel.NearbyPlaces,
 		CancellationPeriod: hotel.CancellationPeriod,
 	}
+
+	bucketName := fmt.Sprintf("%s-%s", constant.ConstHotel, constant.ConstPublic)
+	for _, photo := range hotel.Photos {
+		photoUrl, err := hu.fileStorage.GetFile(ctx, bucketName, photo)
+		if err != nil {
+			logger.Error(ctx, "Error getting user profile photo", err.Error())
+			return nil, fmt.Errorf("failed to get user profile photo: %s", err.Error())
+		}
+		respHotel.Photos = append(respHotel.Photos, photoUrl)
+	}
+
+	var nearbyPlaces []hoteldto.NearbyPlaceForAgent
+	for _, nearbyPlace := range hotel.NearbyPlaces {
+		nearbyPlaces = append(nearbyPlaces, hoteldto.NearbyPlaceForAgent{
+			Name:   nearbyPlace.Name,
+			Radius: nearbyPlace.Radius,
+		})
+	}
+	respHotel.NearbyPlace = nearbyPlaces
 
 	if hotel.CheckInHour != nil {
 		respHotel.CheckInHour = hotel.CheckInHour.In(constant.AsiaJakarta).Format("15:04-07:00")
@@ -50,7 +68,14 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 			BedTypes:      rt.BedTypeNames,
 			IsSmokingRoom: rt.IsSmokingAllowed != nil && *rt.IsSmokingAllowed,
 			Description:   rt.Description,
-			Photos:        rt.Photos,
+		}
+		for _, photo := range rt.Photos {
+			photoUrl, err := hu.fileStorage.GetFile(ctx, bucketName, photo)
+			if err != nil {
+				logger.Error(ctx, "Error getting user profile photo", err.Error())
+				return nil, fmt.Errorf("failed to get user profile photo: %s", err.Error())
+			}
+			roomType.Photos = append(roomType.Photos, photoUrl)
 		}
 
 		roomType.WithoutBreakfast = entity.CustomBreakfastWithID{
@@ -83,7 +108,7 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 				}
 				promos = append(promos, hoteldto.PromoDetailRoom{
 					PromoID:               prt.Promo.ID,
-					TotalNights:           prt.TotalNight,
+					TotalNights:           prt.TotalNights,
 					Description:           prt.Promo.Description,
 					CodePromo:             prt.Promo.Code,
 					PriceWithBreakfast:    priceWithBreakfast,

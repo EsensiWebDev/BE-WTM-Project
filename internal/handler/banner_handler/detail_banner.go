@@ -3,9 +3,9 @@ package banner_handler
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"wtm-backend/internal/dto/bannerdto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
-	"wtm-backend/pkg/utils"
 )
 
 // DetailBanner godoc
@@ -15,27 +15,20 @@ import (
 // @Accept json
 // @Produce json
 // @Param id path string true "Banner Id"
-// @Success 200 {object} response.ResponseWithData{data=entity.Banner} "Banner details fetched successfully"
+// @Success 200 {object} response.ResponseWithData{data=bannerdto.BannerData} "Banner details fetched successfully"
 // @Security BearerAuth
 // @Router /banners/{id} [get]
 func (bh *BannerHandler) DetailBanner(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	bannerID := c.Param("id")
-	if bannerID == "" {
-		logger.Error(ctx, "Banner Id is required")
-		response.Error(c, http.StatusBadRequest, "Banner Id is required")
+	var req bannerdto.DetailBannerRequest
+	if err := c.ShouldBindUri(&req); err != nil {
+		logger.Error(ctx, "Error binding query parameters:", err.Error())
+		response.Error(c, http.StatusBadRequest, "Invalid query parameters")
 		return
 	}
 
-	bannerIDUint, err := utils.StringToUint(bannerID)
-	if err != nil {
-		logger.Error(ctx, "Invalid banner Id format:", err.Error())
-		response.Error(c, http.StatusBadRequest, "Invalid banner Id format")
-		return
-	}
-
-	banner, err := bh.bannerUsecase.DetailBanner(ctx, bannerIDUint)
+	banner, err := bh.bannerUsecase.DetailBanner(ctx, &req)
 	if err != nil {
 		logger.Error(ctx, "Error fetching banner details:", err.Error())
 		response.Error(c, http.StatusInternalServerError, "Failed to fetch banner details")
@@ -47,5 +40,5 @@ func (bh *BannerHandler) DetailBanner(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, banner, "Banner details fetched successfully")
+	response.Success(c, banner.Banner, "Banner details fetched successfully")
 }

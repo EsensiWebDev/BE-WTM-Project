@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"github.com/lib/pq"
 	"time"
 )
 
@@ -32,14 +33,14 @@ type Hotel struct {
 }
 
 type CustomHotel struct {
-	ID              uint     `json:"id"`
-	Name            string   `json:"name"`
-	AddrSubDistrict string   `json:"addr_sub_district"`
-	AddrCity        string   `json:"addr_city"`
-	AddrProvince    string   `json:"addr_province"`
-	Photos          []string `json:"photos"`
-	Rating          int      `json:"rating"`
-	MinPrice        float64  `json:"min_price"`
+	ID              uint           `json:"id"`
+	Name            string         `json:"name"`
+	AddrSubDistrict string         `json:"addr_sub_district"`
+	AddrCity        string         `json:"addr_city"`
+	AddrProvince    string         `json:"addr_province"`
+	Photos          pq.StringArray `gorm:"type:text[] "json:"photos"`
+	Rating          int            `json:"rating"`
+	MinPrice        float64        `json:"min_price"`
 }
 
 type BedType struct {
@@ -75,11 +76,11 @@ type RoomType struct {
 }
 
 type PromoRoomTypes struct {
-	ID         uint
-	PromoID    uint
-	RoomTypeID uint
-	TotalNight int
-	Promo      Promo
+	ID          uint
+	PromoID     uint
+	RoomTypeID  uint
+	TotalNights int
+	Promo       Promo
 }
 
 type CustomRoomAdditional struct {

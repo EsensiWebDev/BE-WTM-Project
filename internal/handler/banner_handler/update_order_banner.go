@@ -1,6 +1,7 @@
 package banner_handler
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/dto/bannerdto"
@@ -43,7 +44,7 @@ func (bh *BannerHandler) UpdateOrderBanner(c *gin.Context) {
 
 	if err := bh.bannerUsecase.UpdateOrderBanner(ctx, &req); err != nil {
 		logger.Error(ctx, "Error updating order banner:", err.Error())
-		response.Error(c, http.StatusInternalServerError, "Error updating order banner")
+		response.Error(c, http.StatusInternalServerError, fmt.Sprintf("Failed to update order banner: %s", err.Error()))
 		return
 	}
 

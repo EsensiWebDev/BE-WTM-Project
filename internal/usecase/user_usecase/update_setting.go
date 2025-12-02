@@ -21,6 +21,9 @@ func (uu *UserUsecase) UpdateSetting(ctx context.Context, req *userdto.UpdateSet
 		return errors.New("user not found in context")
 	}
 
+	logger.Info(ctx, "Update setting user request", req)
+	logger.Info(ctx, "Update setting user dataUser", dataUser)
+
 	if dataUser.Username != req.Username {
 		user, err := uu.userRepo.GetUserByUsername(ctx, req.Username)
 		if err != nil {

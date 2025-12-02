@@ -82,6 +82,7 @@ func (eu *EmailUsecase) SendContactUsEmail(ctx context.Context, req *emaildto.Se
 
 		// Bangun daftar sub-booking
 		var subBookings []SubBooking
+		var guests []string
 
 		if req.SubBookingCode != "" {
 			sb, err := eu.bookingRepo.GetSubBookingByCode(ctx, req.SubBookingCode)
@@ -93,24 +94,32 @@ func (eu *EmailUsecase) SendContactUsEmail(ctx context.Context, req *emaildto.Se
 				return fmt.Errorf("sub booking not found: %s", req.SubBookingCode)
 			}
 			subBookings = append(subBookings, SubBooking{
-				Hotel:    safeHotelName(sb.DetailRooms.HotelName),
-				CheckIn:  formatDate(sb.CheckInDate),
-				CheckOut: formatDate(sb.CheckOutDate),
+				SubBookingCode: sb.SubBookingID,
+				GuestName:      sb.Guest,
+				Hotel:          safeHotelName(sb.DetailRooms.HotelName),
+				CheckIn:        formatDate(sb.CheckInDate),
+				CheckOut:       formatDate(sb.CheckOutDate),
 			})
+
+			// Ambil guest
+			guests = append(guests, sb.Guest)
 		} else {
 			for _, sb := range booking.BookingDetails {
 				subBookings = append(subBookings, SubBooking{
-					Hotel:    safeHotelName(sb.DetailRooms.HotelName),
-					CheckIn:  formatDate(sb.CheckInDate),
-					CheckOut: formatDate(sb.CheckOutDate),
+					SubBookingCode: sb.SubBookingID,
+					GuestName:      sb.Guest,
+					Hotel:          safeHotelName(sb.DetailRooms.HotelName),
+					CheckIn:        formatDate(sb.CheckInDate),
+					CheckOut:       formatDate(sb.CheckOutDate),
 				})
+				guests = append(guests, sb.Guest)
 			}
 		}
 
 		// Data untuk template booking
 		data := BookingContactEmailData{
 			BookingID:    booking.BookingCode, // atau booking.BookingID sesuai field di entity
-			GuestName:    strings.Join(booking.Guests, ", "),
+			GuestName:    strings.Join(guests, ", "),
 			AgentName:    req.Name,
 			AgencyName:   booking.AgentCompanyName,
 			AgentEmail:   req.Email,
@@ -164,9 +173,11 @@ type GeneralContactEmailData struct {
 }
 
 type SubBooking struct {
-	Hotel    string
-	CheckIn  string // bisa pakai time.Time kalau mau parsing tanggal
-	CheckOut string
+	SubBookingCode string
+	GuestName      string
+	Hotel          string
+	CheckIn        string // bisa pakai time.Time kalau mau parsing tanggal
+	CheckOut       string
 }
 
 type BookingContactEmailData struct {

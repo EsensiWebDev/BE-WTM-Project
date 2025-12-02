@@ -35,6 +35,7 @@ type ListUserData struct {
 	ID               uint   `json:"id"`
 	Name             string `json:"name"`
 	Email            string `json:"email,omitempty"`
+	Username         string `json:"username,omitempty"`
 	PhoneNumber      string `json:"phone_number,omitempty"`
 	Status           string `json:"status,omitempty"`
 	PromoGroupName   string `json:"promo_group_name,omitempty"`

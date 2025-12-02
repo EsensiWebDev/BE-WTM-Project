@@ -2,7 +2,7 @@ package report_repository
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	"gorm.io/gorm/clause"
 	"strings"
 	"wtm-backend/internal/domain/entity"
@@ -28,7 +28,9 @@ func (rr *ReportRepository) ReportAgentBookingDetail(ctx context.Context, filter
 		Preload("StatusBooking")
 
 	if filter.HotelID != nil {
-		query = query.Joins("JOIN room_types rt ON booking_details.room_type_id = rt.id").
+		query = query.
+			Joins("JOIN room_prices rp ON booking_details.room_price_id = rp.id").
+			Joins("JOIN room_types rt ON rp.room_type_id = rt.id").
 			Where("rt.hotel_id = ?", *filter.HotelID)
 	}
 	if filter.AgentID != nil {
@@ -76,18 +78,12 @@ func (rr *ReportRepository) ReportAgentBookingDetail(ctx context.Context, filter
 			additionalNames = append(additionalNames, add.NameAdditional)
 		}
 
-		var detailRoom entity.DetailRoom
-		if err := json.Unmarshal(bd.DetailRoom, &detailRoom); err != nil {
-			logger.Error(ctx, "Error marshalling room detail to JSON", err.Error())
-			detailRoom = entity.DetailRoom{}
-		}
-
 		result := entity.ReportAgentDetail{
 			GuestName:     bd.Guest,
-			RoomType:      detailRoom.RoomTypeName,
+			RoomType:      bd.RoomPrice.RoomType.Name,
 			DateIn:        bd.CheckInDate.Format("2006-01-02"),
 			DateOut:       bd.CheckOutDate.Format("2006-01-02"),
-			Capacity:      detailRoom.Capacity,
+			Capacity:      fmt.Sprintf("%d Adult", bd.RoomPrice.RoomType.MaxOccupancy),
 			Additional:    strings.Join(additionalNames, ","),
 			StatusBooking: bd.StatusBooking.Status,
 		}

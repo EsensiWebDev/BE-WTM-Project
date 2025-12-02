@@ -64,6 +64,7 @@ func generateJWT(user *entity.User, tokenType string, secret string, expiry time
 			ID:          user.ID,
 			Username:    user.Username,
 			Role:        user.RoleName,
+			RoleID:      user.RoleID,
 			Permissions: user.Permissions,
 			PhotoURL:    user.PhotoSelfie,
 			FullName:    user.FullName,

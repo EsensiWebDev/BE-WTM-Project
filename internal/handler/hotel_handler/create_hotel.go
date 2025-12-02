@@ -25,7 +25,7 @@ import (
 // @Param nearby_places formData string false "Nearby places as JSON string. Example: /example_nearby_places "
 // @Param facilities formData []string false "Facilities (multiple allowed)" collectionFormat(multi)
 // @Param social_medias formData string false "Social media links as JSON string. Example: /example_social_medias "
-// @Success 200 {object} response.Response "Successfully created hotel"
+// @Success 200 {object} response.ResponseWithData{data=hoteldto.CreateHotelResponse} "Successfully created hotel"
 // @Router /hotels [post]
 // @Security BearerAuth
 func (hh *HotelHandler) CreateHotel(c *gin.Context) {
@@ -48,12 +48,13 @@ func (hh *HotelHandler) CreateHotel(c *gin.Context) {
 		return
 	}
 
-	if err := hh.hotelUsecase.CreateHotel(ctx, &req); err != nil {
+	resp, err := hh.hotelUsecase.CreateHotel(ctx, &req)
+	if err != nil {
 		logger.Error(ctx, "Failed to create hotel", err.Error())
 		response.Error(c, http.StatusInternalServerError, "Failed to create hotel")
 		return
 	}
 
-	response.Success(c, nil, "Successfully created hotel")
+	response.Success(c, resp, "Successfully created hotel")
 	return
 }

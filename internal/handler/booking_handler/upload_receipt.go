@@ -13,9 +13,11 @@ import (
 // @Summary      Upload Receipt
 // @Description  Upload a receipt for a booking
 // @Tags         Booking
-// @Accept       json
+// @Accept       multipart/form-data
 // @Produce      json
-// @Param        request body bookingdto.UploadReceiptRequest true "Upload receipt request"
+// @Param        receipt formData file true "Receipt File"
+// @Param        booking_id formData string false "Booking ID"
+// @Param        sub_booking_id formData string false "Sub Booking ID"
 // @Success      200 {object} response.Response "Successfully uploaded receipt"
 // @Security     BearerAuth
 // @Router       /bookings/receipt [post]
@@ -23,9 +25,9 @@ func (bh *BookingHandler) UploadReceipt(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	var req bookingdto.UploadReceiptRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		logger.Error(ctx, "Failed to bind JSON body", err.Error())
-		response.Error(c, http.StatusBadRequest, "Failed to bind JSON body")
+	if err := c.ShouldBind(&req); err != nil {
+		logger.Error(ctx, "Failed to bind form data:", err.Error())
+		response.Error(c, http.StatusBadRequest, "Failed to bind form data")
 		return
 	}
 

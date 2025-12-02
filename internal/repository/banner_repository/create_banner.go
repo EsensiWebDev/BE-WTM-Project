@@ -17,6 +17,19 @@ func (br *BannerRepository) CreateBanner(ctx context.Context, banner *entity.Ban
 		return nil, err
 	}
 
+	// Ambil nilai display_order paling tinggi
+	var maxOrder int
+	if err := db.WithContext(ctx).
+		Model(&model.Banner{}).
+		Select("COALESCE(MAX(display_order), 0)").
+		Scan(&maxOrder).Error; err != nil {
+		logger.Error(ctx, "Error getting max display_order", err.Error())
+		return nil, err
+	}
+
+	// Set display_order baru
+	bannerModel.DisplayOrder = maxOrder + 1
+
 	if err := db.Create(&bannerModel).Error; err != nil {
 		logger.Error(ctx, "Error creating banner in database", err.Error())
 		return nil, err
