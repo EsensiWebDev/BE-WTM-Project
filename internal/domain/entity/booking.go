@@ -128,6 +128,7 @@ type Invoice struct {
 	InvoiceCode     string        `json:"invoice_code"`
 	DetailInvoice   DetailInvoice `json:"detail_invoice"`
 	CreatedAt       time.Time     `json:"created_at"`
+	BookingDetail   BookingDetail `json:"booking_detail"`
 }
 
 type DetailInvoice struct {

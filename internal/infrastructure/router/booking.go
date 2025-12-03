@@ -31,6 +31,6 @@ func BookingRoute(app *bootstrap.Application, mm MiddlewareMap, routerGroup *gin
 		bookingRouter.GET("/history", mm.RequirePermission("promo:view"), bookingHandler.ListBookingHistory)
 		bookingRouter.GET("/logs", mm.RequirePermission("promo:view"), bookingHandler.ListBookingLog)
 		bookingRouter.POST("/receipt", bookingHandler.UploadReceipt)
-		bookingRouter.POST("/:sub_booking_id/cancel", mm.RequirePermission("booking:delete"), bookingHandler.CancelBooking)
+		bookingRouter.POST("/:sub_booking_id/cancel", bookingHandler.CancelBooking)
 	}
 }

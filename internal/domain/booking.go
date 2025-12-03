@@ -48,11 +48,11 @@ type BookingRepository interface {
 	AddGuestsToCart(ctx context.Context, agentID uint, bookingID uint, guests []string) error
 	RemoveGuestsFromCart(ctx context.Context, agentID uint, bookingID uint, guest []string) error
 	AddGuestToSubCart(ctx context.Context, agentID uint, bookingDetailID uint, guest string) error
-	CancelBooking(ctx context.Context, agentID uint, subBookingID string) error
+	CancelBooking(ctx context.Context, agentID uint, subBookingID string) (*entity.BookingDetail, error)
 	CreateInvoice(ctx context.Context, invoices []entity.Invoice) error
 	GenerateCode(ctx context.Context, keyRedis string, prefixCode string) (string, error)
 	GetBookingDetailIDsByBookingCode(ctx context.Context, bookingCode string) ([]uint, error)
 	GetIDBySubBookingID(ctx context.Context, subBookingID string) (uint, error)
 	GetListBookingLog(ctx context.Context, filter *filter.BookingFilter) ([]entity.BookingDetail, int64, error)
-	UpdateDetailBookingDetail(ctx context.Context, bookingDetailID uint, room *entity.DetailRoom, promo *entity.DetailPromo, price float64) error
+	UpdateDetailBookingDetail(ctx context.Context, bookingDetailID uint, room *entity.DetailRoom, promo *entity.DetailPromo, price float64, additionals []entity.BookingDetailAdditional) error
 }

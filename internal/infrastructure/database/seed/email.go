@@ -106,6 +106,30 @@ func (s *Seed) SeedEmailTemplate() {
 
 <p>Sincerely,<br>The HotelBox Team</p>
 `
+	bodyHotelBookingCancel := `
+<p>Dear Reservation Team,</p>
+
+<p><em>" Warmest Greeting From World Travel Marketing Bali "</em></p>
+
+<p>Please kindly assist us to <strong>CANCEL</strong> reservation with details as below:</p>
+
+<ul>
+    <li><strong>NAME:</strong> {{.GuestName}}</li>
+    <li><strong>PERIOD:</strong> {{.Period}}</li>
+    <li><strong>ROOM:</strong> {{.RoomType}}</li>
+    <li><strong>RATE:</strong> {{.Rate}}</li>
+    <li><strong>BOOKING CODE:</strong> {{.BookingCode}}</li>
+    <li><strong>REMARK:</strong> {{.Remark}}</li>
+    <li><strong>ADDITIONAL:</strong> {{.Additional}}</li>
+</ul>
+
+<p>Thank you but regret to inform you that we would like to <strong>CANCEL</strong> our reservation as detailed below.</p>
+
+<p>We are looking forward to hearing back from you soon.<br>
+Many thanks for your kind attention and assistance.</p>
+
+<p>Best Regards,<br>{{.SystemSignature}}</p>
+`
 	bodyHotelBookingRequest := `
 <p>Dear Reservation Team,</p>
 
@@ -119,8 +143,6 @@ func (s *Seed) SeedEmailTemplate() {
     <li><strong>ROOM:</strong> {{.RoomType}}</li>
     <li><strong>RATE:</strong> {{.Rate}}</li>
     <li><strong>BOOKING CODE:</strong> {{.BookingCode}}</li>
-    <li><strong>BENEFIT:</strong> {{.Benefit}}</li>
-    <li><strong>REMARK:</strong> {{.Remark}}</li>
     <li><strong>ADDITIONAL:</strong> {{.Additional}}</li>
 </ul>
 
@@ -228,6 +250,7 @@ World Travel Management</p>
 		{Subject: `Help Request for Booking – {{.BookingID}}`, Body: bodyContactUsBooking, Name: constant.EmailContactUsBooking, IsSignatureImage: false},
 		{Subject: `Password Reset Request`, Body: bodyForgotPassword, Name: constant.EmailForgotPassword, IsSignatureImage: false},
 		{Subject: `Your Account Has Been Activated – Please Change Your Password Immediately`, Body: bodyAccountActivated, Name: constant.EmailAccountActivated, IsSignatureImage: false},
+		{Subject: `Booking Cancellation – {{.BookingCode}}`, Body: bodyHotelBookingCancel, Name: constant.EmailHotelBookingCancel, IsSignatureImage: false},
 	}
 
 	for _, tpl := range templates {

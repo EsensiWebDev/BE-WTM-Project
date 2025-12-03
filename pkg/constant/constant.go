@@ -90,6 +90,7 @@ const (
 	EmailBookingConfirmed    = "booking_confirmed"
 	EmailBookingRejected     = "booking_rejected"
 	EmailHotelBookingRequest = "hotel_booking_request"
+	EmailHotelBookingCancel  = "hotel_booking_cancel"
 	EmailContactUsGeneral    = "contact_us_general"
 	EmailContactUsBooking    = "contact_us_booking"
 	EmailForgotPassword      = "forgot_password"

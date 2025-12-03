@@ -29,6 +29,7 @@ type HotelUsecase interface {
 	ListStatusHotel(ctx context.Context) (*hoteldto.ListStatusHotelResponse, error)
 	UpdateHotel(ctx context.Context, req *hoteldto.UpdateHotelRequest) error
 	UpdateRoomType(ctx context.Context, req *hoteldto.UpdateRoomTypeRequest) error
+	UploadHotel(ctx context.Context, req *hoteldto.UploadHotelRequest) error
 }
 
 type HotelRepository interface {

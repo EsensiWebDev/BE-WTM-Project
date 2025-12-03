@@ -3,8 +3,10 @@ package email_handler
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"wtm-backend/internal/dto/emaildto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
+	"wtm-backend/pkg/utils"
 )
 
 // EmailTemplate godoc
@@ -18,7 +20,24 @@ import (
 func (eh *EmailHandler) EmailTemplate(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	templates, err := eh.emailUsecase.EmailTemplate(ctx)
+	var req emaildto.EmailTemplateRequest
+	if err := c.ShouldBind(&req); err != nil {
+		logger.Error(ctx, "Failed to bind request payload", err)
+		response.Error(c, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	if err := req.Validate(); err != nil {
+		logger.Error(ctx, "Validation error", err.Error())
+		if ve := utils.ParseValidationErrors(err); ve != nil {
+			response.ValidationError(c, ve)
+			return
+		}
+		response.Error(c, http.StatusBadRequest, "Invalid request")
+		return
+	}
+
+	templates, err := eh.emailUsecase.EmailTemplate(ctx, &req)
 	if err != nil {
 		logger.Error(ctx, "Error getting email templates:", err.Error())
 		response.Error(c, http.StatusInternalServerError, "Failed to get email templates")

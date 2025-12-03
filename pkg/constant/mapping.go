@@ -16,6 +16,7 @@ var MapStatusBooking = map[int]string{
 	StatusBookingConfirmedID:       StatusBookingConfirmed,
 	StatusBookingWaitingApprovalID: StatusBookingWaitingApproval,
 	StatusBookingRejectedID:        StatusBookingRejected,
+	StatusBookingCanceledID:        StatusBookingCanceled,
 }
 
 // slice untuk urutan
@@ -23,6 +24,7 @@ var StatusBookingOrder = []int{
 	StatusBookingConfirmedID,
 	StatusBookingWaitingApprovalID,
 	StatusBookingRejectedID,
+	StatusBookingCanceledID,
 }
 
 var MapStatusPayment = map[int]string{

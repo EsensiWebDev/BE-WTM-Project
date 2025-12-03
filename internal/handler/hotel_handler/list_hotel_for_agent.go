@@ -24,7 +24,7 @@ import (
 // @Param range_price_max query float64 false "Maximum price range for filtering hotels"
 // @Param total_bedrooms query []int false "Filter hotels by total number of bedrooms (e.g., 1,2,3,4,5)" collectionFormat(multi)
 // @Param total_rooms query int false "Filter hotels by total number of rooms (e.g., 1,2,3,4,5)"
-// @Param total_quests query int false "Filter hotels by total number of guests (e.g., 1,2,3,4,5)"
+// @Param total_guests query int false "Filter hotels by total number of guests (e.g., 1,2,3,4,5)"
 // @Param promo_id query int false "Filter hotels by promo id"
 // @Param bed_type_id query []int false "Filter hotels by bed type Id (e.g., 1,2,3)" collectionFormat(multi)
 // @Success 200 {object} response.ResponseWithPagination{data=hoteldto.ListHotelForAgentResponse} "Successfully retrieved list of hotels for agent"

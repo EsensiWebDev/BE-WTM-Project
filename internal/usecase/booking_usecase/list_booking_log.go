@@ -11,12 +11,16 @@ import (
 func (bu *BookingUsecase) ListBookingLog(ctx context.Context, req *bookingdto.ListBookingLogRequest) (*bookingdto.ListBookingLogResponse, error) {
 	filterReq := filter.BookingFilter{}
 	filterReq.PaginationRequest = req.PaginationRequest
+
 	filterReq.ConfirmDateFrom = req.ConfirmDateFrom
 	filterReq.ConfirmDateTo = req.ConfirmDateTo
+
 	filterReq.CheckInDateFrom = req.CheckInDateFrom
 	filterReq.CheckInDateTo = req.CheckInDateTo
+
 	filterReq.CheckOutDateFrom = req.CheckOutDateFrom
 	filterReq.CheckOutDateTo = req.CheckOutDateTo
+
 	filterReq.BookingStatusID = req.BookingStatusID
 	filterReq.PaymentStatusID = req.PaymentStatusID
 
@@ -44,6 +48,7 @@ func (bu *BookingUsecase) ListBookingLog(ctx context.Context, req *bookingdto.Li
 			RoomTypeName:  detail.DetailRooms.RoomTypeName,
 			RoomNights:    int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24),
 			Capacity:      fmt.Sprintf("%d Adult", detail.DetailRooms.Capacity),
+			ConfirmDate:   detail.ApprovedAt.Format("2006-01-02"),
 		}
 		if detail.ApprovedAt.IsZero() {
 			bookingLog.ConfirmDate = "N/A"

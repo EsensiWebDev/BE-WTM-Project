@@ -32,4 +32,5 @@ type PromoGroupRepository interface {
 	RemovePromoFromGroup(ctx context.Context, promoGroupID uint, promoID uint) error
 	GetUnassignedPromos(ctx context.Context, filterReq *filter.PromoGroupFilter) ([]entity.Promo, int64, error)
 	DeletePromoGroup(ctx context.Context, promoGroupID uint) error
+	CheckPromoGroupExists(ctx context.Context, name string) bool
 }

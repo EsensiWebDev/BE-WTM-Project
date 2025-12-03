@@ -22,6 +22,8 @@ func HotelRoute(app *bootstrap.Application, mm MiddlewareMap, routerGroup *gin.R
 		{
 			hotels.GET("", mm.Auth, mm.RequirePermission("hotel:view"), hotelHandler.ListHotels)
 			hotels.POST("", mm.Auth, mm.RequirePermission("hotel:create"), mm.TimeoutFile, hotelHandler.CreateHotel)
+			//hotels.GET("/download-format", mm.Auth, hotelHandler.DownloadFormat)
+			hotels.POST("/upload", mm.Auth, mm.RequirePermission("hotel:create"), mm.TimeoutFile, hotelHandler.UploadHotel)
 			hotels.PUT("/:id", mm.Auth, mm.RequirePermission("hotel:edit"), mm.TimeoutFile, hotelHandler.UpdateHotel)
 			hotels.GET("/:id", mm.Auth, mm.RequirePermission("hotel:view"), hotelHandler.DetailHotel)
 			hotels.DELETE("/:id", mm.Auth, mm.RequirePermission("hotel:delete"), hotelHandler.RemoveHotel)

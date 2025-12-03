@@ -18,24 +18,23 @@ func (br *BookingRepository) GetListBookingLog(ctx context.Context, filter *filt
 
 	if filter.Search != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		query = query.Where("sub_booking_id ILIKE ? ", "%"+safeSearch+"%")
-		query = query.Or("guest ILIKE ? ", "%"+safeSearch+"%")
-		query = query.Or("detail_room->>'hotel_name' ILIKE ? ", "%"+safeSearch+"%")
+		query = query.Joins("JOIN bookings b ON b.id = booking_details.booking_id").
+			Where("b.booking_code ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	if filter.BookingStatusID > 0 {
-		query = query.Where("status_booking_id = ?", filter.BookingStatusID)
+		query = query.Where("booking_details.status_booking_id = ?", filter.BookingStatusID)
 	}
 
 	if filter.PaymentStatusID > 0 {
-		query = query.Where("status_payment_id = ?", filter.PaymentStatusID)
+		query = query.Where("booking_details.status_payment_id = ?", filter.PaymentStatusID)
 	}
 
 	if filter.ConfirmDateFrom != "" {
-		query = query.Where("approved_at >= ?", filter.ConfirmDateFrom)
+		query = query.Where("booking_details.approved_at >= ?", filter.ConfirmDateFrom)
 	}
 	if filter.ConfirmDateTo != "" {
-		query = query.Where("approved_at <= ?", filter.ConfirmDateTo)
+		query = query.Where("booking_details.approved_at <= ?", filter.ConfirmDateTo)
 	}
 
 	if filter.CheckInDateFrom != "" {
@@ -45,13 +44,13 @@ func (br *BookingRepository) GetListBookingLog(ctx context.Context, filter *filt
 		query = query.Where("check_in_date <= ?", filter.CheckInDateTo)
 	}
 	if filter.CheckOutDateFrom != "" {
-		query = query.Where("check_out_date >= ?", filter.CheckInDateFrom)
+		query = query.Where("check_out_date >= ?", filter.CheckOutDateFrom)
 	}
 	if filter.CheckOutDateTo != "" {
 		query = query.Where("check_out_date <= ?", filter.CheckOutDateTo)
 	}
 
-	query = query.Where("approved_at IS NOT NULL")
+	query = query.Where("booking_details.approved_at IS NOT NULL")
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {

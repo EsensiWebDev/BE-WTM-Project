@@ -12,7 +12,7 @@ func (er *EmailRepository) GetEmailTemplateByName(ctx context.Context, name stri
 	db := er.db.GetTx(ctx)
 
 	var emailTemplate model.EmailTemplate
-	if err := db.WithContext(ctx).Where("name = ?", name).First(&emailTemplate).Error; err != nil {
+	if err := db.WithContext(ctx).Where("name = ?", name).Debug().First(&emailTemplate).Error; err != nil {
 		logger.Error(ctx, "Failed to get email template by name", err.Error())
 		return nil, err
 	}

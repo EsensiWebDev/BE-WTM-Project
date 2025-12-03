@@ -9,6 +9,7 @@ import (
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
+	"wtm-backend/pkg/utils"
 )
 
 func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOutCartResponse, error) {
@@ -129,11 +130,12 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 			}
 			totalPrice += itemRoom.Total
 			descriptionItems = append(descriptionItems, itemRoom)
-
+			var bookingDetailAdditionalName []string
 			for _, additional := range detail.BookingDetailsAdditional {
 				quantity := 1
 				price := additional.Price
 				priceAdditional := float64(quantity) * price
+				bookingDetailAdditionalName = append(bookingDetailAdditionalName, additional.NameAdditional)
 				itemAdditional := entity.DescriptionInvoice{
 					Description: additional.NameAdditional,
 					Quantity:    quantity,
@@ -147,10 +149,14 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 			//invoiceData.DetailInvoice.Promo = detail.Promo
 			invoiceData.DetailInvoice.DescriptionInvoice = descriptionItems
 			invoiceData.DetailInvoice.TotalPrice = totalPrice
+			invoiceData.BookingDetail = detail
+			invoiceData.BookingDetail.Price = detail.Price
+			invoiceData.BookingDetail.Booking.BookingCode = booking.BookingCode
+			invoiceData.BookingDetail.BookingDetailAdditionalName = bookingDetailAdditionalName
 			invoices = append(invoices, invoiceData)
 
 			//Update Detail Booking Detail
-			if err = bu.bookingRepo.UpdateDetailBookingDetail(txCtx, detail.ID, &detailRoom, &detailPromo, detail.Price); err != nil {
+			if err = bu.bookingRepo.UpdateDetailBookingDetail(txCtx, detail.ID, &detailRoom, &detailPromo, detail.Price, detail.BookingDetailsAdditional); err != nil {
 				logger.Error(ctx, "failed to update booking", err.Error())
 				return fmt.Errorf("failed to update booking: %s", err.Error())
 			}
@@ -175,12 +181,69 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 		Invoice: make([]bookingdto.DataInvoice, 0, len(invoices)),
 	}
 	for _, invoice := range invoices {
-
+		go func() {
+			newCtx, cancel := context.WithTimeout(context.Background(), bu.config.DurationCtxTOSlow)
+			defer cancel()
+			bu.sendEmailNotificationHotelConfirm(newCtx, invoice.BookingDetail)
+		}()
 		resp.Invoice = append(resp.Invoice, bookingdto.DataInvoice{
 			InvoiceNumber: invoice.InvoiceCode,
 			DetailInvoice: invoice.DetailInvoice,
 			InvoiceDate:   time.Now().Format(time.DateOnly),
 		})
 	}
+
 	return resp, nil
+}
+
+func (bu *BookingUsecase) sendEmailNotificationHotelConfirm(ctx context.Context, bd entity.BookingDetail) {
+
+	logger.Info(ctx, "Data details:", bd)
+
+	emailTemplate, err := bu.emailRepo.GetEmailTemplateByName(ctx, constant.EmailHotelBookingRequest)
+	if err != nil || emailTemplate == nil {
+		logger.Error(ctx, "Failed to get email template:", err)
+		return
+	}
+
+	data := HotelEmailData{
+		GuestName:   bd.Guest,
+		Period:      fmt.Sprintf("%s to %s", bd.CheckInDate.Format("02-01-2006"), bd.CheckOutDate.Format("02-01-2006")),
+		RoomType:    bd.DetailRooms.RoomTypeName,
+		Rate:        fmt.Sprintf("%.2f", bd.Price),
+		BookingCode: bd.Booking.BookingCode,
+		Additional:  strings.Join(bd.BookingDetailAdditionalName, ", "),
+	}
+
+	if emailTemplate.IsSignatureImage && emailTemplate.Signature != "" {
+		data.SystemSignature = bu.assignSignatureEmail(emailTemplate.Signature)
+	}
+
+	if data.SystemSignature == "" && emailTemplate.Signature != "" {
+		data.SystemSignature = emailTemplate.Signature
+	}
+
+	subjectParsed, err := utils.ParseTemplate(emailTemplate.Subject, data)
+	bodyHTML, err := utils.ParseTemplate(emailTemplate.Body, data)
+	if err != nil {
+		logger.Error(ctx, "Failed to parse hotel email template:", err)
+		return
+	}
+
+	err = bu.emailSender.Send(ctx, bd.RoomPrice.RoomType.Hotel.Email, subjectParsed, bodyHTML, "Please view this email in HTML format.")
+	if err != nil {
+		logger.Error(ctx, "Failed to send hotel booking email:", err.Error())
+	}
+
+}
+
+type HotelEmailData struct {
+	GuestName       string
+	Period          string
+	RoomType        string
+	Rate            string
+	BookingCode     string
+	Remark          string
+	Additional      string
+	SystemSignature string // bisa berupa teks atau <img src="...">
 }

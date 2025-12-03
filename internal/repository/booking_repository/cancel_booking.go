@@ -5,15 +5,19 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"time"
+	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
+	"wtm-backend/pkg/utils"
 )
 
-func (br *BookingRepository) CancelBooking(ctx context.Context, agentID uint, bookingDetailID string) error {
+func (br *BookingRepository) CancelBooking(ctx context.Context, agentID uint, bookingDetailID string) (*entity.BookingDetail, error) {
 	db := br.db.GetTx(ctx)
 
-	return db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	var bookingDetail entity.BookingDetail
+
+	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Step 1: Validasi booking detail milik agent dan masih waiting approval
 		var exists bool
 		if err := tx.Model(&model.BookingDetail{}).
@@ -21,7 +25,7 @@ func (br *BookingRepository) CancelBooking(ctx context.Context, agentID uint, bo
 			Joins("JOIN bookings ON bookings.id = booking_details.booking_id").
 			Where("booking_details.sub_booking_id = ?", bookingDetailID).
 			Where("bookings.agent_id = ?", agentID).
-			Where("booking_details.status_booking_id = ?", constant.StatusBookingWaitingApprovalID).
+			Where("booking_details.status_booking_id IN (?)", []int{constant.StatusBookingWaitingApprovalID, constant.StatusBookingConfirmedID}).
 			Find(&exists).Error; err != nil {
 			logger.Error(ctx, "failed to validate booking detail id with agent id", err.Error())
 			return err
@@ -29,7 +33,7 @@ func (br *BookingRepository) CancelBooking(ctx context.Context, agentID uint, bo
 
 		if !exists {
 			logger.Error(ctx, "booking detail id not found for the agent or not waiting approval")
-			return nil // nothing to cancel
+			return fmt.Errorf("this booking is not valid for cancelling")
 		}
 
 		// Step 2: Update detail ke canceled
@@ -94,8 +98,39 @@ func (br *BookingRepository) CancelBooking(ctx context.Context, agentID uint, bo
 				logger.Error(ctx, "failed to update booking with priority", err.Error())
 				return err
 			}
+
+			// Step 7 Get Data Booking Detail
+			var modelBookingDetail model.BookingDetail
+			if err := tx.Model(&model.BookingDetail{}).
+				Preload("Booking").
+				Preload("RoomPrice").
+				Preload("RoomPrice.RoomType").
+				Preload("RoomPrice.RoomType.Hotel").
+				Preload("BookingDetailsAdditional").
+				Where("sub_booking_id = ?", bookingDetailID).
+				First(&modelBookingDetail).Error; err != nil {
+				logger.Error(ctx, "failed to get updated booking detail", err.Error())
+				return err
+			}
+
+			if err := utils.CopyStrict(&bookingDetail, &modelBookingDetail); err != nil {
+				logger.Error(ctx, "failed to copy booking detail", err.Error())
+				return err
+			}
+
+			for _, additional := range modelBookingDetail.BookingDetailsAdditional {
+				bookingDetail.BookingDetailAdditionalName = append(bookingDetail.BookingDetailAdditionalName, additional.NameAdditional)
+			}
 		}
 
 		return nil
 	})
+
+	if err != nil {
+		logger.Error(ctx, "failed to cancel booking", err.Error())
+		return nil, err
+	}
+
+	return &bookingDetail, nil
+
 }

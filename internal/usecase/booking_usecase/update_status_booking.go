@@ -55,12 +55,6 @@ func (bu *BookingUsecase) UpdateStatusBooking(ctx context.Context, req *bookingd
 		go func() {
 			newCtx, cancel := context.WithTimeout(context.Background(), bu.config.DurationCtxTOSlow)
 			defer cancel()
-			bu.sendEmailNotificationHotel(newCtx, bookingDetails, req.StatusID, req.Reason)
-		}()
-
-		go func() {
-			newCtx, cancel := context.WithTimeout(context.Background(), bu.config.DurationCtxTOSlow)
-			defer cancel()
 			bu.sendEmailNotificationAgent(newCtx, bookingDetails, req.StatusID, req.Reason, types, guests)
 		}()
 
@@ -142,68 +136,6 @@ func (bu *BookingUsecase) sendEmailNotificationAgent(ctx context.Context, detail
 	}
 }
 
-func (bu *BookingUsecase) sendEmailNotificationHotel(ctx context.Context, details []entity.BookingDetail, statusID uint, rejectionReason string) {
-	if len(details) == 0 {
-		logger.Warn(ctx,
-			"No booking details provided for hotel email notification")
-		return
-	}
-
-	var templateName string
-	switch statusID {
-	case constant.StatusBookingConfirmedID:
-		templateName = constant.EmailHotelBookingRequest
-	default:
-		logger.Warn(ctx,
-			"No email template for status:", statusID)
-		return
-	}
-
-	emailTemplate, err := bu.emailRepo.GetEmailTemplateByName(ctx, templateName)
-	if err != nil || emailTemplate == nil {
-		logger.Error(ctx, "Failed to get email template:", err)
-		return
-	}
-
-	for _, bd := range details {
-
-		hotel, err := bu.hotelRepo.GetHotelByID(ctx, bd.RoomPrice.RoomType.HotelID, constant.RoleAdmin)
-		if err != nil || hotel == nil {
-			logger.Error(ctx, "Failed to get hotel by Id:", err)
-			continue
-		}
-		data := HotelEmailData{
-			GuestName:   bd.Guest,
-			Period:      fmt.Sprintf("%s to %s", bd.CheckInDate.Format("02-01-2006"), bd.CheckOutDate.Format("02-01-2006")),
-			RoomType:    bd.DetailRooms.RoomTypeName,
-			Rate:        fmt.Sprintf("%.2f", bd.Price),
-			BookingCode: bd.Booking.BookingCode,
-			Remark:      rejectionReason,
-			Additional:  strings.Join(bd.BookingDetailAdditionalName, ", "),
-		}
-
-		if emailTemplate.IsSignatureImage && emailTemplate.Signature != "" {
-			data.SystemSignature = bu.assignSignatureEmail(emailTemplate.Signature)
-		}
-
-		if data.SystemSignature == "" && emailTemplate.Signature != "" {
-			data.SystemSignature = emailTemplate.Signature
-		}
-
-		subjectParsed, err := utils.ParseTemplate(emailTemplate.Subject, data)
-		bodyHTML, err := utils.ParseTemplate(emailTemplate.Body, data)
-		if err != nil {
-			logger.Error(ctx, "Failed to parse hotel email template:", err)
-			continue
-		}
-
-		err = bu.emailSender.Send(ctx, hotel.Email, subjectParsed, bodyHTML, "Please view this email in HTML format.")
-		if err != nil {
-			logger.Error(ctx, "Failed to send hotel booking email:", err.Error())
-		}
-	}
-}
-
 func (bu *BookingUsecase) assignSignatureEmail(emailSignature string) string {
 	if emailSignature == "" {
 		return ""
@@ -231,15 +163,4 @@ type BookingEmailData struct {
 	SubBookings     []SubBookingData
 	RejectionReason string // hanya dipakai untuk rejected
 	HomePageLink    string // hanya dipakai untuk rejected
-}
-
-type HotelEmailData struct {
-	GuestName       string
-	Period          string
-	RoomType        string
-	Rate            string
-	BookingCode     string
-	Remark          string
-	Additional      string
-	SystemSignature string // bisa berupa teks atau <img src="...">
 }

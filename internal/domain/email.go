@@ -19,7 +19,7 @@ type EmailRepository interface {
 }
 
 type EmailUsecase interface {
-	EmailTemplate(ctx context.Context) (*emaildto.EmailTemplateResponse, error)
+	EmailTemplate(ctx context.Context, req *emaildto.EmailTemplateRequest) (*emaildto.EmailTemplateResponse, error)
 	UpdateEmailTemplate(ctx context.Context, req *emaildto.UpdateEmailTemplateRequest) error
 	SendContactUsEmail(ctx context.Context, req *emaildto.SendContactUsEmailRequest) error
 	ListEmailLogs(ctx context.Context, req *emaildto.ListEmailLogsRequest) (*emaildto.ListEmailLogsResponse, error)

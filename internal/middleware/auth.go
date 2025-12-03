@@ -148,7 +148,7 @@ func (m *Middleware) RequireRole(required string) gin.HandlerFunc {
 			return
 		}
 
-		if role == constant.RoleSuperAdmin {
+		if role == constant.RoleSuperAdminCap {
 			c.Next()
 			return
 		}

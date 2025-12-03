@@ -28,14 +28,14 @@ func UserRoutes(app *bootstrap.Application, mm MiddlewareMap, routerGroup *gin.R
 
 	users := routerGroup.Group("/users", mm.Auth)
 	{
-		users.GET("/control", mm.RequireRole(constant.RoleAdmin), userHandler.ListControlUsers)
+		users.GET("/control", mm.RequirePermission("account:view"), userHandler.ListControlUsers)
 		users.GET("", mm.RequirePermission("account:view"), userHandler.ListUsers)
 		users.PUT("", mm.RequirePermission("account:edit"), userHandler.UpdateUserByAdmin)
 		users.POST("", mm.RequirePermission("account:create"), userHandler.CreateUserByAdmin)
 		users.GET("/agent-companies", userHandler.ListAgentCompanies)
 		users.GET("/by-agent-company/:id", userHandler.ListUsersByAgentCompany)
 		users.GET("/status", userHandler.ListStatusUsers)
-		users.POST("/status", mm.RequireRole(constant.RoleAdmin), userHandler.UpdateStatusUser)
+		users.POST("/status", mm.RequirePermission("account:edit"), userHandler.UpdateStatusUser)
 	}
 
 }

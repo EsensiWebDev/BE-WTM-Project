@@ -7,16 +7,26 @@ import (
 	"wtm-backend/pkg/logger"
 )
 
-func (eu *EmailUsecase) EmailTemplate(ctx context.Context) (*emaildto.EmailTemplateResponse, error) {
+func (eu *EmailUsecase) EmailTemplate(ctx context.Context, req *emaildto.EmailTemplateRequest) (*emaildto.EmailTemplateResponse, error) {
 
-	emailTemplate, err := eu.emailRepo.GetEmailTemplateByName(ctx, constant.EmailHotelBookingRequest)
+	var nameTemplate string
+	switch req.Type {
+	case "confirm":
+		nameTemplate = constant.EmailHotelBookingRequest
+	case "cancel":
+		nameTemplate = constant.EmailHotelBookingCancel
+	default:
+		nameTemplate = constant.EmailHotelBookingRequest
+	}
+
+	emailTemplate, err := eu.emailRepo.GetEmailTemplateByName(ctx, nameTemplate)
 	if err != nil {
 		logger.Error(ctx, "Error getting email template by name:", err.Error())
 		return nil, err
 	}
 
 	if emailTemplate == nil {
-		logger.Error(ctx, "Email template not found for name:", constant.EmailHotelBookingRequest)
+		logger.Error(ctx, "Email template not found for name:", nameTemplate)
 		return nil, nil
 	}
 

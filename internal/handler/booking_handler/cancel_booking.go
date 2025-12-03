@@ -1,6 +1,7 @@
 package booking_handler
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/dto/bookingdto"
@@ -41,7 +42,7 @@ func (bh *BookingHandler) CancelBooking(c *gin.Context) {
 
 	if err := bh.bookingUsecase.CancelBooking(ctx, &req); err != nil {
 		logger.Error(ctx, "Error cancelling booking:", err.Error())
-		response.Error(c, http.StatusInternalServerError, "Failed to cancel booking")
+		response.Error(c, http.StatusInternalServerError, fmt.Sprintf("Failed to cancel booking: %s", err.Error()))
 		return
 	}
 

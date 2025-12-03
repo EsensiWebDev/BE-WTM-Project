@@ -10,7 +10,7 @@ import (
 	"wtm-backend/pkg/logger"
 )
 
-func (br *BookingRepository) UpdateDetailBookingDetail(ctx context.Context, bookingDetailID uint, room *entity.DetailRoom, promo *entity.DetailPromo, price float64) error {
+func (br *BookingRepository) UpdateDetailBookingDetail(ctx context.Context, bookingDetailID uint, room *entity.DetailRoom, promo *entity.DetailPromo, price float64, additionals []entity.BookingDetailAdditional) error {
 	db := br.db.GetTx(ctx)
 
 	updates := make(map[string]interface{})
@@ -52,6 +52,23 @@ func (br *BookingRepository) UpdateDetailBookingDetail(ctx context.Context, book
 	if err != nil {
 		logger.Error(ctx, "failed to update booking detail: ", err.Error())
 		return fmt.Errorf("failed to update booking detail: %w", err)
+	}
+
+	// Jika ada yang diupdate, update detail_additional
+	if len(additionals) > 0 {
+		for _, additional := range additionals {
+			if err := db.WithContext(ctx).
+				Model(&model.BookingDetailAdditional{}).
+				Where("booking_detail_id = ?", bookingDetailID).
+				Where("id = ?", additional.ID).
+				Updates(map[string]interface{}{
+					"price":           additional.Price,
+					"name_additional": additional.NameAdditional,
+				}).Error; err != nil {
+				logger.Error(ctx, "failed to update booking detail additional: ", err.Error())
+				return fmt.Errorf("failed to update booking detail additional: %w", err)
+			}
+		}
 	}
 
 	return nil
