@@ -1,4 +1,43 @@
+# --- Environment & Secrets ---
 .env
-.idea
-app
+*.env
+
+# --- IDE / Editor ---
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Logs ---
 logs/
+*.log
+
+# --- Build / Binary ---
+app
+*.exe
+*.out
+*.test
+bin/
+dist/
+
+# --- OS Metadata ---
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*:Zone.Identifier
+
+# Linux
+*~
+
+# --- Go Specific ---
+# Go build cache & test binaries
+*.prof
+*.pprof
+*.cover
+*.cov
