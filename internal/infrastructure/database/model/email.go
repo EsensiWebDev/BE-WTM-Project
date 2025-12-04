@@ -41,3 +41,7 @@ type StatusEmail struct {
 	Status     string     `gorm:"type:varchar(50);uniqueIndex;not null"`
 	ExternalID ExternalID `gorm:"embedded"`
 }
+
+func (b *StatusEmail) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}

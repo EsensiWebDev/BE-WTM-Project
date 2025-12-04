@@ -1,9 +1,10 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
 	"wtm-backend/internal/bootstrap"
 	"wtm-backend/internal/handler/banner_handler"
+
+	"github.com/gin-gonic/gin"
 )
 
 func BannerRoutes(app *bootstrap.Application, middlewareMap MiddlewareMap, routerGroup *gin.RouterGroup) {

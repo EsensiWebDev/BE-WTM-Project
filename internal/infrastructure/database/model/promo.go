@@ -1,15 +1,20 @@
 package model
 
 import (
+	"time"
+
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
-	"time"
 )
 
 type PromoType struct {
 	gorm.Model
 	ExternalID ExternalID `gorm:"embedded"`
 	Name       string     `json:"name"`
+}
+
+func (b *PromoType) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
 }
 
 type Promo struct {

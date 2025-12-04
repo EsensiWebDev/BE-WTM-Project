@@ -1,10 +1,11 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
 	"wtm-backend/internal/bootstrap"
 	"wtm-backend/internal/handler/user_handler"
 	"wtm-backend/pkg/constant"
+
+	"github.com/gin-gonic/gin"
 )
 
 func UserRoutes(app *bootstrap.Application, mm MiddlewareMap, routerGroup *gin.RouterGroup) {

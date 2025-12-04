@@ -58,15 +58,15 @@ func (dbs *DBPostgre) runMigrations(ctx context.Context, cfg *config.Config) err
 		&model.Invoice{},
 	}
 
+	if err := dbs.DB.AutoMigrate(models...); err != nil {
+		logger.Error(ctx, "Database migration failed", err.Error())
+		return fmt.Errorf("migration: %w", err)
+	}
+
 	// ✅ TAMBAHKAN: Migrasi external_id untuk semua table
 	if err := dbs.migrateAllExternalIDs(ctx, models); err != nil {
 		logger.Error(ctx, "ExternalID migration failed", err.Error())
 		return fmt.Errorf("external_id migration: %w", err)
-	}
-
-	if err := dbs.DB.AutoMigrate(models...); err != nil {
-		logger.Error(ctx, "Database migration failed", err.Error())
-		return fmt.Errorf("migration: %w", err)
 	}
 
 	logger.Info(ctx, "Database migration completed",
@@ -106,6 +106,11 @@ func (dbs *DBPostgre) migrateAllExternalIDs(ctx context.Context, models []interf
 
 // ✅ FUNGSI BARU: Migrasi external_id per table (Pure SQL)
 func (dbs *DBPostgre) migrateTableExternalID(ctx context.Context, tableName string, model interface{}) error {
+	if tableName == "role_permissions" {
+		// Skip role_permissions migration
+		return nil
+	}
+
 	// Step 1: Check if external_id column already exists menggunakan SQL
 	var columnExists bool
 	checkColumnSQL := `

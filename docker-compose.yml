@@ -92,24 +92,24 @@ services:
       - loki
       - prometheus
 
-  backend:
-    image: golang:1.21
-    container_name: wtm-backend
-    working_dir: /app
-    volumes:
-      - ./app:/app/app
-      - ./logs:/app/logs
-      - ./.env:/app/.env
-    command: ["/app/app"]
-    env_file:
-      - .env
-    ports:
-      - "4816:4816"
-    depends_on:
-      - postgres
-      - redis
-      - minio
-    restart: always
+#  backend:
+#    image: golang:1.21
+#    container_name: wtm-backend
+#    working_dir: /app
+#    volumes:
+#      - ./app:/app/app
+#      - ./logs:/app/logs
+#      - ./.env:/app/.env
+#    command: ["/app/app"]
+#    env_file:
+#      - .env
+#    ports:
+#      - "4816:4816"
+#    depends_on:
+#      - postgres
+#      - redis
+#      - minio
+#    restart: always
 
 volumes:
   pgdata:

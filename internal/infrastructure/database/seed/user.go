@@ -1,10 +1,11 @@
 package seed
 
 import (
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/constant"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (s *Seed) SeedUser() {
@@ -18,9 +19,9 @@ func (s *Seed) SeedUser() {
 
 	statuses := []model.StatusUser{
 		{ID: constant.StatusUserWaitingApprovalID, Status: constant.StatusUserWaitingApproval},
-		{Status: constant.StatusUserActive},
-		{Status: constant.StatusUserReject},
-		{Status: constant.StatusUserInactive},
+		{ID: constant.StatusUserActiveID, Status: constant.StatusUserActive},
+		{ID: constant.StatusUserRejectID, Status: constant.StatusUserReject},
+		{ID: constant.StatusUserInactiveID, Status: constant.StatusUserInactive},
 	}
 
 	if countS == 0 {

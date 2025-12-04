@@ -1,16 +1,21 @@
 package model
 
 import (
+	"time"
+
 	"github.com/lib/pq"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
-	"time"
 )
 
 type StatusHotel struct {
 	ID         uint       `json:"id" gorm:"primaryKey"` // override default gorm.Model ID
 	Status     string     `json:"status"`
 	ExternalID ExternalID `gorm:"embedded"`
+}
+
+func (b *StatusHotel) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
 }
 
 type Hotel struct {

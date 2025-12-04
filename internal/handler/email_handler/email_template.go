@@ -1,12 +1,13 @@
 package email_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/dto/emaildto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // EmailTemplate godoc
@@ -14,6 +15,7 @@ import (
 // @Description Retrieve a list of email templates
 // @Tags Email
 // @Produce json
+// @Param type query string false "Type of email template (option: 'confirm', 'cancel')"
 // @Success 200 {object} response.Response{data=[]emaildto.EmailTemplateResponse} "Successfully retrieved email templates"
 // @Router /email/template [get]
 // @Security BearerAuth

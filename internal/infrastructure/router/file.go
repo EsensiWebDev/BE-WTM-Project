@@ -1,9 +1,10 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
 	"wtm-backend/internal/bootstrap"
 	"wtm-backend/internal/handler/file_handler"
+
+	"github.com/gin-gonic/gin"
 )
 
 func FileRouter(app *bootstrap.Application, routerGroup *gin.RouterGroup) {

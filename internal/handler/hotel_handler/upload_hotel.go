@@ -1,14 +1,25 @@
 package hotel_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
+// UploadHotel godoc
+// @Summary Upload hotel
+// @Description Upload hotel
+// @Tags Hotel
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "File"
+// @Success 200 {object} response.Response "Successfully uploaded data hotel"
+// @Router /hotels/upload [post]
+// @Security BearerAuth
 func (hh *HotelHandler) UploadHotel(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -30,7 +41,7 @@ func (hh *HotelHandler) UploadHotel(c *gin.Context) {
 	}
 
 	if err := hh.hotelUsecase.UploadHotel(ctx, &req); err != nil {
-		logger.Error(ctx, "Failed to upload hotel", err)
+		logger.Error(ctx, "Failed to upload hotel", err.Error())
 		response.Error(c, http.StatusInternalServerError, "Failed to upload hotel")
 		return
 	}

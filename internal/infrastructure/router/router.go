@@ -1,11 +1,12 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"wtm-backend/internal/bootstrap"
 	"wtm-backend/internal/middleware"
 	"wtm-backend/pkg/logger"
+
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type MiddlewareMap struct {

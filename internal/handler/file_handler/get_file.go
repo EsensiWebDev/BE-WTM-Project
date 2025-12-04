@@ -2,13 +2,14 @@ package file_handler
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"sync"
 	"wtm-backend/internal/domain"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
+
+	"github.com/gin-gonic/gin"
 )
 
 var bufferPool = sync.Pool{

@@ -1409,6 +1409,14 @@ const docTemplate = `{
                     "Email"
                 ],
                 "summary": "Get Email Templates",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Type of email template (option: 'confirm', 'cancel')",
+                        "name": "type",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successfully retrieved email templates",
@@ -2014,12 +2022,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "number",
+                        "format": "float64",
                         "description": "Minimum price range for filtering hotels",
                         "name": "range_price_min",
                         "in": "query"
                     },
                     {
                         "type": "number",
+                        "format": "float64",
                         "description": "Maximum price range for filtering hotels",
                         "name": "range_price_max",
                         "in": "query"
@@ -2043,7 +2053,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "Filter hotels by total number of guests (e.g., 1,2,3,4,5)",
-                        "name": "total_quests",
+                        "name": "total_guests",
                         "in": "query"
                     },
                     {
@@ -2192,6 +2202,34 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/hotels/download-format": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Download CSV format for hotel import",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Hotel"
+                ],
+                "summary": "Download CSV format",
+                "responses": {
+                    "200": {
+                        "description": "Successfully download CSV format",
+                        "schema": {
+                            "type": "file"
                         }
                     }
                 }
@@ -2817,6 +2855,43 @@ const docTemplate = `{
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/hotels/upload": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload hotel",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Hotel"
+                ],
+                "summary": "Upload hotel",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully uploaded data hotel",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -6947,7 +7022,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "is_active": {
                     "type": "boolean"

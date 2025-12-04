@@ -2,12 +2,13 @@ package hoteldto
 
 import (
 	"fmt"
-	validation "github.com/go-ozzo/ozzo-validation"
 	"mime/multipart"
+
+	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 type UploadHotelRequest struct {
-	File *multipart.FileHeader `json:"file"`
+	File *multipart.FileHeader `json:"file" form:"file"`
 }
 
 func (r *UploadHotelRequest) Validate() error {

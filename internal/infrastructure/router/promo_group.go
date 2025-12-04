@@ -1,9 +1,10 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
 	"wtm-backend/internal/bootstrap"
 	"wtm-backend/internal/handler/promo_group_handler"
+
+	"github.com/gin-gonic/gin"
 )
 
 func PromoGroupRoutes(app *bootstrap.Application, mm MiddlewareMap, routerGroup *gin.RouterGroup) {

@@ -1025,7 +1025,7 @@ definitions:
       duration:
         type: integer
       id:
-        type: string
+        type: integer
       is_active:
         type: boolean
       promo_code:
@@ -2191,6 +2191,11 @@ paths:
   /email/template:
     get:
       description: Retrieve a list of email templates
+      parameters:
+      - description: 'Type of email template (option: ''confirm'', ''cancel'')'
+        in: query
+        name: type
+        type: string
       produces:
       - application/json
       responses:
@@ -2719,10 +2724,12 @@ paths:
         name: rating
         type: array
       - description: Minimum price range for filtering hotels
+        format: float64
         in: query
         name: range_price_min
         type: number
       - description: Maximum price range for filtering hotels
+        format: float64
         in: query
         name: range_price_max
         type: number
@@ -2739,7 +2746,7 @@ paths:
         type: integer
       - description: Filter hotels by total number of guests (e.g., 1,2,3,4,5)
         in: query
-        name: total_quests
+        name: total_guests
         type: integer
       - description: Filter hotels by promo id
         in: query
@@ -2830,6 +2837,23 @@ paths:
       security:
       - BearerAuth: []
       summary: List All Bed Types
+      tags:
+      - Hotel
+  /hotels/download-format:
+    get:
+      consumes:
+      - application/json
+      description: Download CSV format for hotel import
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Successfully download CSV format
+          schema:
+            type: file
+      security:
+      - BearerAuth: []
+      summary: Download CSV format
       tags:
       - Hotel
   /hotels/facilities:
@@ -3223,6 +3247,29 @@ paths:
       security:
       - BearerAuth: []
       summary: List Hotel Statuses
+      tags:
+      - Hotel
+  /hotels/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload hotel
+      parameters:
+      - description: File
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully uploaded data hotel
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Upload hotel
       tags:
       - Hotel
   /login:

@@ -1,9 +1,10 @@
 package model
 
 import (
+	"time"
+
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
-	"time"
 )
 
 type StatusBooking struct {
@@ -12,11 +13,20 @@ type StatusBooking struct {
 	ExternalID ExternalID `gorm:"embedded"`
 }
 
+func (b *StatusBooking) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type StatusPayment struct {
 	ID         uint       `gorm:"primaryKey"` // override default gorm.Model ID
 	Status     string     `gorm:"type:text"`
 	ExternalID ExternalID `gorm:"embedded"`
 }
+
+func (b *StatusPayment) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type Booking struct {
 	gorm.Model
 	ExternalID      ExternalID `gorm:"embedded"`

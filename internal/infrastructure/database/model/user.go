@@ -1,14 +1,19 @@
 package model
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type StatusUser struct {
 	ID         uint       `gorm:"primaryKey"` // override default gorm.Model ID
 	Status     string     `json:"status"`
 	ExternalID ExternalID `gorm:"embedded"`
+}
+
+func (s *StatusUser) BeforeCreate(tx *gorm.DB) error {
+	return s.ExternalID.BeforeCreate(tx)
 }
 
 type AgentCompany struct {
@@ -60,18 +65,17 @@ type Role struct {
 	Permissions []Permission `gorm:"many2many:role_permissions"` // many-to-many
 }
 
+func (b *Role) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
+}
+
 type RolePermission struct {
 	gorm.Model
-	ExternalID   ExternalID `gorm:"embedded"`
-	RoleID       uint       `json:"role_id" gorm:"index"`
-	PermissionID uint       `json:"permission_id" gorm:"index"`
+	RoleID       uint `json:"role_id" gorm:"index"`
+	PermissionID uint `json:"permission_id" gorm:"index"`
 
 	Role       Role       `gorm:"foreignKey:RoleID"`
 	Permission Permission `gorm:"foreignKey:PermissionID"`
-}
-
-func (b *RolePermission) BeforeCreate(tx *gorm.DB) error {
-	return b.ExternalID.BeforeCreate(tx)
 }
 
 type Permission struct {
@@ -82,6 +86,10 @@ type Permission struct {
 	Action     string     `json:"action"`     // optional
 
 	Role []Role `gorm:"many2many:role_permissions"` // many-to-many
+}
+
+func (b *Permission) BeforeCreate(tx *gorm.DB) error {
+	return b.ExternalID.BeforeCreate(tx)
 }
 
 type PasswordResetToken struct {
