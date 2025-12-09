@@ -100,7 +100,7 @@ GOOS=linux GOARCH=amd64 go build -o app ./cmd/main.go
 ---
 
 ## 8) Health Check
-- Backend: `http://<domain>:<port>/health`
+- Backend: `http://<domain>:<port>/api/ping`
 - Swagger: `<domain>/swagger/index.html`
 - PostgreSQL: test connection
 - Redis: `redis-cli ping`
