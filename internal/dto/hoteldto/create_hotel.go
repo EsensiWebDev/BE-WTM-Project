@@ -2,9 +2,10 @@ package hoteldto
 
 import (
 	"fmt"
-	validation "github.com/go-ozzo/ozzo-validation"
 	"mime/multipart"
 	"wtm-backend/pkg/utils"
+
+	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 type CreateHotelRequest struct {

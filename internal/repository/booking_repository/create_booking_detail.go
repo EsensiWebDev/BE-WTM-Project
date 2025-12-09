@@ -11,15 +11,20 @@ import (
 func (br *BookingRepository) CreateBookingDetail(ctx context.Context, detail *entity.BookingDetail) ([]uint, error) {
 	db := br.db.GetTx(ctx)
 
-	var bookingDetail model.BookingDetail
-	if err := utils.CopyPatch(&bookingDetail, detail); err != nil {
+	var baseDetail model.BookingDetail
+	if err := utils.CopyPatch(&baseDetail, detail); err != nil {
 		logger.Error(ctx, "Failed to copy booking detail entity to model", err.Error())
 		return nil, err
 	}
 
-	countTrx := bookingDetail.Quantity
+	countTrx := baseDetail.Quantity
 	var ids []uint
 	for i := 0; i < countTrx; i++ {
+		var bookingDetail model.BookingDetail
+		if err := utils.CopyPatch(&bookingDetail, baseDetail); err != nil {
+			logger.Error(ctx, "Failed to copy booking detail entity to model", err.Error())
+			return nil, err
+		}
 		code, err := br.GenerateCode(ctx, "sub_booking_codes", "SBK")
 		if err != nil {
 			logger.Error(ctx, "failed to generate sub booking code", err.Error())
@@ -37,11 +42,6 @@ func (br *BookingRepository) CreateBookingDetail(ctx context.Context, detail *en
 			return nil, err
 		}
 		ids = append(ids, bookingDetail.ID)
-	}
-
-	if err := utils.CopyStrict(detail, &bookingDetail); err != nil {
-		logger.Error(ctx, "Failed to copy booking detail model to entity", err.Error())
-		return nil, err
 	}
 
 	return ids, nil

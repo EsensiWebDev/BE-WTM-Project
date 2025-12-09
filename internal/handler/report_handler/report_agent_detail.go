@@ -1,12 +1,13 @@
 package report_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/reportdto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
+
+	"github.com/gin-gonic/gin"
 )
 
 // ReportAgentDetail godoc
@@ -19,6 +20,8 @@ import (
 // @Param limit query int false "Number of items per page"
 // @Param hotel_id query int false "Filter by Hotel Id"
 // @Param agent_id query int false "Filter by Agent Id"
+// @Param date_from query string false "Start date for the report in YYYY-MM-DD format"
+// @Param date_to query string false "End date for the report in YYYY-MM-DD format"
 // @Success 200 {object} response.ResponseWithPagination{data=[]entity.ReportAgentDetail} "Successfully generated detailed report for agent bookings"
 // @Security BearerAuth
 // @Router       /reports/agent/detail [get]

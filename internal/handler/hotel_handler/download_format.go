@@ -39,7 +39,7 @@ func (hh *HotelHandler) DownloadFormat(c *gin.Context) {
 		"# NOTES:",
 		"# - Column separator: ;",
 		"# - Facilities: comma-separated list (e.g., WiFi,Pool,Gym)",
-		"# - Nearby places: format PlaceName,Distance|PlaceName,Distance (e.g., Mall Ambassador,0.5|Kuningan City,1.2)",
+		"# - Nearby places: format PlaceName,Distance|PlaceName,Distance (e.g., Mall Ambassador,3|Kuningan City,2)",
 		"",
 	}
 
@@ -77,7 +77,7 @@ func (hh *HotelHandler) DownloadFormat(c *gin.Context) {
 		"Jakarta Province",
 		"Comfortable hotel located in the city center",
 		"5",
-		"Mall Ambassador,0.5|Kuningan City,1.2",
+		"Mall Ambassador,3|Kuningan City,2",
 		"WiFi,Pool,Gym",
 		"https://tiktok.com/@rosehotel",
 		"https://rosehotel.com",

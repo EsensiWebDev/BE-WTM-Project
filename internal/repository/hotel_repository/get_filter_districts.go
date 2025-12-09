@@ -107,7 +107,7 @@ func (hr *HotelRepository) GetFilterDistricts(ctx context.Context, filter filter
 
 	// 🔍 Execute query
 	var districts []string
-	if err := db.Raw(query, args...).Debug().Scan(&districts).Error; err != nil {
+	if err := db.Raw(query, args...).Scan(&districts).Error; err != nil {
 		logger.Error(ctx, "Error fetching filter districts (raw)", err.Error())
 		return nil, err
 	}

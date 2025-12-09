@@ -1,6 +1,7 @@
 package hotel_handler
 
 import (
+	"fmt"
 	"net/http"
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/internal/response"
@@ -40,9 +41,15 @@ func (hh *HotelHandler) UploadHotel(c *gin.Context) {
 		return
 	}
 
-	if err := hh.hotelUsecase.UploadHotel(ctx, &req); err != nil {
+	success, err := hh.hotelUsecase.UploadHotel(ctx, &req)
+	if err != nil {
+		if success {
+			logger.Warn(ctx, "Partial upload success with errors", err.Error())
+			response.Success(c, http.StatusOK, err.Error())
+			return
+		}
 		logger.Error(ctx, "Failed to upload hotel", err.Error())
-		response.Error(c, http.StatusInternalServerError, "Failed to upload hotel")
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Failed to upload hotel: %s", err.Error()))
 		return
 	}
 

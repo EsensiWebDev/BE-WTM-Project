@@ -30,7 +30,7 @@ func (ur *UserRepository) CreateUser(ctx context.Context, user *entity.User) (*e
 		modelUser.UserNotificationSettings = defaultSettings
 	}
 
-	err := db.WithContext(ctx).Debug().Create(&modelUser).Error
+	err := db.WithContext(ctx).Create(&modelUser).Error
 	if err != nil {
 		if ur.db.ErrDuplicateKey(ctx, err) {
 			logger.Warn(ctx, "User already exists with username", user.Username)

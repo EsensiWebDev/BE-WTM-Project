@@ -13,6 +13,7 @@ func NotificationRouter(app *bootstrap.Application, middlewareMap MiddlewareMap,
 	notificationRouter := routerGroup.Group("/notifications", middlewareMap.TimeoutFast, middlewareMap.Auth)
 	{
 		notificationRouter.GET("", notificationHandler.ListNotifications)
+		notificationRouter.PUT("/read", notificationHandler.ReadNotification)
 		notificationRouter.PUT("/settings", notificationHandler.UpdateNotificationSettings)
 	}
 }

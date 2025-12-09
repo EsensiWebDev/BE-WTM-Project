@@ -15,6 +15,10 @@ func (ur *UserRepository) GetUserByPhone(ctx context.Context, phone string) (*en
 	if err := db.WithContext(ctx).
 		Where("phone = ?", phone).
 		First(&user).Error; err != nil {
+		if ur.db.ErrRecordNotFound(ctx, err) {
+			logger.Info(ctx, "User not found with phone:", phone)
+			return nil, nil
+		}
 		logger.Error(ctx, "Error getting user by email:", err.Error())
 		return nil, err
 	}

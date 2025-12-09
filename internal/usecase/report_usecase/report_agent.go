@@ -12,14 +12,12 @@ import (
 
 func (ru *ReportUsecase) ReportAgent(ctx context.Context, req *reportdto.ReportRequest) (*reportdto.ReportAgentResponse, error) {
 	var dateFrom, dateTo *time.Time
-	var isDateFromSet, isDateToSet bool
 	// Parse dates
 	if req.DateFrom != "" {
 		dateFromDt, err := time.Parse("2006-01-02", req.DateFrom)
 		if err != nil {
 			return nil, fmt.Errorf("invalid date_from: %s", err.Error())
 		}
-		isDateFromSet = true
 		dateFrom = &dateFromDt
 	} else {
 		now := time.Now().In(constant.AsiaJakarta)
@@ -32,7 +30,7 @@ func (ru *ReportUsecase) ReportAgent(ctx context.Context, req *reportdto.ReportR
 		if err != nil {
 			return nil, fmt.Errorf("invalid date_to: %s", err.Error())
 		}
-		isDateToSet = true
+		dateToDt = dateToDt.AddDate(0, 0, 1)
 		dateTo = &dateToDt
 	} else {
 		now := time.Now().In(constant.AsiaJakarta)
@@ -50,10 +48,6 @@ func (ru *ReportUsecase) ReportAgent(ctx context.Context, req *reportdto.ReportR
 	}
 	if len(req.AgentCompanyID) > 0 {
 		filterReq.AgentCompanyID = req.AgentCompanyID
-	}
-
-	if isDateFromSet || isDateToSet {
-		filterReq.IsRangeDate = true
 	}
 
 	filterReq.PaginationRequest = req.PaginationRequest

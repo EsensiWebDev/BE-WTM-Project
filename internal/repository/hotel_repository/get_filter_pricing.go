@@ -101,7 +101,7 @@ func (hr *HotelRepository) GetFilterPricing(ctx context.Context, filter filter.H
 
 	// 🔍 Execute query
 	var result entity.FilterRangePrice
-	if err := db.Raw(query, args...).Debug().Scan(&result).Error; err != nil {
+	if err := db.Raw(query, args...).Scan(&result).Error; err != nil {
 		logger.Error(ctx, "Error fetching range price (raw)", err.Error())
 		return nil, err
 	}

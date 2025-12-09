@@ -27,9 +27,10 @@ func (nr *NotificationRepository) GetNotificationsByUserID(ctx context.Context, 
 		offset := (filter.Page - 1) * filter.Limit
 		query = query.Limit(filter.Limit).Offset(offset)
 	}
+	query = query.Order("is_read ASC").Order("created_at DESC")
 
 	var notifications []model.Notification
-	if err := query.Order("is_read DESC").Find(&notifications).Error; err != nil {
+	if err := query.Find(&notifications).Error; err != nil {
 		logger.Error(ctx, "failed to get notifications by user Id", err.Error())
 		return nil, 0, err
 	}

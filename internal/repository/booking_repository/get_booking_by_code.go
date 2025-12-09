@@ -2,6 +2,7 @@ package booking_repository
 
 import (
 	"context"
+	"encoding/json"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/logger"
@@ -17,8 +18,6 @@ func (br *BookingRepository) GetBookingByCode(ctx context.Context, code string) 
 		Preload("Agent.AgentCompany").
 		Preload("BookingGuests").
 		Preload("BookingDetails").
-		Preload("BookingDetails.RoomType").
-		Preload("BookingDetails.RoomType.Hotel").
 		Where("booking_code = ?", code).
 		First(&booking).Error; err != nil {
 		logger.Error(ctx, "failed to get booking by Id", err.Error())
@@ -43,6 +42,14 @@ func (br *BookingRepository) GetBookingByCode(ctx context.Context, code string) 
 		for i, guest := range booking.BookingGuests {
 			result.Guests[i] = guest.Name
 		}
+	}
+
+	for i, detail := range booking.BookingDetails {
+		var detailRoom entity.DetailRoom
+		if err := json.Unmarshal(detail.DetailRoom, &detailRoom); err != nil {
+			logger.Error(ctx, "failed to unmarshal detail room", err.Error())
+		}
+		result.BookingDetails[i].DetailRooms = detailRoom
 	}
 
 	return &result, nil

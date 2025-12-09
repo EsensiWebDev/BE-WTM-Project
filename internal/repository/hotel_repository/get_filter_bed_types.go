@@ -116,7 +116,7 @@ func (hr *HotelRepository) GetFilterBedTypes(ctx context.Context, filter filter.
 
 	// 🔍 Execute query
 	var results []entity.FilterBedTypeHotel
-	if err := db.Raw(query, args...).Debug().Scan(&results).Error; err != nil {
+	if err := db.Raw(query, args...).Scan(&results).Error; err != nil {
 		logger.Error(ctx, "Error fetching filter bed types (raw)", err.Error())
 		return nil, fmt.Errorf("error fetching filter bed types: %s", err.Error())
 	}

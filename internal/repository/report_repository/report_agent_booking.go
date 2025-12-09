@@ -2,7 +2,7 @@ package report_repository
 
 import (
 	"context"
-	"github.com/Masterminds/squirrel"
+	"fmt"
 	"strings"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/repository/filter"
@@ -13,79 +13,160 @@ import (
 func (rr *ReportRepository) ReportAgentBooking(ctx context.Context, filter filter.ReportFilter) ([]entity.ReportAgentBooking, int64, error) {
 	db := rr.db.GetTx(ctx)
 
-	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar) // pakai $1, $2, ... untuk PostgreSQL
+	// Build WHERE conditions
+	var conditions []string
+	var args []interface{}
+	argIndex := 1
 
-	// Base query builder
-	builder := psql.Select(
-		"h.id AS hotel_id",
-		"h.name AS hotel_name",
-		"ac.name AS agent_company",
-		"u.id AS agent_id",
-		"u.full_name AS agent_name",
-		"SUM(CASE WHEN bd.status_booking_id = 3 THEN 1 END) AS confirmed_booking",
-		"SUM(CASE WHEN bd.status_booking_id = 5 THEN 1 END) AS cancelled_booking",
-	).From("booking_details bd").
-		Join("bookings b ON bd.booking_id = b.id").
-		Join("users u ON b.agent_id = u.id").
-		LeftJoin("agent_companies ac ON u.agent_company_id = ac.id").
-		Join("room_prices rp ON rp.id = bd.room_price_id").
-		Join("room_types rt ON rp.room_type_id = rt.id").
-		Join("hotels h ON rt.hotel_id = h.id").
-		Where("TRUE").
-		GroupBy("h.name, ac.name, u.full_name, h.id, u.id ")
+	// Date filters with correct columns per status
+	var dateConditions []string
+	if filter.DateFrom != nil && filter.DateTo != nil {
+		dateConditions = append(dateConditions,
+			fmt.Sprintf("(bd.status_booking_id = 3 AND bd.approved_at >= $%d AND bd.approved_at < $%d)", argIndex, argIndex+1),
+		)
+		args = append(args, filter.DateFrom, filter.DateTo)
+		argIndex += 2
 
-	// Apply search filter
+		dateConditions = append(dateConditions,
+			fmt.Sprintf("(bd.status_booking_id = 5 AND bd.cancelled_at >= $%d AND bd.cancelled_at < $%d)", argIndex, argIndex+1),
+		)
+		args = append(args, filter.DateFrom, filter.DateTo)
+		argIndex += 2
+
+		dateConditions = append(dateConditions,
+			fmt.Sprintf("(bd.status_booking_id = 4 AND bd.rejected_at >= $%d AND bd.rejected_at < $%d)", argIndex, argIndex+1),
+		)
+		args = append(args, filter.DateFrom, filter.DateTo)
+		argIndex += 2
+
+		conditions = append(conditions, "("+strings.Join(dateConditions, " OR ")+")")
+	} else if filter.DateFrom != nil {
+		dateConditions = append(dateConditions,
+			fmt.Sprintf("(bd.status_booking_id = 3 AND bd.approved_at >= $%d)", argIndex),
+		)
+		args = append(args, filter.DateFrom)
+		argIndex++
+
+		dateConditions = append(dateConditions,
+			fmt.Sprintf("(bd.status_booking_id = 5 AND bd.cancelled_at >= $%d)", argIndex),
+		)
+		args = append(args, filter.DateFrom)
+		argIndex++
+
+		dateConditions = append(dateConditions,
+			fmt.Sprintf("(bd.status_booking_id = 4 AND bd.rejected_at >= $%d)", argIndex),
+		)
+		args = append(args, filter.DateFrom)
+		argIndex++
+
+		conditions = append(conditions, "("+strings.Join(dateConditions, " OR ")+")")
+	} else if filter.DateTo != nil {
+		dateConditions = append(dateConditions,
+			fmt.Sprintf("(bd.status_booking_id = 3 AND bd.approved_at < $%d)", argIndex),
+		)
+		args = append(args, filter.DateTo)
+		argIndex++
+
+		dateConditions = append(dateConditions,
+			fmt.Sprintf("(bd.status_booking_id = 5 AND bd.cancelled_at < $%d)", argIndex),
+		)
+		args = append(args, filter.DateTo)
+		argIndex++
+
+		dateConditions = append(dateConditions,
+			fmt.Sprintf("(bd.status_booking_id = 4 AND bd.rejected_at < $%d)", argIndex),
+		)
+		args = append(args, filter.DateTo)
+		argIndex++
+
+		conditions = append(conditions, "("+strings.Join(dateConditions, " OR ")+")")
+	}
+
+	// Search filter
 	if strings.TrimSpace(filter.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		builder = builder.Where(
-			squirrel.Or{
-				squirrel.Expr("u.full_name ILIKE ? ", "%"+safeSearch+"%"),
-			},
-		)
+		conditions = append(conditions, fmt.Sprintf("u.full_name ILIKE $%d", argIndex))
+		args = append(args, "%"+safeSearch+"%")
+		argIndex++
 	}
 
-	// Apply other filters
-	if filter.DateFrom != nil {
-		builder = builder.Where(squirrel.GtOrEq{"b.approved_at": filter.DateFrom.Format("2006-01-02")})
-	}
-	if filter.DateTo != nil {
-		builder = builder.Where(squirrel.LtOrEq{"b.approved_at": filter.DateTo.Format("2006-01-02")})
-	}
-
+	// Hotel ID filter
 	if len(filter.HotelID) > 0 {
-		builder = builder.Where(squirrel.Eq{"h.id": filter.HotelID})
+		placeholders := make([]string, len(filter.HotelID))
+		for i, id := range filter.HotelID {
+			placeholders[i] = fmt.Sprintf("$%d", argIndex)
+			args = append(args, id)
+			argIndex++
+		}
+		conditions = append(conditions, fmt.Sprintf("h.id IN (%s)", strings.Join(placeholders, ",")))
 	}
 
+	// Agent Company ID filter
 	if len(filter.AgentCompanyID) > 0 {
-		builder = builder.Where(squirrel.Eq{"ac.id": filter.AgentCompanyID})
+		placeholders := make([]string, len(filter.AgentCompanyID))
+		for i, id := range filter.AgentCompanyID {
+			placeholders[i] = fmt.Sprintf("$%d", argIndex)
+			args = append(args, id)
+			argIndex++
+		}
+		conditions = append(conditions, fmt.Sprintf("ac.id IN (%s)", strings.Join(placeholders, ",")))
 	}
+
+	// Build WHERE clause
+	whereClause := "WHERE TRUE"
+	if len(conditions) > 0 {
+		whereClause = "WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	// Base query
+	baseQuery := fmt.Sprintf(`
+        SELECT
+            h.id AS hotel_id,
+            h.name AS hotel_name,
+            ac.name AS agent_company,
+            u.id AS agent_id,
+            u.full_name AS agent_name,
+            SUM(CASE WHEN bd.status_booking_id = 3 THEN 1 ELSE 0 END) AS confirmed_booking,
+            SUM(CASE WHEN bd.status_booking_id = 5 THEN 1 ELSE 0 END) AS cancelled_booking,
+            SUM(CASE WHEN bd.status_booking_id = 4 THEN 1 ELSE 0 END) AS rejected_booking
+        FROM booking_details bd
+        JOIN bookings b ON bd.booking_id = b.id
+        JOIN users u ON b.agent_id = u.id
+        LEFT JOIN agent_companies ac ON u.agent_company_id = ac.id
+        JOIN room_prices rp ON rp.id = bd.room_price_id
+        JOIN room_types rt ON rp.room_type_id = rt.id
+        JOIN hotels h ON rt.hotel_id = h.id
+        %s
+        GROUP BY h.id, h.name, ac.name, u.id, u.full_name
+        ORDER BY h.id, u.id
+    `, whereClause)
 
 	// Count total records
+	countQuery := fmt.Sprintf(`
+        SELECT COUNT(*) FROM (
+            %s
+        ) subquery
+    `, baseQuery)
+
 	var total int64
-	countBuilder := squirrel.Select("COUNT(*)").FromSelect(builder, "subquery")
-	countQuery, countArgs, err := countBuilder.ToSql()
-	if err := db.WithContext(ctx).Raw(countQuery, countArgs...).Scan(&total).Error; err != nil {
+	if err := db.WithContext(ctx).Raw(countQuery, args...).Scan(&total).Error; err != nil {
 		logger.Error(ctx, "Error counting report agent bookings", err.Error())
 		return nil, 0, err
 	}
 
-	// Apply pagination
+	// Add pagination
+	finalQuery := baseQuery
 	if filter.Limit > 0 {
 		if filter.Page < 1 {
 			filter.Page = 1
 		}
 		offset := (filter.Page - 1) * filter.Limit
-		builder = builder.Limit(uint64(filter.Limit)).Offset(uint64(offset))
-	}
-
-	query, args, err := builder.ToSql()
-	if err != nil {
-		return nil, 0, err
+		finalQuery += fmt.Sprintf(" LIMIT %d OFFSET %d", filter.Limit, offset)
 	}
 
 	// Execute final query
 	var reports []entity.ReportAgentBooking
-	if err := db.WithContext(ctx).Raw(query, args...).Debug().Scan(&reports).Error; err != nil {
+	if err := db.WithContext(ctx).Raw(finalQuery, args...).Scan(&reports).Error; err != nil {
 		logger.Error(ctx, "Error fetching report agent bookings", err.Error())
 		return nil, 0, err
 	}

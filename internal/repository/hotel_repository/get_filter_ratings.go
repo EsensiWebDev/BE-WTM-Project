@@ -108,7 +108,7 @@ func (hr *HotelRepository) GetFilterRatings(ctx context.Context, filter filter.H
 
 	// 🔍 Execute query
 	var ratings []entity.FilterRatingHotel
-	if err := db.Raw(query, args...).Debug().Scan(&ratings).Error; err != nil {
+	if err := db.Raw(query, args...).Scan(&ratings).Error; err != nil {
 		logger.Error(ctx, "Error fetching filter ratings (raw)", err.Error())
 		return nil, err
 	}

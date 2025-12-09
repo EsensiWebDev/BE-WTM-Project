@@ -13,7 +13,7 @@ func (ur *UserRepository) GetAllRolesWithPermissions(ctx context.Context) ([]ent
 	db := ur.db.GetTx(ctx)
 
 	var roles []model.Role
-	err := db.WithContext(ctx).Debug().
+	err := db.WithContext(ctx).
 		Where("id != ?", constant.DefaultRoleSuperAdmin).
 		Preload("Permissions").
 		Find(&roles).Error

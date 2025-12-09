@@ -3,13 +3,14 @@ package hotel_usecase
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"time"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/internal/repository/filter"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
+
+	"golang.org/x/sync/errgroup"
 )
 
 func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.ListHotelForAgentRequest) (*hoteldto.ListHotelForAgentResponse, error) {
@@ -31,6 +32,8 @@ func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.Li
 		}
 	}
 
+	logger.Info(ctx, "Request ListHotelsForAgent", req)
+
 	filterHotel := filter.HotelFilterForAgent{
 		Ratings:           req.Rating,
 		BedTypeIDs:        req.BedTypeID,
@@ -46,7 +49,7 @@ func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.Li
 	}
 
 	if req.TotalGuests > 0 && req.TotalRooms > 0 {
-		filterHotel.MinGuest = req.TotalRooms / req.TotalGuests
+		filterHotel.MinGuest = req.TotalGuests / req.TotalRooms
 	}
 
 	filter.Clean(&filterHotel)
@@ -67,6 +70,7 @@ func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.Li
 
 	eg.Go(func() error {
 		var err error
+		logger.Info(ctx, "Request GetHotelsForAgent", filterHotel)
 		hotels, total, err = hu.hotelRepo.GetHotelsForAgent(egCtx, filterHotel)
 		respHotels = make([]hoteldto.ListHotelForAgent, 0, len(hotels))
 		for _, hotel := range hotels {

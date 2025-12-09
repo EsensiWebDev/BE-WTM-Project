@@ -2,14 +2,15 @@ package booking_repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"gorm.io/gorm"
-	"time"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"gorm.io/gorm"
 )
 
 func (br *BookingRepository) CancelBooking(ctx context.Context, agentID uint, bookingDetailID string) (*entity.BookingDetail, error) {
@@ -36,11 +37,15 @@ func (br *BookingRepository) CancelBooking(ctx context.Context, agentID uint, bo
 			return fmt.Errorf("this booking is not valid for cancelling")
 		}
 
-		// Step 2: Update detail ke canceled
+		// Step 2: Update detail ke cancelled
 		if err := tx.Model(&model.BookingDetail{}).
 			Where("sub_booking_id = ?", bookingDetailID).
-			Update("status_booking_id", constant.StatusBookingCanceledID).Error; err != nil {
-			logger.Error(ctx, "failed to update booking detail status to canceled", err.Error())
+			Updates(map[string]interface{}{
+				"status_booking_id": constant.StatusBookingCancelledID,
+				"cancelled_at":      gorm.Expr("NOW()"),
+			}).
+			Update("status_booking_id", constant.StatusBookingCancelledID).Error; err != nil {
+			logger.Error(ctx, "failed to update booking detail status to cancelled", err.Error())
 			return err
 		}
 
@@ -74,7 +79,7 @@ func (br *BookingRepository) CancelBooking(ctx context.Context, agentID uint, bo
                 END`,
 				constant.StatusBookingRejectedID,
 				constant.StatusBookingConfirmedID,
-				constant.StatusBookingCanceledID,
+				constant.StatusBookingCancelledID,
 			)
 
 			var detailStatus uint
@@ -93,7 +98,6 @@ func (br *BookingRepository) CancelBooking(ctx context.Context, agentID uint, bo
 				Where("id = ?", bookingID).
 				Updates(map[string]interface{}{
 					"status_booking_id": detailStatus,
-					"approved_at":       time.Now(),
 				}).Error; err != nil {
 				logger.Error(ctx, "failed to update booking with priority", err.Error())
 				return err
@@ -117,6 +121,12 @@ func (br *BookingRepository) CancelBooking(ctx context.Context, agentID uint, bo
 				logger.Error(ctx, "failed to copy booking detail", err.Error())
 				return err
 			}
+
+			var detailRoom entity.DetailRoom
+			if err := json.Unmarshal(modelBookingDetail.DetailRoom, &detailRoom); err != nil {
+				logger.Error(ctx, "failed to unmarshal room", err.Error())
+			}
+			bookingDetail.DetailRooms = detailRoom
 
 			for _, additional := range modelBookingDetail.BookingDetailsAdditional {
 				bookingDetail.BookingDetailAdditionalName = append(bookingDetail.BookingDetailAdditionalName, additional.NameAdditional)

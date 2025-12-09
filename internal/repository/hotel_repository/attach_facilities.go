@@ -21,7 +21,7 @@ func (hr *HotelRepository) AttachFacilities(ctx context.Context, hotelID uint, f
 		facilities = append(facilities, f)
 	}
 	// Association attach
-	if err := db.WithContext(ctx).Debug().Model(&model.Hotel{Model: gorm.Model{ID: hotelID}}).
+	if err := db.WithContext(ctx).Model(&model.Hotel{Model: gorm.Model{ID: hotelID}}).
 		Association("Facilities").Replace(facilities); err != nil {
 		logger.Error(ctx, "Failed to attach facilities to hotel", err.Error())
 		return err

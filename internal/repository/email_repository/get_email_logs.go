@@ -6,13 +6,22 @@ import (
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/internal/repository/filter"
+	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
 )
 
-func (er *EmailRepository) GetEmailLogs(ctx context.Context, filter filter.DefaultFilter) ([]entity.EmailLog, int64, error) {
+func (er *EmailRepository) GetEmailLogs(ctx context.Context, filter filter.EmailLogFilter) ([]entity.EmailLog, int64, error) {
 	db := er.db.GetTx(ctx)
-	query := db.WithContext(ctx).Model(&model.EmailLog{})
+	query := db.WithContext(ctx).
+		Model(&model.EmailLog{})
+
+	// Apply filter
+	if len(filter.EmailType) > 0 {
+		query = query.
+			Joins("JOIN email_templates et ON et.id = email_logs.email_template_id").
+			Where("et.name IN ?", filter.EmailType)
+	}
 
 	// Count total records
 	var total int64
@@ -35,7 +44,7 @@ func (er *EmailRepository) GetEmailLogs(ctx context.Context, filter filter.Defau
 
 	// Fetch results
 	var emailLogs []model.EmailLog
-	if err := query.Find(&emailLogs).Error; err != nil {
+	if err := query.Preload("EmailTemplate").Find(&emailLogs).Error; err != nil {
 		logger.Error(ctx, "failed to get email logs", err.Error())
 		return nil, 0, err
 	}
@@ -48,12 +57,15 @@ func (er *EmailRepository) GetEmailLogs(ctx context.Context, filter filter.Defau
 	}
 
 	for i, emailLog := range emailLogs {
-		var meta entity.MetadataEmailLog
-		if err := json.Unmarshal(emailLog.Meta, &meta); err != nil {
-			logger.Error(ctx, "failed to unmarshal email log meta", err.Error())
-			return nil, 0, err
+		if emailLog.Meta != nil {
+			var meta entity.MetadataEmailLog
+			if err := json.Unmarshal(emailLog.Meta, &meta); err != nil {
+				logger.Error(ctx, "failed to unmarshal email log meta", err.Error())
+				return nil, 0, err
+			}
+			result[i].Meta = &meta
 		}
-		result[i].Meta = meta
+		result[i].EmailType = constant.MapEmailType[emailLog.EmailTemplate.Name]
 	}
 
 	return result, total, nil

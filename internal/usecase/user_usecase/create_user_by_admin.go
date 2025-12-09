@@ -3,6 +3,7 @@ package user_usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/userdto"
@@ -135,11 +136,43 @@ func (uu *UserUsecase) sendEmail(ctx context.Context, name, email, tempPassword 
 		return
 	}
 
-	bodyText := "Please view this email in HTML format." // Optional fallback
+	bodyText := "Please view this email in HTML format." // Optional fallback ini doang kan?
 
-	err = uu.emailSender.Send(ctx, email, emailTemplate.Subject, bodyHTML, bodyText)
+	subjectParsed := emailTemplate.Subject
+
+	emailTo := email
+
+	emailLog := entity.EmailLog{
+		To:              emailTo,
+		Subject:         subjectParsed,
+		Body:            bodyHTML,
+		EmailTemplateID: uint(emailTemplate.ID),
+	}
+	metadataLog := entity.MetadataEmailLog{AgentName: name}
+	emailLog.Meta = &metadataLog
+
+	var dataEmail bool
+	statusEmailID := constant.StatusEmailSuccessID
+	if err = uu.emailRepo.CreateEmailLog(ctx, &emailLog); err != nil {
+		logger.Error(ctx, "Failed to create email log:", err)
+		dataEmail = false
+	} else {
+		dataEmail = true
+	}
+
+	err = uu.emailSender.Send(ctx, constant.ScopeAgent, emailTo, subjectParsed, bodyHTML, bodyText)
 	if err != nil {
-		logger.Error(ctx, "Error sending email:", err.Error())
+		logger.Error(ctx, "Failed to send email:", err.Error())
+		statusEmailID = constant.StatusEmailFailedID
+		metadataLog.Notes = fmt.Sprintf("Failed to send email: %s", err.Error())
+		emailLog.Meta = &metadataLog
+	}
+
+	if dataEmail {
+		emailLog.StatusID = uint(statusEmailID)
+		if err := uu.emailRepo.UpdateStatusEmailLog(ctx, &emailLog); err != nil {
+			logger.Error(ctx, "Failed to update email log:", err.Error())
+		}
 	}
 
 }

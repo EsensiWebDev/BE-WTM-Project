@@ -13,6 +13,12 @@ type ReportRequest struct {
 	dto.PaginationRequest `json:",inline"`
 }
 
+type ReportSummaryRequest struct {
+	DateFrom              string `json:"date_from" form:"date_from"`
+	DateTo                string `json:"date_to" form:"date_to"`
+	dto.PaginationRequest `json:",inline"`
+}
+
 type ReportSummaryResponse struct {
 	SummaryData SummaryData             `json:"summary_data"`
 	GraphicData []entity.ReportForGraph `json:"graphic_data"`
@@ -24,9 +30,9 @@ type ReportAgentResponse struct {
 }
 
 type SummaryData struct {
-	ConfirmedBooking    DataTotalWithPercentage `json:"confirmed_booking"`
-	CancellationBooking DataTotalWithPercentage `json:"cancellation_booking"`
-	NewCustomer         DataTotalWithPercentage `json:"new_customer"`
+	ConfirmedBooking DataTotalWithPercentage `json:"confirmed_booking"`
+	CancelledBooking DataTotalWithPercentage `json:"cancelled_booking"`
+	RejectedBooking  DataTotalWithPercentage `json:"rejected_booking"`
 }
 
 type DataTotalWithPercentage struct {
@@ -36,8 +42,10 @@ type DataTotalWithPercentage struct {
 }
 
 type ReportAgentDetailRequest struct {
-	HotelID               uint `json:"hotel_id" form:"hotel_id"`
-	AgentID               uint `json:"agent_id" form:"agent_id"`
+	HotelID               uint   `json:"hotel_id" form:"hotel_id"`
+	AgentID               uint   `json:"agent_id" form:"agent_id"`
+	DateFrom              string `json:"date_from" form:"date_from"`
+	DateTo                string `json:"date_to" form:"date_to"`
 	dto.PaginationRequest `json:",inline"`
 }
 

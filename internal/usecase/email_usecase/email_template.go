@@ -2,6 +2,7 @@ package email_usecase
 
 import (
 	"context"
+	"fmt"
 	"wtm-backend/internal/dto/emaildto"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
@@ -37,7 +38,12 @@ func (eu *EmailUsecase) EmailTemplate(ctx context.Context, req *emaildto.EmailTe
 	}
 
 	if emailTemplate.IsSignatureImage {
-
+		bucketName := fmt.Sprintf("%s-%s", constant.ConstEmail, constant.ConstPublic)
+		signatureImg, err := eu.fileStorage.GetFile(ctx, bucketName, emailTemplate.Signature)
+		if err != nil {
+			logger.Error(ctx, "Error getting signature image:", err.Error())
+		}
+		resp.Signature = signatureImg
 	}
 
 	return resp, nil

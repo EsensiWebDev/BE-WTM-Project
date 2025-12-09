@@ -22,9 +22,10 @@ type BookingUsecase struct {
 	emailRepo   domain.EmailRepository
 	emailSender domain.EmailSender
 	userRepo    domain.UserRepository
+	notifRepo   domain.NotificationRepository
 }
 
-func NewBookingUsecase(bookingRepo domain.BookingRepository, hotelRepo domain.HotelRepository, promoRepo domain.PromoRepository, middleware domain.Middleware, dbTrx domain.DatabaseTransaction, fileStorage domain.StorageClient, config *config.Config, emailRepo domain.EmailRepository, emailSender domain.EmailSender, userRepo domain.UserRepository) *BookingUsecase {
+func NewBookingUsecase(bookingRepo domain.BookingRepository, hotelRepo domain.HotelRepository, promoRepo domain.PromoRepository, middleware domain.Middleware, dbTrx domain.DatabaseTransaction, fileStorage domain.StorageClient, config *config.Config, emailRepo domain.EmailRepository, emailSender domain.EmailSender, userRepo domain.UserRepository, notifRepo domain.NotificationRepository) *BookingUsecase {
 	return &BookingUsecase{
 		bookingRepo: bookingRepo,
 		hotelRepo:   hotelRepo,
@@ -36,6 +37,7 @@ func NewBookingUsecase(bookingRepo domain.BookingRepository, hotelRepo domain.Ho
 		emailRepo:   emailRepo,
 		emailSender: emailSender,
 		userRepo:    userRepo,
+		notifRepo:   notifRepo,
 	}
 }
 
@@ -71,7 +73,7 @@ func (bu *BookingUsecase) summaryStatus(statuses []string, types string) string 
 			constant.StatusBookingRejected,
 			constant.StatusBookingWaitingApproval,
 			constant.StatusBookingConfirmed,
-			constant.StatusBookingCanceled,
+			constant.StatusBookingCancelled,
 		}
 	case constant.ConstPayment:
 		priority = []string{

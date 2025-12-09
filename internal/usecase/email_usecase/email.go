@@ -18,11 +18,12 @@ type EmailUsecase struct {
 	fileStorage domain.StorageClient
 }
 
-func NewEmailUsecase(emailRepo domain.EmailRepository, emailSender domain.EmailSender, bookingRepo domain.BookingRepository) *EmailUsecase {
+func NewEmailUsecase(emailRepo domain.EmailRepository, emailSender domain.EmailSender, bookingRepo domain.BookingRepository, fileStorage domain.StorageClient) *EmailUsecase {
 	return &EmailUsecase{
 		emailRepo:   emailRepo,
 		emailSender: emailSender,
 		bookingRepo: bookingRepo,
+		fileStorage: fileStorage,
 	}
 }
 

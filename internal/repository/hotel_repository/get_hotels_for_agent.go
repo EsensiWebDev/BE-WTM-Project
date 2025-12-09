@@ -114,7 +114,7 @@ func (hr *HotelRepository) GetHotelsForAgent(ctx context.Context, filter filter.
 	// 🔢 Count total
 	var total int64
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM (%s) AS sub", baseQuery)
-	if err := db.Raw(countQuery, args...).Debug().Scan(&total).Error; err != nil {
+	if err := db.Raw(countQuery, args...).Scan(&total).Error; err != nil {
 		logger.Error(ctx, "Error counting hotels (raw)", err.Error())
 		return nil, 0, err
 	}
@@ -137,7 +137,7 @@ func (hr *HotelRepository) GetHotelsForAgent(ctx context.Context, filter filter.
 
 	// 🔍 Execute main query
 	var hotels []entity.CustomHotel
-	if err := db.Raw(finalQuery, args...).Debug().Scan(&hotels).Error; err != nil {
+	if err := db.Raw(finalQuery, args...).Scan(&hotels).Error; err != nil {
 		logger.Error(ctx, "Error fetching hotels (raw)", err.Error())
 		return nil, 0, err
 	}

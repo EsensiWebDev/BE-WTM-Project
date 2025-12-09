@@ -13,7 +13,7 @@ import (
 
 func (ur *UserRepository) GetUsers(ctx context.Context, filter filter.UserFilter) ([]entity.User, int64, error) {
 	db := ur.db.GetTx(ctx)
-	query := db.WithContext(ctx).Model(&model.User{}).Debug()
+	query := db.WithContext(ctx).Model(&model.User{})
 
 	// Select default fields
 	selectFields := []string{"id", "username", "full_name", "email", "phone", "status_id"}
@@ -29,6 +29,8 @@ func (ur *UserRepository) GetUsers(ctx context.Context, filter filter.UserFilter
 			if filter.Scope == constant.ScopeManagement {
 				selectFields = append(selectFields, "promo_group_id")
 				query = query.Where("status_id = ?", constant.StatusUserActiveID).Preload("PromoGroup")
+			} else if filter.Scope == constant.ScopeControl {
+				query = query.Where("status_id IN ?", []int{constant.StatusUserWaitingApprovalID, constant.StatusUserInactiveID})
 			}
 
 		}

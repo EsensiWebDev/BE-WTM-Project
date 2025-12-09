@@ -230,9 +230,41 @@ func (bu *BookingUsecase) sendEmailNotificationHotelConfirm(ctx context.Context,
 		return
 	}
 
-	err = bu.emailSender.Send(ctx, bd.RoomPrice.RoomType.Hotel.Email, subjectParsed, bodyHTML, "Please view this email in HTML format.")
+	emailTo := bd.RoomPrice.RoomType.Hotel.Email
+
+	emailLog := entity.EmailLog{
+		To:              emailTo,
+		Subject:         subjectParsed,
+		Body:            bodyHTML,
+		EmailTemplateID: uint(emailTemplate.ID),
+	}
+	metadataLog := entity.MetadataEmailLog{
+		HotelName: bd.RoomPrice.RoomType.Hotel.Name,
+	}
+	emailLog.Meta = &metadataLog
+
+	var dataEmail bool
+	statusEmailID := constant.StatusEmailSuccessID
+	if err = bu.emailRepo.CreateEmailLog(ctx, &emailLog); err != nil {
+		logger.Error(ctx, "Failed to create email log:", err)
+		dataEmail = false
+	} else {
+		dataEmail = true
+	}
+
+	err = bu.emailSender.Send(ctx, constant.ScopeHotel, emailTo, subjectParsed, bodyHTML, "Please view this email in HTML format.")
 	if err != nil {
-		logger.Error(ctx, "Failed to send hotel booking email:", err.Error())
+		logger.Error(ctx, "Failed to sending email:", err.Error())
+		statusEmailID = constant.StatusEmailFailedID
+		metadataLog.Notes = fmt.Sprintf("Failed to send email: %s", err.Error())
+		emailLog.Meta = &metadataLog
+	}
+
+	if dataEmail {
+		emailLog.StatusID = uint(statusEmailID)
+		if err := bu.emailRepo.UpdateStatusEmailLog(ctx, &emailLog); err != nil {
+			logger.Error(ctx, "Failed to update email log:", err.Error())
+		}
 	}
 
 }

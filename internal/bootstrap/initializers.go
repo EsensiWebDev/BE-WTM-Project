@@ -101,10 +101,10 @@ func initializeUsecases(deps *Dependencies, repos *Repositories) AppUsecases {
 		HotelUsecase:        hotel_usecase.NewHotelUsecase(repos.HotelRepo, storageActive, deps.DBTransaction, deps.Config),
 		BannerUsecase:       banner_usecase.NewBannerUsecase(repos.BannerRepo, deps.DBTransaction, storageActive),
 		PromoGroupUsecase:   promo_group_usecase.NewPromoGroupUsecase(repos.PromoGroupRepo, repos.UserRepo),
-		BookingUsecase:      booking_usecase.NewBookingUsecase(repos.BookingRepo, repos.HotelRepo, repos.PromoRepo, deps.Middleware, deps.DBTransaction, storageActive, deps.Config, repos.EmailRepo, deps.EmailSender, repos.UserRepo),
+		BookingUsecase:      booking_usecase.NewBookingUsecase(repos.BookingRepo, repos.HotelRepo, repos.PromoRepo, deps.Middleware, deps.DBTransaction, storageActive, deps.Config, repos.EmailRepo, deps.EmailSender, repos.UserRepo, repos.NotificationRepo),
 		ReportUsecase:       report_usecase.NewReportUsecase(repos.ReportRepo),
 		NotificationUsecase: notification_usecase.NewNotificationUsecase(repos.NotificationRepo, deps.Middleware, deps.DBTransaction),
-		EmailUsecase:        email_usecase.NewEmailUsecase(repos.EmailRepo, deps.EmailSender, repos.BookingRepo),
+		EmailUsecase:        email_usecase.NewEmailUsecase(repos.EmailRepo, deps.EmailSender, repos.BookingRepo, storageActive),
 		FileUsecase:         file_usecase.NewFileUsecase(storageActive),
 	}
 }

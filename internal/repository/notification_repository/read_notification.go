@@ -6,11 +6,11 @@ import (
 	"wtm-backend/pkg/logger"
 )
 
-func (nr *NotificationRepository) ReadNotification(ctx context.Context, id int64) error {
+func (nr *NotificationRepository) ReadNotification(ctx context.Context, ids []uint) error {
 	db := nr.db.GetTx(ctx)
 
 	if err := db.Model(&entity.Notification{}).
-		Where("id = ?", id).
+		Where("id IN ?", ids).
 		Update("is_read", true).Error; err != nil {
 		logger.Error(ctx, "Failed to mark notification as read", err.Error())
 		return err

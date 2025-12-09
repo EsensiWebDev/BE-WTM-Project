@@ -3,6 +3,7 @@ package user_usecase
 import (
 	"context"
 	"fmt"
+	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/userdto"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
@@ -70,9 +71,41 @@ func (uu *UserUsecase) sendEmailNotification(ctx context.Context, req *userdto.U
 
 	bodyText := "Please view this email in HTML format." // Optional fallback
 
-	err = uu.emailSender.Send(ctx, email, emailTemplate.Subject, bodyHTML, bodyText)
+	subjectParsed := emailTemplate.Subject
+
+	emailTo := email
+
+	emailLog := entity.EmailLog{
+		To:              emailTo,
+		Subject:         subjectParsed,
+		Body:            bodyHTML,
+		EmailTemplateID: uint(emailTemplate.ID),
+	}
+	metadataLog := entity.MetadataEmailLog{AgentName: name}
+	emailLog.Meta = &metadataLog
+
+	var dataEmail bool
+	statusEmailID := constant.StatusEmailSuccessID
+	if err = uu.emailRepo.CreateEmailLog(ctx, &emailLog); err != nil {
+		logger.Error(ctx, "Failed to create email log:", err)
+		dataEmail = false
+	} else {
+		dataEmail = true
+	}
+
+	err = uu.emailSender.Send(ctx, constant.ScopeAgent, emailTo, subjectParsed, bodyHTML, bodyText)
 	if err != nil {
-		logger.Error(ctx, "Error sending email:", err.Error())
+		logger.Error(ctx, "Failed to sending email:", err.Error())
+		statusEmailID = constant.StatusEmailFailedID
+		metadataLog.Notes = fmt.Sprintf("Failed to sending email: %s", err.Error())
+		emailLog.Meta = &metadataLog
+	}
+
+	if dataEmail {
+		emailLog.StatusID = uint(statusEmailID)
+		if err := uu.emailRepo.UpdateStatusEmailLog(ctx, &emailLog); err != nil {
+			logger.Error(ctx, "Failed to update email log:", err.Error())
+		}
 	}
 
 }

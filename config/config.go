@@ -1,10 +1,11 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
 	"strings"
 	"time"
 	"wtm-backend/pkg/utils"
+
+	"github.com/joho/godotenv"
 )
 
 type AWSConfig struct {
@@ -61,17 +62,54 @@ type Config struct {
 	DefaultCheckInHour        string
 	DefaultCheckOutHour       string
 
-	EmailHost     string
-	EmailPort     int
-	EmailUser     string
-	EmailPass     string
-	EmailFrom     string
-	EmailProvider string
+	HostSES               string
+	UsernameSES           string
+	PortSES               int
+	PasswordSES           string
+	DisableAuthSES        bool
+	UseTLSSES             bool
+	HostNameSES           string
+	DefaultFromSES        string
+	SupportEmailSES       string
+	ProviderSESReplyTo    bool
+	ProviderSESReturnPath bool
+	TimeoutSES            time.Duration
 
-	SupportEmail string
+	HostGmail               string
+	UsernameGmail           string
+	PortGmail               int
+	PasswordGmail           string
+	DisableAuthGmail        bool
+	UseTLSGmail             bool
+	HostNameGmail           string
+	DefaultFromGmail        string
+	SupportEmailGmail       string
+	ProviderGmailReplyTo    bool
+	ProviderGmailReturnPath bool
+	TimeoutGmail            time.Duration
+
+	HostMailhog        string
+	PortMailhog        int
+	DisableAuthMailhog bool
+	UseTLSMailhog      bool
+	DefaultFromMailhog string
+
+	EmailContactUs string
+	EmailFromAgent string
+	EmailFromHotel string
 
 	AWSConfig   AWSConfig
 	AutoMigrate bool
+
+	ProviderAgent string
+	ProviderHotel string
+
+	RetryDelay     time.Duration
+	DialTimeout    time.Duration
+	SendTimeout    time.Duration
+	CommandTimeout time.Duration
+
+	HostIP string
 }
 
 func LoadConfig() *Config {
@@ -120,14 +158,52 @@ func LoadConfig() *Config {
 		DefaultCheckInHour:        utils.GetStringEnv("DEFAULT_CHECK_IN_HOUR", "14:00"),
 		DefaultCheckOutHour:       utils.GetStringEnv("DEFAULT_CHECK_OUT_HOUR", "12:00"),
 
-		EmailHost:     utils.GetStringEnv("EMAIL_HOST", "localhost"),
-		EmailPort:     utils.GetIntEnv("EMAIL_PORT", 1025),
-		EmailUser:     utils.GetStringEnv("EMAIL_USERNAME", ""),
-		EmailPass:     utils.GetStringEnv("EMAIL_PASSWORD", ""),
-		EmailFrom:     utils.GetStringEnv("EMAIL_FROM", "noreply@dev.local"),
-		EmailProvider: utils.GetStringEnv("EMAIL_PROVIDER", "mailhog"),
+		HostSES:               utils.GetStringEnv("HOST_SES", ""),
+		UsernameSES:           utils.GetStringEnv("USERNAME_SES", ""),
+		PortSES:               utils.GetIntEnv("PORT_SES", 587),
+		PasswordSES:           utils.GetStringEnv("PASSWORD_SES", ""),
+		DisableAuthSES:        utils.GetBoolEnv("DISABLE_AUTH_SES", false),
+		UseTLSSES:             utils.GetBoolEnv("USE_TLS_SES", false),
+		HostNameSES:           utils.GetStringEnv("HOST_NAME_SES", ""),
+		DefaultFromSES:        utils.GetStringEnv("DEFAULT_FROM_SES", ""),
+		SupportEmailSES:       utils.GetStringEnv("SUPPORT_EMAIL_SES", ""),
+		ProviderSESReplyTo:    utils.GetBoolEnv("PROVIDER_SES_REPLY_TO", false),
+		ProviderSESReturnPath: utils.GetBoolEnv("PROVIDER_SES_RETURN_PATH", false),
+		TimeoutSES:            utils.GetDurationEnv("TIMEOUT_SES", 12*time.Second),
 
-		SupportEmail: utils.GetStringEnv("SUPPORT_EMAIL", "support@dev.local"),
+		HostGmail:               utils.GetStringEnv("HOST_GMAIL", ""),
+		UsernameGmail:           utils.GetStringEnv("USERNAME_GMAIL", ""),
+		PortGmail:               utils.GetIntEnv("PORT_GMAIL", 587),
+		PasswordGmail:           utils.GetStringEnv("PASSWORD_GMAIL", ""),
+		DisableAuthGmail:        utils.GetBoolEnv("DISABLE_AUTH_GMAIL", false),
+		UseTLSGmail:             utils.GetBoolEnv("USE_TLS_GMAIL", false),
+		DefaultFromGmail:        utils.GetStringEnv("DEFAULT_FROM_GMAIL", ""),
+		SupportEmailGmail:       utils.GetStringEnv("SUPPORT_EMAIL_GMAIL", ""),
+		ProviderGmailReplyTo:    utils.GetBoolEnv("PROVIDER_GMAIL_REPLY_TO", false),
+		ProviderGmailReturnPath: utils.GetBoolEnv("PROVIDER_GMAIL_RETURN_PATH", false),
+		TimeoutGmail:            utils.GetDurationEnv("TIMEOUT_GMAIL", 12*time.Second),
+
+		HostMailhog:        utils.GetStringEnv("HOST_MAILHOG", ""),
+		PortMailhog:        utils.GetIntEnv("PORT_MAILHOG", 8025),
+		DisableAuthMailhog: utils.GetBoolEnv("DISABLE_AUTH_MAILHOG", false),
+		UseTLSMailhog:      utils.GetBoolEnv("USE_TLS_MAILHOG", false),
+		DefaultFromMailhog: utils.GetStringEnv("DEFAULT_FROM_MAILHOG", ""),
+
+		EmailContactUs: utils.GetStringEnv("EMAIL_CONTACT_US", "contact@wtm.com"),
+		EmailFromAgent: utils.GetStringEnv("EMAIL_FROM_AGENT", "agent@wtm.com"),
+		EmailFromHotel: utils.GetStringEnv("EMAIL_FROM_HOTEL", "admin@wtm.com"),
+
+		ProviderAgent: utils.GetStringEnv("PROVIDER_AGENT", "mailhog"),
+		ProviderHotel: utils.GetStringEnv("PROVIDER_HOTEL", "mailhog"),
+
+		RetryDelay:     utils.GetDurationEnv("RETRY_DELAY", 2*time.Second),
+		DialTimeout:    utils.GetDurationEnv("DIAL_TIMEOUT", 10*time.Second),
+		SendTimeout:    utils.GetDurationEnv("SEND_TIMEOUT", 30*time.Second),
+		CommandTimeout: utils.GetDurationEnv("COMMAND_TIMEOUT", 5*time.Second),
+
+		HostIP: utils.GetStringEnv("HOST_IP", "127.0.0.1"),
+
+		AutoMigrate: utils.GetBoolEnv("AUTO_MIGRATE", false),
 
 		AWSConfig: AWSConfig{
 			Region:            utils.GetStringEnv("AWS_REGION", "us-east-1"),

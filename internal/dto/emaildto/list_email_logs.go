@@ -14,6 +14,7 @@ type ListEmailLogsResponse struct {
 // EmailLogResponse represents a single email log entry in the response
 type EmailLogResponse struct {
 	DateTime  string `json:"date_time"`
+	EmailType string `json:"email_type"`
 	HotelName string `json:"hotel_name"`
 	Status    string `json:"status"`
 	Notes     string `json:"notes"`

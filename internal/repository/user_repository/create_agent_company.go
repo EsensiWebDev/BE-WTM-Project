@@ -15,7 +15,7 @@ func (ur *UserRepository) CreateAgentCompany(ctx context.Context, agentCompany s
 		Name: agentCompany,
 	}
 
-	err := db.WithContext(ctx).Debug().Where("LOWER(name) = LOWER(?)", agentCompany).FirstOrCreate(&modelAgentCompany).Error
+	err := db.WithContext(ctx).Where("LOWER(name) = LOWER(?)", agentCompany).FirstOrCreate(&modelAgentCompany).Error
 	if err != nil {
 		logger.Error(ctx, "Error to add agent company", err.Error())
 		return nil, err

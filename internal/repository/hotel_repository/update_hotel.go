@@ -50,7 +50,7 @@ func (hr *HotelRepository) UpdateHotel(ctx context.Context, hotel *entity.Hotel)
 	// Hapus semua relasi lama
 	if err := db.WithContext(ctx).
 		Unscoped().
-		Where("hotel_id = ?", hotel.ID).Debug().
+		Where("hotel_id = ?", hotel.ID).
 		Delete(&model.HotelNearbyPlace{}).Error; err != nil {
 		logger.Error(ctx, "failed to clear hotel nearby places", err.Error())
 		return err
@@ -63,7 +63,7 @@ func (hr *HotelRepository) UpdateHotel(ctx context.Context, hotel *entity.Hotel)
 			NearbyPlaceID: np.ID,
 			Radius:        np.Radius,
 		}
-		if err := db.WithContext(ctx).Debug().Create(&link).Error; err != nil {
+		if err := db.WithContext(ctx).Create(&link).Error; err != nil {
 			logger.Error(ctx, "failed to attach nearby place to hotel", err.Error())
 			return err
 		}

@@ -2,6 +2,7 @@ package booking_repository
 
 import (
 	"context"
+	"encoding/json"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/logger"
@@ -25,6 +26,12 @@ func (br *BookingRepository) GetSubBookingByCode(ctx context.Context, code strin
 		logger.Error(ctx, "failed to copy booking model to entity", err.Error())
 		return nil, err
 	}
+
+	var detailRoom entity.DetailRoom
+	if err := json.Unmarshal(bookingDetail.DetailRoom, &detailRoom); err != nil {
+		logger.Error(ctx, "failed to unmarshal detail room", err.Error())
+	}
+	result.DetailRooms = detailRoom
 
 	return &result, nil
 }

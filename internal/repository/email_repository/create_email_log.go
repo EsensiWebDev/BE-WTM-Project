@@ -19,12 +19,14 @@ func (er *EmailRepository) CreateEmailLog(ctx context.Context, log *entity.Email
 		return err
 	}
 
-	metaJSON, err := json.Marshal(log.Meta)
-	if err != nil {
-		logger.Error(ctx, "failed to marshal metadata to JSON", err.Error())
-		return err
+	if log.Meta != nil {
+		metaJSON, err := json.Marshal(log.Meta)
+		if err != nil {
+			logger.Error(ctx, "failed to marshal metadata to JSON", err.Error())
+			return err
+		}
+		modelEmailLog.Meta = metaJSON
 	}
-	modelEmailLog.Meta = metaJSON
 
 	modelEmailLog.StatusID = constant.StatusEmailPendingID
 
@@ -32,6 +34,8 @@ func (er *EmailRepository) CreateEmailLog(ctx context.Context, log *entity.Email
 		logger.Error(ctx, "failed to create email log", err.Error())
 		return err
 	}
+
+	log.ID = modelEmailLog.ID
 
 	return nil
 }

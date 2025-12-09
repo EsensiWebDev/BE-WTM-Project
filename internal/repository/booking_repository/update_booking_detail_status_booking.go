@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
-	"time"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"gorm.io/gorm"
 )
 
 func (br *BookingRepository) UpdateBookingDetailStatusBooking(ctx context.Context, bookingDetailIDs []uint, statusID uint) ([]entity.BookingDetail, []string, error) {
@@ -25,15 +25,20 @@ func (br *BookingRepository) UpdateBookingDetailStatusBooking(ctx context.Contex
 			Where("id IN ?", bookingDetailIDs).
 			Where("status_booking_id = ?", constant.StatusBookingWaitingApprovalID)
 
-		if statusID == constant.StatusBookingConfirmedID {
+		switch statusID {
+		case constant.StatusBookingConfirmedID:
 			res.Updates(map[string]interface{}{
 				"status_booking_id": statusID,
-				"approved_at":       time.Now(),
+				"approved_at":       gorm.Expr("NOW()"),
 			})
-		} else {
+		case constant.StatusBookingRejectedID:
 			res.Updates(map[string]interface{}{
 				"status_booking_id": statusID,
+				"rejected_at":       gorm.Expr("NOW()"),
 			})
+		default:
+			logger.Error(ctx, "invalid status booking")
+			return errors.New("invalid status booking")
 		}
 
 		if err := res.Error; err != nil {
@@ -75,7 +80,7 @@ func (br *BookingRepository) UpdateBookingDetailStatusBooking(ctx context.Contex
 				END`,
 				constant.StatusBookingRejectedID,
 				constant.StatusBookingConfirmedID,
-				constant.StatusBookingCanceledID,
+				constant.StatusBookingCancelledID,
 			)
 			// Step 3a: Tentukan status prioritas dari semua detail
 			var detailStatus uint
@@ -94,7 +99,6 @@ func (br *BookingRepository) UpdateBookingDetailStatusBooking(ctx context.Contex
 				Where("id = ?", bookingID).
 				Updates(map[string]interface{}{
 					"status_booking_id": detailStatus,
-					"approved_at":       time.Now(),
 				}).Error; err != nil {
 				logger.Error(ctx, "failed to update booking with priority", err.Error())
 				return err

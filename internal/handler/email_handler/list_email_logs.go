@@ -1,11 +1,12 @@
 package email_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/dto/emaildto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
+
+	"github.com/gin-gonic/gin"
 )
 
 // ListEmailLogs godoc

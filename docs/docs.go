@@ -1449,7 +1449,7 @@ const docTemplate = `{
                 ],
                 "description": "Update an existing email template",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -1459,6 +1459,13 @@ const docTemplate = `{
                 ],
                 "summary": "Update Email Template",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template Type",
+                        "name": "type",
+                        "in": "formData",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "Template Subject",
@@ -3241,6 +3248,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/notifications/read": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Read Notification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Read Notification",
+                "parameters": [
+                    {
+                        "description": "Read Notification Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/notifdto.ReadNotificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully read notification",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/notifications/settings": {
             "put": {
                 "security": [
@@ -4661,6 +4707,18 @@ const docTemplate = `{
                         "description": "Filter by Agent Id",
                         "name": "agent_id",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date for the report in YYYY-MM-DD format",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date for the report in YYYY-MM-DD format",
+                        "name": "date_to",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4707,24 +4765,6 @@ const docTemplate = `{
                 ],
                 "summary": "Generate Report Summary",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search term",
-                        "name": "search",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by Hotel Id",
-                        "name": "hotel_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by Agent Company Id",
-                        "name": "agent_company_id",
-                        "in": "query"
-                    },
                     {
                         "type": "string",
                         "description": "Start date for the report in YYYY-MM-DD format",
@@ -6030,6 +6070,9 @@ const docTemplate = `{
                 "date_time": {
                     "type": "string"
                 },
+                "email_type": {
+                    "type": "string"
+                },
                 "hotel_name": {
                     "type": "string"
                 },
@@ -6268,6 +6311,9 @@ const docTemplate = `{
                 "title": {
                     "type": "string"
                 },
+                "type": {
+                    "type": "string"
+                },
                 "user_id": {
                     "type": "integer"
                 }
@@ -6417,6 +6463,9 @@ const docTemplate = `{
                 },
                 "hotel_name": {
                     "type": "string"
+                },
+                "rejected_booking": {
+                    "type": "integer"
                 }
             }
         },
@@ -6453,6 +6502,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "date": {
+                    "type": "string"
+                },
+                "date_time": {
                     "type": "string"
                 }
             }
@@ -7001,6 +7053,17 @@ const docTemplate = `{
                 }
             }
         },
+        "notifdto.ReadNotificationRequest": {
+            "type": "object",
+            "properties": {
+                "notif_id": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "notifdto.UpdateNotificationSettingRequest": {
             "type": "object",
             "properties": {
@@ -7247,13 +7310,13 @@ const docTemplate = `{
         "reportdto.SummaryData": {
             "type": "object",
             "properties": {
-                "cancellation_booking": {
+                "cancelled_booking": {
                     "$ref": "#/definitions/reportdto.DataTotalWithPercentage"
                 },
                 "confirmed_booking": {
                     "$ref": "#/definitions/reportdto.DataTotalWithPercentage"
                 },
-                "new_customer": {
+                "rejected_booking": {
                     "$ref": "#/definitions/reportdto.DataTotalWithPercentage"
                 }
             }

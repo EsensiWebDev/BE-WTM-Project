@@ -26,9 +26,10 @@ func (bu *BookingUsecase) ListBookingHistory(ctx context.Context, req *bookingdt
 	agentID := userCtx.ID
 
 	bookingFilter := filter.BookingFilter{
-		AgentID:         agentID,
-		BookingStatusID: req.StatusBookingID,
-		PaymentStatusID: req.StatusPaymentID,
+		PaginationRequest: req.PaginationRequest,
+		AgentID:           agentID,
+		BookingStatusID:   req.StatusBookingID,
+		PaymentStatusID:   req.StatusPaymentID,
 	}
 	if req.SearchBy == "booking_id" {
 		bookingFilter.BookingIDSearch = req.Search

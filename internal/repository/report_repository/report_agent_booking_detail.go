@@ -2,13 +2,16 @@ package report_repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"gorm.io/gorm/clause"
 	"strings"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/internal/repository/filter"
+	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
+
+	"gorm.io/gorm/clause"
 )
 
 var validateColumnSort = map[string]bool{
@@ -25,7 +28,8 @@ func (rr *ReportRepository) ReportAgentBookingDetail(ctx context.Context, filter
 	query := db.WithContext(ctx).
 		Model(&model.BookingDetail{}).
 		Preload("BookingDetailsAdditional").
-		Preload("StatusBooking")
+		Preload("StatusBooking").
+		Where("booking_details.status_booking_id IN ?", []int{constant.StatusBookingConfirmedID, constant.StatusBookingCancelledID, constant.StatusBookingRejectedID})
 
 	if filter.HotelID != nil {
 		query = query.
@@ -37,9 +41,38 @@ func (rr *ReportRepository) ReportAgentBookingDetail(ctx context.Context, filter
 		query = query.Joins("JOIN bookings b ON booking_details.booking_id = b.id").
 			Where("b.agent_id = ?", *filter.AgentID)
 	}
+	// Date filters with correct logic per status
+	if filter.DateFrom != nil && filter.DateTo != nil {
+		query = query.Where(
+			db.Where("booking_details.status_booking_id = ? AND booking_details.approved_at >= ? AND booking_details.approved_at < ?",
+				constant.StatusBookingConfirmedID, *filter.DateFrom, *filter.DateTo).
+				Or("booking_details.status_booking_id = ? AND booking_details.cancelled_at >= ? AND booking_details.cancelled_at < ?",
+					constant.StatusBookingCancelledID, *filter.DateFrom, *filter.DateTo).
+				Or("booking_details.status_booking_id = ? AND booking_details.rejected_at >= ? AND booking_details.rejected_at < ?",
+					constant.StatusBookingRejectedID, *filter.DateFrom, *filter.DateTo),
+		)
+	} else if filter.DateFrom != nil {
+		query = query.Where(
+			db.Where("booking_details.status_booking_id = ? AND booking_details.approved_at >= ?",
+				constant.StatusBookingConfirmedID, *filter.DateFrom).
+				Or("booking_details.status_booking_id = ? AND booking_details.cancelled_at >= ?",
+					constant.StatusBookingCancelledID, *filter.DateFrom).
+				Or("booking_details.status_booking_id = ? AND booking_details.rejected_at >= ?",
+					constant.StatusBookingRejectedID, *filter.DateFrom),
+		)
+	} else if filter.DateTo != nil {
+		query = query.Where(
+			db.Where("booking_details.status_booking_id = ? AND booking_details.approved_at < ?",
+				constant.StatusBookingConfirmedID, *filter.DateTo).
+				Or("booking_details.status_booking_id = ? AND booking_details.cancelled_at < ?",
+					constant.StatusBookingCancelledID, *filter.DateTo).
+				Or("booking_details.status_booking_id = ? AND booking_details.rejected_at < ?",
+					constant.StatusBookingRejectedID, *filter.DateTo),
+		)
+	}
 
 	var total int64
-	if err := query.Count(&total).Debug().Error; err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		logger.Error(ctx, "Error counting booking details", err.Error())
 		return nil, 0, err
 	}
@@ -66,7 +99,7 @@ func (rr *ReportRepository) ReportAgentBookingDetail(ctx context.Context, filter
 		query = query.Order("booking_details.id DESC")
 	}
 
-	if err := query.Find(&bookingDetails).Debug().Error; err != nil {
+	if err := query.Find(&bookingDetails).Error; err != nil {
 		logger.Error(ctx, "Error fetching booking details", err.Error())
 		return nil, total, err
 	}
@@ -78,12 +111,17 @@ func (rr *ReportRepository) ReportAgentBookingDetail(ctx context.Context, filter
 			additionalNames = append(additionalNames, add.NameAdditional)
 		}
 
+		var detailRoom entity.DetailRoom
+		if err := json.Unmarshal(bd.DetailRoom, &detailRoom); err != nil {
+			logger.Error(ctx, "Error unmarshaling detail room", err.Error())
+		}
+
 		result := entity.ReportAgentDetail{
 			GuestName:     bd.Guest,
-			RoomType:      bd.RoomPrice.RoomType.Name,
+			RoomType:      detailRoom.RoomTypeName,
 			DateIn:        bd.CheckInDate.Format("2006-01-02"),
 			DateOut:       bd.CheckOutDate.Format("2006-01-02"),
-			Capacity:      fmt.Sprintf("%d Adult", bd.RoomPrice.RoomType.MaxOccupancy),
+			Capacity:      fmt.Sprintf("%d Adult", detailRoom.Capacity),
 			Additional:    strings.Join(additionalNames, ","),
 			StatusBooking: bd.StatusBooking.Status,
 		}

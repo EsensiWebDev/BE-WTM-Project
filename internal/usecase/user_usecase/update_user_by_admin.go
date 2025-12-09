@@ -10,6 +10,7 @@ import (
 )
 
 func (uu *UserUsecase) UpdateUserByAdmin(ctx context.Context, req *userdto.UpdateUserByAdminRequest) error {
+
 	userDB, err := uu.userRepo.GetUserByID(ctx, req.UserID)
 	if err != nil {
 		logger.Error(ctx, "Error getting user by Id", err.Error())
@@ -64,7 +65,7 @@ func (uu *UserUsecase) UpdateUserByAdmin(ctx context.Context, req *userdto.Updat
 
 	trxErr := uu.dbTrx.WithTransaction(ctx, func(txCtx context.Context) error {
 
-		if req.Role == constant.RoleAgent {
+		if userDB.RoleID == constant.RoleAgentID {
 			if req.PromoGroupID > 0 {
 				promoGroup, err := uu.promoGroupRepo.GetPromoGroupByID(txCtx, req.PromoGroupID)
 				if err != nil {

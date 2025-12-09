@@ -84,6 +84,7 @@ type ReportAgentBooking struct {
 	HotelName        string `json:"hotel_name"`
 	ConfirmedBooking int64  `json:"confirmed_booking"`
 	CancelledBooking int64  `json:"cancelled_booking"`
+	RejectedBooking  int64  `json:"rejected_booking"`
 }
 
 // ReportAgentDetail represents detailed booking information for agents
@@ -98,9 +99,10 @@ type ReportAgentDetail struct {
 }
 
 type MonthlyBookingSummary struct {
-	Month               string `json:"month"` // "2023-12"
-	ConfirmedBooking    int64  `json:"confirmed_booking"`
-	CancellationBooking int64  `json:"cancellation_booking"`
+	Month            string `json:"month"` // "2023-12"
+	ConfirmedBooking int64  `json:"confirmed_booking"`
+	CancelledBooking int64  `json:"cancelled_booking"`
+	RejectedBooking  int64  `json:"rejected_booking"`
 }
 
 type MonthlyNewAgentSummary struct {
@@ -109,8 +111,9 @@ type MonthlyNewAgentSummary struct {
 }
 
 type ReportForGraph struct {
-	Date  string `json:"date"`
-	Count int64  `json:"count"`
+	DateTime *time.Time `json:"date_time,omitempty"`
+	Date     string     `json:"date"`
+	Count    int64      `json:"count"`
 }
 
 type StatusBooking struct {

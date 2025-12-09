@@ -13,8 +13,7 @@ func (ar *AuthRepository) ValidateAccessToken(ctx context.Context, userID uint, 
 		return false, err
 	}
 	if token != accessToken {
-		logger.Warn(ctx,
-			"Access token does not match", "userID", userID, "expected", accessToken, "found", token)
+		logger.Warn(ctx, "Access token does not match")
 		return false, nil
 	}
 	return true, nil

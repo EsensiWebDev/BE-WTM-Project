@@ -379,6 +379,8 @@ definitions:
     properties:
       date_time:
         type: string
+      email_type:
+        type: string
       hotel_name:
         type: string
       notes:
@@ -533,6 +535,8 @@ definitions:
         type: string
       title:
         type: string
+      type:
+        type: string
       user_id:
         type: integer
     type: object
@@ -631,6 +635,8 @@ definitions:
         type: integer
       hotel_name:
         type: string
+      rejected_booking:
+        type: integer
     type: object
   entity.ReportAgentDetail:
     properties:
@@ -654,6 +660,8 @@ definitions:
       count:
         type: integer
       date:
+        type: string
+      date_time:
         type: string
     type: object
   entity.StatusBooking:
@@ -1011,6 +1019,13 @@ definitions:
         description: 'Format: YYYY-MM'
         type: string
     type: object
+  notifdto.ReadNotificationRequest:
+    properties:
+      notif_id:
+        type: integer
+      type:
+        type: string
+    type: object
   notifdto.UpdateNotificationSettingRequest:
     properties:
       channel:
@@ -1170,11 +1185,11 @@ definitions:
     type: object
   reportdto.SummaryData:
     properties:
-      cancellation_booking:
+      cancelled_booking:
         $ref: '#/definitions/reportdto.DataTotalWithPercentage'
       confirmed_booking:
         $ref: '#/definitions/reportdto.DataTotalWithPercentage'
-      new_customer:
+      rejected_booking:
         $ref: '#/definitions/reportdto.DataTotalWithPercentage'
     type: object
   response.Pagination:
@@ -2217,9 +2232,14 @@ paths:
       - Email
     put:
       consumes:
-      - application/json
+      - multipart/form-data
       description: Update an existing email template
       parameters:
+      - description: Template Type
+        in: formData
+        name: type
+        required: true
+        type: string
       - description: Template Subject
         in: formData
         name: subject
@@ -3346,6 +3366,30 @@ paths:
       summary: List Notifications
       tags:
       - Notifications
+  /notifications/read:
+    put:
+      consumes:
+      - application/json
+      description: Read Notification
+      parameters:
+      - description: Read Notification Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/notifdto.ReadNotificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully read notification
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: Read Notification
+      tags:
+      - Notifications
   /notifications/settings:
     put:
       consumes:
@@ -4220,6 +4264,14 @@ paths:
         in: query
         name: agent_id
         type: integer
+      - description: Start date for the report in YYYY-MM-DD format
+        in: query
+        name: date_from
+        type: string
+      - description: End date for the report in YYYY-MM-DD format
+        in: query
+        name: date_to
+        type: string
       produces:
       - application/json
       responses:
@@ -4245,18 +4297,6 @@ paths:
       - application/json
       description: Generate a summary report of bookings with optional filters
       parameters:
-      - description: Search term
-        in: query
-        name: search
-        type: string
-      - description: Filter by Hotel Id
-        in: query
-        name: hotel_id
-        type: integer
-      - description: Filter by Agent Company Id
-        in: query
-        name: agent_company_id
-        type: integer
       - description: Start date for the report in YYYY-MM-DD format
         in: query
         name: date_from

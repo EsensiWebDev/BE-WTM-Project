@@ -10,8 +10,9 @@ import (
 )
 
 func (eu *EmailUsecase) ListEmailLogs(ctx context.Context, req *emaildto.ListEmailLogsRequest) (*emaildto.ListEmailLogsResponse, error) {
-	filterReq := filter.DefaultFilter{}
+	filterReq := filter.EmailLogFilter{}
 	filterReq.PaginationRequest = req.PaginationRequest
+	filterReq.EmailType = []string{constant.EmailHotelBookingRequest, constant.EmailHotelBookingCancel}
 
 	emailLogs, total, err := eu.emailRepo.GetEmailLogs(ctx, filterReq)
 	if err != nil {
@@ -27,9 +28,12 @@ func (eu *EmailUsecase) ListEmailLogs(ctx context.Context, req *emaildto.ListEma
 	for _, log := range emailLogs {
 		logData := emaildto.EmailLogResponse{
 			DateTime:  log.CreatedAt.Format(time.RFC3339),
-			HotelName: log.Meta.HotelName,
 			Status:    constant.MapStatusEmailLog[int(log.StatusID)],
-			Notes:     log.Meta.Notes,
+			EmailType: log.EmailType,
+		}
+		if log.Meta != nil {
+			logData.HotelName = log.Meta.HotelName
+			logData.Notes = log.Meta.Notes
 		}
 		response.EmailLogs = append(response.EmailLogs, logData)
 	}

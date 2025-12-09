@@ -101,7 +101,7 @@ func (hr *HotelRepository) GetFilterTotalBedrooms(ctx context.Context, filter fi
     `, priceHaving, roomWhere, hotelWhere)
 
 	var totalRooms []entity.FilterTotalBedroom
-	if err := db.Raw(rawQuery, args...).Debug().Scan(&totalRooms).Error; err != nil {
+	if err := db.Raw(rawQuery, args...).Scan(&totalRooms).Error; err != nil {
 		logger.Error(ctx, "Error fetching total bedrooms (raw)", err.Error())
 		return nil, err
 	}

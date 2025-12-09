@@ -24,7 +24,7 @@ func (hr *HotelRepository) GetHotels(ctx context.Context, filter filter.HotelFil
 		Model(&model.Hotel{}).
 		Preload("RoomTypes").
 		Preload("RoomTypes.RoomPrices").
-		Select(selectFields).Debug()
+		Select(selectFields)
 
 	// Apply filters
 	if filter.IsAPI != nil {
@@ -48,7 +48,7 @@ func (hr *HotelRepository) GetHotels(ctx context.Context, filter filter.HotelFil
 
 	// Count
 	var total int64
-	if err := query.Debug().Count(&total).Error; err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		logger.Error(ctx, "Error counting hotels", err.Error())
 		return nil, total, err
 	}

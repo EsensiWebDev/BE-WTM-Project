@@ -8,7 +8,18 @@ import (
 )
 
 func (eu *EmailUsecase) UpdateEmailTemplate(ctx context.Context, req *emaildto.UpdateEmailTemplateRequest) error {
-	emailTemplate, err := eu.emailRepo.GetEmailTemplateByName(ctx, constant.EmailHotelBookingRequest)
+
+	var typeName string
+	switch req.Type {
+	case "confirm":
+		typeName = constant.EmailHotelBookingRequest
+	case "cancel":
+		typeName = constant.EmailHotelBookingCancel
+	default:
+		typeName = constant.EmailHotelBookingRequest
+	}
+
+	emailTemplate, err := eu.emailRepo.GetEmailTemplateByName(ctx, typeName)
 	if err != nil {
 		logger.Error(ctx, "Error getting email template by name:", err.Error())
 		return err

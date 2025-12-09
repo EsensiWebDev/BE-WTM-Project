@@ -16,7 +16,7 @@ func (ur *UserRepository) GetUserByRole(ctx context.Context, roleID uint, search
 	var users []model.User
 	var total int64
 
-	query := db.WithContext(ctx).Debug().
+	query := db.WithContext(ctx).
 		Model(&model.User{}).
 		Where("role_id = ?", roleID)
 

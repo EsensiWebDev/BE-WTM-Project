@@ -15,7 +15,7 @@ func (s *Seed) SeedBooking() {
 		{ID: constant.StatusBookingWaitingApprovalID, Status: constant.StatusBookingWaitingApproval},
 		{ID: constant.StatusBookingConfirmedID, Status: constant.StatusBookingConfirmed},
 		{ID: constant.StatusBookingRejectedID, Status: constant.StatusBookingRejected},
-		{ID: constant.StatusBookingCanceledID, Status: constant.StatusBookingCanceled},
+		{ID: constant.StatusBookingCancelledID, Status: constant.StatusBookingCancelled},
 	}
 
 	// definisi status payment

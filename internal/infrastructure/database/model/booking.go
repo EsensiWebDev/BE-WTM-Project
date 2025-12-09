@@ -34,13 +34,12 @@ type Booking struct {
 	BookingCode     string     `gorm:"uniqueIndex;not null"`
 	StatusBookingID uint       `gorm:"index"`
 	StatusPaymentID uint       `gorm:"index"`
-	ApprovedAt      time.Time
 
 	StatusBooking  StatusBooking   `gorm:"foreignkey:StatusBookingID"`
 	StatusPayment  StatusPayment   `gorm:"foreignkey:StatusPaymentID"`
 	Agent          User            `gorm:"foreignkey:AgentID"`
 	BookingDetails []BookingDetail `gorm:"foreignkey:BookingID"`
-	BookingGuests  []BookingGuest  `gorm:"foreignkey:BookingID"`
+	BookingGuests  []BookingGuest  `gorm:"foreignKey:BookingID;constraint:OnDelete:CASCADE;"`
 }
 
 func (b *Booking) BeforeCreate(tx *gorm.DB) error {
@@ -56,6 +55,8 @@ type BookingDetail struct {
 	CheckInDate  time.Time
 	CheckOutDate time.Time
 	ApprovedAt   time.Time
+	RejectedAt   time.Time
+	CancelledAt  time.Time
 	Quantity     int
 	ReceiptUrl   string `gorm:"type:text"`
 	PaidAt       *time.Time

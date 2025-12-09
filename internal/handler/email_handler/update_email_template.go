@@ -1,20 +1,22 @@
 package email_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/dto/emaildto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // UpdateEmailTemplate godoc
 // @Summary Update Email Template
 // @Description Update an existing email template
 // @Tags Email
-// @Accept json
+// @Accept multipart/form-data
 // @Produce json
+// @Param type formData string true "Template Type"
 // @Param subject formData string true "Template Subject"
 // @Param body formData string true "Template Body dalam html format"
 // @Param signature_text formData string false "Template Signature Text dalam html format"

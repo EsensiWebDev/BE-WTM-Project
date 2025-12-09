@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
+	"wtm-backend/internal/domain/entity"
 	dtoauth "wtm-backend/internal/dto/authdto"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
@@ -34,6 +35,11 @@ func (au *AuthUsecase) ForgotPassword(ctx context.Context, request *dtoauth.Forg
 	if err != nil {
 		logger.Error(ctx, "Error getting user by email:", err.Error())
 		return nil, err
+	}
+
+	if user == nil {
+		logger.Error(ctx, "User not found for email:", request.Email)
+		return nil, fmt.Errorf("user not found for email: %s", request.Email)
 	}
 
 	token, err := utils.GenerateSecureToken()
@@ -94,6 +100,8 @@ func (au *AuthUsecase) sendEmailNotification(ctx context.Context, name, email, t
 		ExpiresIn: utils.HumanizeDuration(expiry),
 	}
 
+	subjectParsed := emailTemplate.Subject
+
 	bodyHTML, err := utils.ParseTemplate(emailTemplate.Body, data)
 	if err != nil {
 		logger.Error(ctx, "Error parsing body HTML:", err.Error())
@@ -102,9 +110,38 @@ func (au *AuthUsecase) sendEmailNotification(ctx context.Context, name, email, t
 
 	bodyText := "Please view this email in HTML format." // Optional fallback
 
-	err = au.emailSender.Send(ctx, email, emailTemplate.Subject, bodyHTML, bodyText)
+	emailTo := email
+
+	emailLog := entity.EmailLog{
+		To:              emailTo,
+		Subject:         subjectParsed,
+		Body:            bodyHTML,
+		EmailTemplateID: uint(emailTemplate.ID),
+	}
+	metadataLog := entity.MetadataEmailLog{AgentName: name}
+	emailLog.Meta = &metadataLog
+	var dataEmail bool
+	statusEmailID := constant.StatusEmailSuccessID
+	if err = au.emailRepo.CreateEmailLog(ctx, &emailLog); err != nil {
+		logger.Error(ctx, "Failed to create email log:", err)
+		dataEmail = false
+	} else {
+		dataEmail = true
+	}
+
+	err = au.emailSender.Send(ctx, constant.ScopeAgent, emailTo, subjectParsed, bodyHTML, bodyText)
 	if err != nil {
 		logger.Error(ctx, "Error sending email:", err.Error())
+		statusEmailID = constant.StatusEmailFailedID
+		metadataLog.Notes = fmt.Sprintf("Error sending email: %s", err.Error())
+		emailLog.Meta = &metadataLog
+	}
+
+	if dataEmail {
+		emailLog.StatusID = uint(statusEmailID)
+		if err := au.emailRepo.UpdateStatusEmailLog(ctx, &emailLog); err != nil {
+			logger.Error(ctx, "Failed to update email log:", err.Error())
+		}
 	}
 
 }

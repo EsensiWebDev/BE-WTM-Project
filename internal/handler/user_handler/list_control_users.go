@@ -1,13 +1,14 @@
 package user_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/dto/userdto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // ListControlUsers godoc
@@ -36,7 +37,6 @@ func (uh *UserHandler) ListControlUsers(c *gin.Context) {
 		req.Role = constant.RoleAgent
 	}
 	req.Scope = constant.ScopeControl
-	req.StatusID = constant.StatusUserWaitingApprovalID
 
 	if err := req.Validate(); err != nil {
 		logger.Error(ctx, "Validation error:", err.Error())

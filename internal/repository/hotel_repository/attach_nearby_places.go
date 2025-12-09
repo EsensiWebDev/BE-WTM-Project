@@ -27,7 +27,7 @@ func (hr *HotelRepository) AttachNearbyPlaces(ctx context.Context, hotelID uint,
 		link := model.HotelNearbyPlace{
 			HotelID:       hotelID,
 			NearbyPlaceID: placeModel.ID,
-			Radius:        np.Distance,
+			Radius:        float64(np.Distance),
 		}
 
 		if err := db.WithContext(ctx).Create(&link).Error; err != nil {

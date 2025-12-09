@@ -1,19 +1,21 @@
 package model
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Notification struct {
 	gorm.Model
 	ExternalID  ExternalID `gorm:"embedded"`
 	UserID      uint       `gorm:"index;not null"`
-	Title       string     `gorm:"type:varchar(255);not null"`
-	Message     string     `gorm:"type:text;not null"`
+	Title       string     `gorm:"type:varchar(255)"`
+	Message     string     `gorm:"type:text"`
 	RedirectURL string     `gorm:"type:varchar(255)"`
-	IsRead      bool       `gorm:"type:boolean;not null"`
-	ReadAt      time.Time
+	IsRead      bool       `gorm:"type:boolean"`
+	Type        string     `gorm:"type:varchar(50)"`
+	ReadAt      *time.Time
 }
 
 func (b *Notification) BeforeCreate(tx *gorm.DB) error {

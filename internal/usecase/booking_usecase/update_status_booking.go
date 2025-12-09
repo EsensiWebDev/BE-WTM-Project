@@ -77,62 +77,137 @@ func (bu *BookingUsecase) sendEmailNotificationAgent(ctx context.Context, detail
 
 	booking := details[0].Booking
 
-	var templateName string
+	notifSettings, err := bu.userRepo.GetNotificationSettings(ctx, booking.AgentID)
+	if err != nil {
+		logger.Error(ctx, "Failed to get notification settings:", err.Error())
+		return
+	}
+
+	var templateName, title, message, typeNotif string
+	var notifAllowed NotifAgentAllowed
 	switch statusID {
 	case constant.StatusBookingConfirmedID:
 		templateName = constant.EmailBookingConfirmed
+		typeNotif = constant.ConstBooking
+		message = fmt.Sprintf("Your booking has been confirmed, please check Booking ID: %s", booking.BookingCode)
+		title = "Booking Status Confirmed"
+
 	case constant.StatusBookingRejectedID:
 		templateName = constant.EmailBookingRejected
+		typeNotif = constant.ConstReject
+		message = fmt.Sprintf("Your booking has been rejected, please check Booking ID: %s", booking.BookingCode)
+		title = "Booking Status Rejected"
+
 	default:
-		logger.Warn(ctx,
-			"No email template for status:", statusID)
+		logger.Warn(ctx, "No email template for status:", statusID)
 		return
 	}
 
-	emailTemplate, err := bu.emailRepo.GetEmailTemplateByName(ctx, templateName)
-	if err != nil || emailTemplate == nil {
-		logger.Error(ctx, "Failed to get email template:", err)
-		return
+	notifAllowed = getNotifAgentAllowed(notifSettings, typeNotif)
+	redirectURL := fmt.Sprintf("%s/history-booking?search_by=booking_id&search=%s", bu.config.URLFEAgent, booking.BookingCode)
+
+	if notifAllowed.WebNotif {
+		go func() {
+			newCtx, cancel := context.WithTimeout(context.Background(), bu.config.DurationCtxTOSlow)
+			defer cancel()
+			notification := entity.Notification{
+				UserID:      booking.AgentID,
+				Title:       title,
+				Message:     message,
+				RedirectURL: redirectURL,
+				Type:        typeNotif,
+			}
+
+			if err = bu.notifRepo.CreateNotification(newCtx, &notification); err != nil {
+				logger.Error(ctx, "Failed to create notification:", err.Error())
+				return
+			}
+			logger.Info(ctx, "Web notification created for agent:", booking.AgentID)
+		}()
+
 	}
 
-	var subBookings []SubBookingData
-	for _, bd := range details {
-		subBookings = append(subBookings, SubBookingData{
-			SubBookingID: bd.SubBookingID,
-			Guest:        bd.Guest,
-			HotelName:    bd.DetailRooms.HotelName,
-			CheckIn:      bd.CheckInDate.Format("02-01-2006"),
-			CheckOut:     bd.CheckOutDate.Format("02-01-2006"),
-		})
-	}
+	if notifAllowed.EmailNotif {
+		go func() {
+			newCtx, cancel := context.WithTimeout(context.Background(), bu.config.DurationCtxTOSlow)
+			defer cancel()
+			emailTemplate, err := bu.emailRepo.GetEmailTemplateByName(newCtx, templateName)
+			if err != nil || emailTemplate == nil {
+				logger.Error(newCtx, "Failed to get email template:", err)
+				return
+			}
 
-	data := BookingEmailData{
-		AgentName:       booking.AgentName,
-		BookingID:       booking.BookingCode,
-		GuestName:       strings.Join(guests, ", "),
-		BookingLink:     fmt.Sprintf("%s/booking-history", bu.config.URLFEAgent),
-		RejectionReason: rejectionReason,
-		HomePageLink:    bu.config.URLFEAgent,
-		SubBookings:     subBookings,
-	}
+			var subBookings []SubBookingData
+			for _, bd := range details {
+				subBookings = append(subBookings, SubBookingData{
+					SubBookingID: bd.SubBookingID,
+					Guest:        bd.Guest,
+					HotelName:    bd.DetailRooms.HotelName,
+					CheckIn:      bd.CheckInDate.Format("02-01-2006"),
+					CheckOut:     bd.CheckOutDate.Format("02-01-2006"),
+				})
+			}
 
-	switch types {
-	case constant.ConstBooking:
-		data.ID = booking.BookingCode
-	case constant.ConstSubBooking:
-		data.ID = details[0].SubBookingID
-	}
+			data := BookingEmailData{
+				AgentName:       booking.AgentName,
+				BookingID:       booking.BookingCode,
+				GuestName:       strings.Join(guests, ", "),
+				BookingLink:     redirectURL,
+				RejectionReason: rejectionReason,
+				HomePageLink:    bu.config.URLFEAgent,
+				SubBookings:     subBookings,
+			}
 
-	subjectParsed, err := utils.ParseTemplate(emailTemplate.Subject, data)
-	bodyHTML, err := utils.ParseTemplate(emailTemplate.Body, data)
-	if err != nil {
-		logger.Error(ctx, "Failed to parse email template:", err)
-		return
-	}
+			switch types {
+			case constant.ConstBooking:
+				data.ID = booking.BookingCode
+			case constant.ConstSubBooking:
+				data.ID = details[0].SubBookingID
+			}
 
-	err = bu.emailSender.Send(ctx, booking.AgentEmail, subjectParsed, bodyHTML, "Please view this email in HTML format.")
-	if err != nil {
-		logger.Error(ctx, "Failed to send booking email:", err.Error())
+			subjectParsed, err := utils.ParseTemplate(emailTemplate.Subject, data)
+			bodyHTML, err := utils.ParseTemplate(emailTemplate.Body, data)
+			if err != nil {
+				logger.Error(ctx, "Failed to parse email template:", err)
+				return
+			}
+
+			emailTo := booking.AgentEmail
+
+			emailLog := entity.EmailLog{
+				To:              emailTo,
+				Subject:         subjectParsed,
+				Body:            bodyHTML,
+				EmailTemplateID: uint(emailTemplate.ID),
+			}
+			metadataLog := entity.MetadataEmailLog{AgentName: booking.AgentName}
+			emailLog.Meta = &metadataLog
+
+			var dataEmail bool
+			statusEmailID := constant.StatusEmailSuccessID
+			if err = bu.emailRepo.CreateEmailLog(newCtx, &emailLog); err != nil {
+				logger.Error(newCtx, "Failed to create email log:", err)
+				dataEmail = false
+			} else {
+				dataEmail = true
+			}
+
+			err = bu.emailSender.Send(newCtx, constant.ScopeAgent, emailTo, subjectParsed, bodyHTML, "Please view this email in HTML format.")
+			if err != nil {
+				logger.Error(newCtx, "Failed to sending email:", err.Error())
+				statusEmailID = constant.StatusEmailFailedID
+				metadataLog.Notes = fmt.Sprintf("Failed to send email: %s", err.Error())
+				emailLog.Meta = &metadataLog
+			}
+
+			if dataEmail {
+				emailLog.StatusID = uint(statusEmailID)
+				if err := bu.emailRepo.UpdateStatusEmailLog(newCtx, &emailLog); err != nil {
+					logger.Error(newCtx, "Failed to update email log:", err.Error())
+				}
+			}
+		}()
+
 	}
 }
 
@@ -144,6 +219,26 @@ func (bu *BookingUsecase) assignSignatureEmail(emailSignature string) string {
 		return fmt.Sprintf(`<img src="%s" alt="Signature" style="width:150px;">`, emailSignature)
 	}
 	return emailSignature
+}
+
+func getNotifAgentAllowed(notifSettings []entity.UserNotificationSetting, typeNotif string) NotifAgentAllowed {
+	result := NotifAgentAllowed{}
+	for _, setting := range notifSettings {
+		if setting.IsEnabled && setting.Type == typeNotif {
+			switch setting.Channel {
+			case constant.ConstEmail:
+				result.EmailNotif = true
+			case constant.ConstWeb:
+				result.WebNotif = true
+			}
+		}
+	}
+	return result
+}
+
+type NotifAgentAllowed struct {
+	EmailNotif bool
+	WebNotif   bool
 }
 
 type SubBookingData struct {

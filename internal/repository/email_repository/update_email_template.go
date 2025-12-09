@@ -16,6 +16,7 @@ func (er *EmailRepository) UpdateEmailTemplate(ctx context.Context, template *en
 		logger.Error(ctx, "failed to copy email template entity to model", err.Error())
 		return err
 	}
+	templateModel.ExternalID.ExternalID = template.ExternalID
 
 	if err := db.WithContext(ctx).Save(templateModel).Error; err != nil {
 		logger.Error(ctx, "failed to update email template", err.Error())

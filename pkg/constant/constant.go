@@ -7,6 +7,7 @@ const (
 	ConstPublic    = "public"
 	ConstPrivate   = "private"
 	ConstEmail     = "email"
+	ConstWeb       = "web"
 	ConstSignature = "signature"
 )
 
@@ -49,12 +50,12 @@ const (
 	StatusBookingWaitingApproval   = "Waiting Approval"
 	StatusBookingConfirmed         = "Confirmed"
 	StatusBookingRejected          = "Rejected"
-	StatusBookingCanceled          = "Canceled"
+	StatusBookingCancelled         = "Cancelled"
 	StatusBookingInCartID          = 1
 	StatusBookingWaitingApprovalID = 2
 	StatusBookingConfirmedID       = 3
 	StatusBookingRejectedID        = 4
-	StatusBookingCanceledID        = 5
+	StatusBookingCancelledID       = 5
 )
 
 const (
@@ -96,6 +97,10 @@ const (
 	EmailForgotPassword      = "forgot_password"
 	EmailAccountActivated    = "account_activated"
 )
+const (
+	BookingRequest = "Booking Request"
+	BookingCancel  = "Booking Cancel"
+)
 
 const (
 	ContactUsGeneral = "general"
@@ -130,4 +135,11 @@ const (
 	RoomPrice = "Room Price"
 	UnitNight = "night"
 	UnitPax   = "pax"
+)
+
+type Scope string
+
+const (
+	ScopeHotel Scope = "hotel" // untuk email terkait akun (verifikasi, reset password)
+	ScopeAgent Scope = "agent" // untuk email transaksi (invoice, receipt, status order)
 )

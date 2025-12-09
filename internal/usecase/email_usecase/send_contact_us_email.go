@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/emaildto"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
@@ -46,7 +47,7 @@ func (eu *EmailUsecase) SendContactUsEmail(ctx context.Context, req *emaildto.Se
 			UserMessage: req.Message,
 		}
 
-		subject, err := utils.ParseTemplate(emailTemplate.Subject, data)
+		subjectParsed, err := utils.ParseTemplate(emailTemplate.Subject, data)
 		if err != nil {
 			logger.Error(ctx, "parse subject general fail", err.Error())
 			return err
@@ -58,10 +59,44 @@ func (eu *EmailUsecase) SendContactUsEmail(ctx context.Context, req *emaildto.Se
 		}
 		bodyText := "Please view this email in HTML format."
 
-		if err := eu.emailSender.Send(ctx, constant.SupportEmail, subject, bodyHTML, bodyText); err != nil {
-			logger.Error(ctx, "send general contact email fail", err.Error())
+		emailTo := constant.SupportEmail
+
+		emailLog := entity.EmailLog{
+			To:              emailTo,
+			Subject:         subjectParsed,
+			Body:            bodyHTML,
+			EmailTemplateID: uint(emailTemplate.ID),
+		}
+
+		var dataEmail bool
+		statusEmailID := constant.StatusEmailSuccessID
+		if err = eu.emailRepo.CreateEmailLog(ctx, &emailLog); err != nil {
+			logger.Error(ctx, "Failed to create email log:", err)
+			dataEmail = false
+		} else {
+			dataEmail = true
+		}
+
+		err = eu.emailSender.Send(ctx, constant.ScopeAgent, emailTo, subjectParsed, bodyHTML, bodyText)
+		if err != nil {
+			logger.Error(ctx, "Failed to send email:", err.Error())
+			statusEmailID = constant.StatusEmailFailedID
+			metadataLog := entity.MetadataEmailLog{Notes: err.Error()}
+			emailLog.Meta = &metadataLog
+		}
+
+		if dataEmail {
+			emailLog.StatusID = uint(statusEmailID)
+			if err := eu.emailRepo.UpdateStatusEmailLog(ctx, &emailLog); err != nil {
+				logger.Error(ctx, "Failed to update email log:", err.Error())
+			}
+		}
+
+		if err != nil {
+			logger.Error(ctx, "Failed to send email:", err.Error())
 			return err
 		}
+
 		return nil
 
 	case constant.ContactUsBooking:
@@ -129,7 +164,7 @@ func (eu *EmailUsecase) SendContactUsEmail(ctx context.Context, req *emaildto.Se
 			// AgentPhone & AgencyName bisa diisi kalau accessible dari booking/agent
 		}
 
-		subject, err := utils.ParseTemplate(emailTemplate.Subject, data)
+		subjectParsed, err := utils.ParseTemplate(emailTemplate.Subject, data)
 		if err != nil {
 			logger.Error(ctx, "parse subject booking fail", err.Error())
 			return err
@@ -141,10 +176,44 @@ func (eu *EmailUsecase) SendContactUsEmail(ctx context.Context, req *emaildto.Se
 		}
 		bodyText := "Please view this email in HTML format."
 
-		if err := eu.emailSender.Send(ctx, constant.SupportEmail, subject, bodyHTML, bodyText); err != nil {
-			logger.Error(ctx, "send booking contact email fail", err.Error())
+		emailTo := constant.SupportEmail
+
+		emailLog := entity.EmailLog{
+			To:              emailTo,
+			Subject:         subjectParsed,
+			Body:            bodyHTML,
+			EmailTemplateID: uint(emailTemplate.ID),
+		}
+
+		var dataEmail bool
+		statusEmailID := constant.StatusEmailSuccessID
+		if err = eu.emailRepo.CreateEmailLog(ctx, &emailLog); err != nil {
+			logger.Error(ctx, "Failed to create email log:", err)
+			dataEmail = false
+		} else {
+			dataEmail = true
+		}
+
+		err = eu.emailSender.Send(ctx, constant.ScopeAgent, emailTo, subjectParsed, bodyHTML, bodyText)
+		if err != nil {
+			logger.Error(ctx, "Failed to sending email:", err.Error())
+			statusEmailID = constant.StatusEmailFailedID
+			metadataLog := entity.MetadataEmailLog{Notes: err.Error()}
+			emailLog.Meta = &metadataLog
+		}
+
+		if dataEmail {
+			emailLog.StatusID = uint(statusEmailID)
+			if err := eu.emailRepo.UpdateStatusEmailLog(ctx, &emailLog); err != nil {
+				logger.Error(ctx, "Failed to update email log:", err.Error())
+			}
+		}
+
+		if err != nil {
+			logger.Error(ctx, "Failed to send email:", err.Error())
 			return err
 		}
+
 		return nil
 	}
 

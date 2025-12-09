@@ -35,9 +35,20 @@ type DefaultFilter struct {
 	dto.PaginationRequest
 }
 
+type EmailLogFilter struct {
+	dto.PaginationRequest
+	EmailType []string
+}
+
 type BannerFilter struct {
 	dto.PaginationRequest
 	IsActive *bool
+}
+
+type ReportSummaryFilter struct {
+	DateFrom *time.Time
+	DateTo   *time.Time
+	dto.PaginationRequest
 }
 
 type ReportFilter struct {
@@ -45,13 +56,14 @@ type ReportFilter struct {
 	DateTo         *time.Time
 	HotelID        []uint
 	AgentCompanyID []uint
-	IsRangeDate    bool
 	dto.PaginationRequest
 }
 
 type ReportDetailFilter struct {
-	HotelID *uint
-	AgentID *uint
+	HotelID  *uint
+	AgentID  *uint
+	DateFrom *time.Time
+	DateTo   *time.Time
 	dto.PaginationRequest
 }
 
