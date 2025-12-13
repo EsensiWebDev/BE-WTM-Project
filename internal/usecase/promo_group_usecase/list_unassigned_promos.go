@@ -2,6 +2,7 @@ package promo_group_usecase
 
 import (
 	"context"
+	"fmt"
 	"wtm-backend/internal/dto/promogroupdto"
 	"wtm-backend/internal/repository/filter"
 	"wtm-backend/pkg/logger"
@@ -24,7 +25,7 @@ func (pgu *PromoGroupUsecase) ListUnassignedPromos(ctx context.Context, req *pro
 	for _, promo := range promos {
 		data := promogroupdto.ListUnassignedPromoData{
 			ID:   promo.ID,
-			Name: promo.Name,
+			Name: fmt.Sprintf("%s - %s", promo.Code, promo.Name),
 		}
 
 		datas = append(datas, data)

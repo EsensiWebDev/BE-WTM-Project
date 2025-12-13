@@ -10,7 +10,20 @@ import (
 )
 
 func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (*hoteldto.DetailHotelForAgentResponse, error) {
-	hotel, err := hu.hotelRepo.GetHotelByID(ctx, hotelID, constant.RoleAgent)
+	userCtx, err := hu.middleware.GenerateUserFromContext(ctx)
+	if err != nil {
+		logger.Error(ctx, "failed to get user from context", err.Error())
+		return nil, err
+	}
+
+	if userCtx == nil {
+		logger.Error(ctx, "user context is nil")
+		return nil, err
+	}
+
+	agentID := userCtx.ID
+
+	hotel, err := hu.hotelRepo.GetHotelByID(ctx, hotelID, agentID)
 	if err != nil {
 		logger.Error(ctx, "Error getting hotel by Id", err.Error())
 		return nil, err

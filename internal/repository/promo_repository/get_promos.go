@@ -23,7 +23,9 @@ func (pr *PromoRepository) GetPromos(ctx context.Context, filterReq *filter.Defa
 
 	if filterReq.Search != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filterReq.Search)
-		query = query.Where("promos.name ILIKE ? ", "%"+safeSearch+"%")
+		query = query.Where(db.Where("promos.name ILIKE ? ", "%"+safeSearch+"%").
+			Or("promos.code ILIKE ? ", "%"+safeSearch+"%").
+			Or("promos.external_id ILIKE ? ", "%"+safeSearch+"%"))
 	}
 
 	if err := query.Count(&total).Error; err != nil {

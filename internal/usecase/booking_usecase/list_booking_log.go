@@ -3,6 +3,7 @@ package booking_usecase
 import (
 	"context"
 	"fmt"
+	"time"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/internal/repository/filter"
 	"wtm-backend/pkg/logger"
@@ -12,14 +13,73 @@ func (bu *BookingUsecase) ListBookingLog(ctx context.Context, req *bookingdto.Li
 	filterReq := filter.BookingFilter{}
 	filterReq.PaginationRequest = req.PaginationRequest
 
-	filterReq.ConfirmDateFrom = req.ConfirmDateFrom
-	filterReq.ConfirmDateTo = req.ConfirmDateTo
+	//validate date
+	if req.ConfirmDateFrom != "" {
+		confirmDateFrom, err := time.Parse(time.DateOnly, req.ConfirmDateFrom)
+		if err != nil {
+			logger.Error(ctx, "ListHotelsForAgent", err.Error())
+		}
+		if !confirmDateFrom.IsZero() {
+			confirmDateFrom = confirmDateFrom.Truncate(time.Hour * 24)
+			filterReq.ConfirmDateFrom = &confirmDateFrom
+		}
+	}
 
-	filterReq.CheckInDateFrom = req.CheckInDateFrom
-	filterReq.CheckInDateTo = req.CheckInDateTo
+	if req.ConfirmDateTo != "" {
+		confirmDateTo, err := time.Parse(time.DateOnly, req.ConfirmDateTo)
+		if err != nil {
+			logger.Error(ctx, "ListHotelsForAgent", err.Error())
+		}
+		if !confirmDateTo.IsZero() {
+			confirmDateTo = confirmDateTo.Truncate(time.Hour*24).AddDate(0, 0, 1)
+			filterReq.ConfirmDateTo = &confirmDateTo
+		}
+	}
 
-	filterReq.CheckOutDateFrom = req.CheckOutDateFrom
-	filterReq.CheckOutDateTo = req.CheckOutDateTo
+	if req.CheckInDateFrom != "" {
+		checkInDateFrom, err := time.Parse(time.DateOnly, req.CheckInDateFrom)
+		if err != nil {
+			logger.Error(ctx, "ListHotelsForAgent", err.Error())
+		}
+		if !checkInDateFrom.IsZero() {
+			checkInDateFrom = checkInDateFrom.Truncate(time.Hour * 24)
+			filterReq.CheckInDateFrom = &checkInDateFrom
+		}
+	}
+
+	if req.CheckInDateTo != "" {
+		checkInDateTo, err := time.Parse(time.DateOnly, req.CheckInDateTo)
+		if err != nil {
+			logger.Error(ctx, "ListHotelsForAgent", err.Error())
+		}
+		if !checkInDateTo.IsZero() {
+			checkInDateTo = checkInDateTo.Truncate(time.Hour*24).AddDate(0, 0, 1)
+			filterReq.CheckInDateTo = &checkInDateTo
+		}
+	}
+
+	if req.CheckOutDateFrom != "" {
+		checkOutDateFrom, err := time.Parse(time.DateOnly, req.CheckOutDateFrom)
+		if err != nil {
+			logger.Error(ctx, "ListHotelsForAgent", err.Error())
+		}
+		if !checkOutDateFrom.IsZero() {
+			checkOutDateFrom = checkOutDateFrom.Truncate(time.Hour * 24)
+			filterReq.CheckInDateFrom = &checkOutDateFrom
+		}
+	}
+
+	if req.CheckOutDateTo != "" {
+		checkOutDateTo, err := time.Parse(time.DateOnly, req.CheckOutDateTo)
+		if err != nil {
+			logger.Error(ctx, "ListHotelsForAgent", err.Error())
+		}
+		if !checkOutDateTo.IsZero() {
+			checkOutDateTo = checkOutDateTo.Truncate(time.Hour*24).AddDate(0, 0, 1)
+			filterReq.CheckInDateTo = &checkOutDateTo
+		}
+
+	}
 
 	filterReq.BookingStatusID = req.BookingStatusID
 	filterReq.PaymentStatusID = req.PaymentStatusID

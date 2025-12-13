@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
 	"wtm-backend/internal/domain/entity"
@@ -11,6 +10,8 @@ import (
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/jwt"
 	"wtm-backend/pkg/logger"
+
+	"github.com/gin-gonic/gin"
 )
 
 type userContextKey struct{}
@@ -131,7 +132,7 @@ func (m *Middleware) RequirePermission(required string) gin.HandlerFunc {
 		}
 
 		logger.Warn(ctx, "Required permission not found")
-		response.Error(c, http.StatusForbidden, "Forbidden")
+		response.Error(c, http.StatusForbidden, "You do not have the required permissions to perform this action.")
 		c.Abort()
 		return
 	}

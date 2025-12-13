@@ -10,7 +10,7 @@ import (
 )
 
 func (hu *HotelUsecase) DetailHotel(ctx context.Context, hotelID uint) (*hoteldto.DetailHotelResponse, error) {
-	hotel, err := hu.hotelRepo.GetHotelByID(ctx, hotelID, constant.RoleAdmin)
+	hotel, err := hu.hotelRepo.GetHotelByID(ctx, hotelID, 0)
 	if err != nil {
 		logger.Error(ctx, "Error getting hotel by Id", err.Error())
 		return nil, err

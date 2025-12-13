@@ -1,10 +1,11 @@
 package userdto
 
 import (
-	validation "github.com/go-ozzo/ozzo-validation"
 	"strings"
 	"wtm-backend/internal/dto"
 	"wtm-backend/pkg/constant"
+
+	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 type ListUsersRequest struct {
@@ -33,6 +34,7 @@ type ListUsersResponse struct {
 
 type ListUserData struct {
 	ID               uint   `json:"id"`
+	ExternalID       string `json:"external_id"`
 	Name             string `json:"name"`
 	Email            string `json:"email,omitempty"`
 	Username         string `json:"username,omitempty"`

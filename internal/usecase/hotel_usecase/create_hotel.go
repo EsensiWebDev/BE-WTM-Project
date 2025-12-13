@@ -36,7 +36,7 @@ func (hu *HotelUsecase) CreateHotel(ctx context.Context, req *hoteldto.CreateHot
 			logger.Error(ctx, "Failed to parse checkInHour", err.Error())
 		}
 
-		checkOutHour, err := utils.ParseHourString(hu.config.DefaultCheckInHour)
+		checkOutHour, err := utils.ParseHourString(hu.config.DefaultCheckOutHour)
 		if err != nil {
 			logger.Error(ctx, "Failed to parse checkInHour", err.Error())
 		}

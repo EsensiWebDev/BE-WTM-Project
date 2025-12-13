@@ -1,12 +1,13 @@
 package promo_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/dto/promodto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CreatePromo godoc
@@ -42,7 +43,7 @@ func (ph *PromoHandler) CreatePromo(c *gin.Context) {
 		return
 	}
 
-	err := ph.promoUsecase.UpsertPromo(ctx, req, nil)
+	err := ph.promoUsecase.UpsertPromo(ctx, req, "")
 	if err != nil {
 		logger.Error(ctx, "Error creating promo:", err.Error())
 		response.Error(c, http.StatusInternalServerError, "Error creating promo")

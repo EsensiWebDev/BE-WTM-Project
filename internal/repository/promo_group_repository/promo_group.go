@@ -1,6 +1,8 @@
 package promo_group_repository
 
-import "wtm-backend/internal/infrastructure/database"
+import (
+	"wtm-backend/internal/infrastructure/database"
+)
 
 type PromoGroupRepository struct {
 	db *database.DBPostgre

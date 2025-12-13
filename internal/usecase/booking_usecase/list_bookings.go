@@ -16,7 +16,6 @@ func (bu *BookingUsecase) ListBookings(ctx context.Context, req *bookingdto.List
 	filterReq.PaginationRequest = req.PaginationRequest
 	filterReq.PaymentStatusID = req.PaymentStatusID
 	filterReq.BookingStatusID = req.BookingStatusID
-	filterReq.GuestNameSearch = req.Search
 
 	bookings, total, err := bu.bookingRepo.GetBookings(ctx, &filterReq)
 	if err != nil {

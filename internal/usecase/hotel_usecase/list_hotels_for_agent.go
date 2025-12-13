@@ -17,18 +17,57 @@ func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.Li
 
 	var rangeDateFrom, rangeDateTo time.Time
 	var err error
+	resp := &hoteldto.ListHotelForAgentResponse{}
 	if req.RangeDateFrom != "" {
 		rangeDateFrom, err = time.Parse(time.DateOnly, req.RangeDateFrom)
 		if err != nil {
 			logger.Error(ctx, "ListHotelsForAgent", err.Error())
-			return nil, err
+			return resp, nil
+		}
+
+		// Validasi: RangeDateFrom minimal hari ini
+		today := time.Now().Truncate(24 * time.Hour)
+		rangeDateFrom = rangeDateFrom.Truncate(24 * time.Hour)
+
+		if rangeDateFrom.Before(today) {
+			errMsg := "RangeDateFrom must be today or in the future"
+			logger.Error(ctx, "ListHotelsForAgent", errMsg)
+			return resp, nil
 		}
 	}
+
 	if req.RangeDateTo != "" {
 		rangeDateTo, err = time.Parse(time.DateOnly, req.RangeDateTo)
 		if err != nil {
 			logger.Error(ctx, "ListHotelsForAgent", err.Error())
-			return nil, err
+			return resp, nil
+		}
+
+		// Validasi: RangeDateTo minimal hari ini
+		today := time.Now().Truncate(24 * time.Hour)
+		rangeDateTo = rangeDateTo.Truncate(24 * time.Hour)
+
+		if rangeDateTo.Before(today) {
+			errMsg := "RangeDateTo must be today or in the future"
+			logger.Error(ctx, "ListHotelsForAgent", errMsg)
+			return resp, nil
+		}
+	}
+
+	// Validasi relasi antar tanggal
+	if req.RangeDateFrom != "" && req.RangeDateTo != "" {
+		// Validasi 1: RangeDateFrom harus sebelum RangeDateTo
+		if rangeDateFrom.After(rangeDateTo) {
+			errMsg := "RangeDateFrom must be before RangeDateTo"
+			logger.Error(ctx, "ListHotelsForAgent", errMsg)
+			return resp, nil
+		}
+
+		// Validasi 2: Tidak boleh sama (minimal 1 hari selisih)
+		if rangeDateFrom.Equal(rangeDateTo) {
+			errMsg := "RangeDateFrom and RangeDateTo cannot be the same date"
+			logger.Error(ctx, "ListHotelsForAgent", errMsg)
+			return resp, nil
 		}
 	}
 
@@ -148,15 +187,13 @@ func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.Li
 		return nil, err
 	}
 
-	resp := &hoteldto.ListHotelForAgentResponse{
-		Hotels:           respHotels,
-		FilterTotalRooms: totalRooms,
-		FilterBedTypes:   bedTypes,
-		FilterRatings:    ratings,
-		FilterPricing:    pricing,
-		FilterDistricts:  districts,
-		Total:            total,
-	}
+	resp.Hotels = respHotels
+	resp.FilterTotalRooms = totalRooms
+	resp.FilterBedTypes = bedTypes
+	resp.FilterRatings = ratings
+	resp.FilterPricing = pricing
+	resp.FilterDistricts = districts
+	resp.Total = total
 
 	return resp, nil
 

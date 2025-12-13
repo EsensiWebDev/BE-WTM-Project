@@ -1,11 +1,13 @@
 package hotel_handler
 
 import (
-	"github.com/gin-gonic/gin"
+	"fmt"
 	"net/http"
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
+
+	"github.com/gin-gonic/gin"
 )
 
 // ListHotelsForAgent godoc
@@ -42,7 +44,7 @@ func (hh *HotelHandler) ListHotelsForAgent(c *gin.Context) {
 	resp, err := hh.hotelUsecase.ListHotelsForAgent(ctx, &req)
 	if err != nil {
 		logger.Error(ctx, "Error fetching hotels for agent:", err.Error())
-		response.Error(c, http.StatusInternalServerError, "Failed to get list of hotels for agent")
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Error fetching hotels for agent: %s", err.Error()))
 		return
 	}
 

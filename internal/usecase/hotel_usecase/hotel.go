@@ -3,7 +3,6 @@ package hotel_usecase
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"mime/multipart"
 	"path"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 	"wtm-backend/internal/domain"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type HotelUsecase struct {
@@ -20,14 +21,16 @@ type HotelUsecase struct {
 	fileStorage   domain.StorageClient
 	dbTransaction domain.DatabaseTransaction
 	config        *config.Config
+	middleware    domain.Middleware
 }
 
-func NewHotelUsecase(hotelRepo domain.HotelRepository, fileStorage domain.StorageClient, dbTrx domain.DatabaseTransaction, config *config.Config) *HotelUsecase {
+func NewHotelUsecase(hotelRepo domain.HotelRepository, fileStorage domain.StorageClient, dbTrx domain.DatabaseTransaction, config *config.Config, middleware domain.Middleware) *HotelUsecase {
 	return &HotelUsecase{
 		hotelRepo:     hotelRepo,
 		fileStorage:   fileStorage,
 		dbTransaction: dbTrx,
 		config:        config,
+		middleware:    middleware,
 	}
 }
 

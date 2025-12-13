@@ -3,8 +3,8 @@ package promodto
 import validation "github.com/go-ozzo/ozzo-validation"
 
 type SetStatusPromoRequest struct {
-	PromoID  uint `json:"promo_id" form:"promo_id"`
-	IsActive bool `json:"is_active" form:"is_active"`
+	PromoID  string `json:"promo_id" form:"promo_id"`
+	IsActive bool   `json:"is_active" form:"is_active"`
 }
 
 func (r *SetStatusPromoRequest) Validate() error {

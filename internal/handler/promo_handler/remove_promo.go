@@ -1,11 +1,11 @@
 package promo_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
-	"wtm-backend/pkg/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // RemovePromo godoc
@@ -28,14 +28,7 @@ func (ph *PromoHandler) RemovePromo(c *gin.Context) {
 		return
 	}
 
-	promoIDUint, err := utils.StringToUint(promoID)
-	if err != nil {
-		logger.Error(ctx, "Invalid promo Id format:", err.Error())
-		response.Error(c, http.StatusBadRequest, "Invalid promo Id format")
-		return
-	}
-
-	if err := ph.promoUsecase.RemovePromo(ctx, promoIDUint); err != nil {
+	if err := ph.promoUsecase.RemovePromo(ctx, promoID); err != nil {
 		logger.Error(ctx, "Error removing promo:", err.Error())
 		response.Error(c, http.StatusInternalServerError, "Error removing promo")
 		return

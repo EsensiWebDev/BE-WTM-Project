@@ -9,12 +9,12 @@ import (
 
 type PromoUsecase interface {
 	ListPromoTypes(ctx context.Context, req *promodto.ListPromoTypesRequest) (*promodto.ListPromoTypesResponse, int64, error)
-	UpsertPromo(ctx context.Context, req *promodto.UpsertPromoRequest, promoID *uint) error
+	UpsertPromo(ctx context.Context, req *promodto.UpsertPromoRequest, promoID string) error
 	ListPromos(ctx context.Context, req *promodto.ListPromosRequest) (*promodto.ListPromosResponse, error)
 	ListPromosForAgent(ctx context.Context, req *promodto.ListPromosForAgentRequest) (*promodto.ListPromosForAgentResponse, error)
 	SetStatusPromo(ctx context.Context, req *promodto.SetStatusPromoRequest) error
-	PromoByID(ctx context.Context, promoID uint) (*entity.Promo, error)
-	RemovePromo(ctx context.Context, promoID uint) error
+	PromoByID(ctx context.Context, promoID string) (*entity.PromoWithExternalID, error)
+	RemovePromo(ctx context.Context, promoID string) error
 }
 
 type PromoRepository interface {
@@ -23,6 +23,7 @@ type PromoRepository interface {
 	GetPromos(ctx context.Context, filterReq *filter.DefaultFilter) ([]entity.Promo, int64, error)
 	GetPromosWithHotels(ctx context.Context, filterReq *filter.PromoFilter) ([]entity.Promo, int64, error)
 	GetPromoByID(ctx context.Context, promoID uint, selectedFields []string) (*entity.Promo, error)
+	GetPromoByExternalID(ctx context.Context, externalID string) (*entity.Promo, error)
 	UpdatePromoStatus(ctx context.Context, promoID uint, isActive bool) error
 	DeletePromo(ctx context.Context, promoID uint) error
 	UpdatePromo(ctx context.Context, promo *entity.Promo) error

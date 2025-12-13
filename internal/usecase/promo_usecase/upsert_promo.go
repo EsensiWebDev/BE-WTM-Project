@@ -10,7 +10,7 @@ import (
 	"wtm-backend/pkg/utils"
 )
 
-func (pu *PromoUsecase) UpsertPromo(ctx context.Context, req *promodto.UpsertPromoRequest, promoID *uint) error {
+func (pu *PromoUsecase) UpsertPromo(ctx context.Context, req *promodto.UpsertPromoRequest, promoID string) error {
 	return pu.dbTrx.WithTransaction(ctx, func(txCtx context.Context) error {
 		startDate, err := utils.ParseRFC3339ToUTC(req.StartDate)
 		if err != nil {
@@ -88,8 +88,15 @@ func (pu *PromoUsecase) UpsertPromo(ctx context.Context, req *promodto.UpsertPro
 			PromoRoomTypes: promoRoomTypes,
 		}
 
-		if promoID != nil && *promoID > 0 {
-			promo.ID = *promoID
+		if promoID != "" {
+
+			promoEntity, err := pu.promoRepo.GetPromoByExternalID(ctx, promoID)
+			if err != nil {
+				logger.Error(ctx, "Error getting promo by Id", "error", err, "promoID", promoID)
+				return err
+			}
+
+			promo.ID = promoEntity.ID
 			err = pu.promoRepo.UpdatePromo(txCtx, promo)
 			if err != nil {
 				logger.Error(ctx, "Error updating promo", err.Error())

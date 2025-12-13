@@ -27,7 +27,7 @@ func (hu *HotelUsecase) UpdateHotel(ctx context.Context, req *hoteldto.UpdateHot
 				return err
 			}
 		}
-		hotel, err := hu.hotelRepo.GetHotelByID(txCtx, req.HotelID, constant.RoleAdmin)
+		hotel, err := hu.hotelRepo.GetHotelByID(txCtx, req.HotelID, 0)
 		if err != nil {
 			logger.Error(ctx, "failed to get hotel by ID", err.Error())
 			return fmt.Errorf("failed to get hotel by ID: %w", err)

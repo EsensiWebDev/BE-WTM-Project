@@ -1,11 +1,11 @@
 package promo_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
-	"wtm-backend/pkg/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // PromoByID godoc
@@ -15,21 +15,15 @@ import (
 // @Accept json
 // @Produce json
 // @Param id path string true "Promo Id"
-// @Success 200 {object} response.ResponseWithData{data=entity.Promo} "Successfully retrieved promo"
+// @Success 200 {object} response.ResponseWithData{data=entity.PromoWithExternalID} "Successfully retrieved promo"
 // @Security BearerAuth
 // @Router /promos/{id} [get]
 func (ph *PromoHandler) PromoByID(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	promoID := c.Param("id")
-	promoIDUint, err := utils.StringToUint(promoID)
-	if err != nil {
-		logger.Error(ctx, "Error converting promo Id to uint:", err.Error())
-		response.Error(c, http.StatusBadRequest, "Invalid promo Id")
-		return
-	}
 
-	promo, err := ph.promoUsecase.PromoByID(ctx, promoIDUint)
+	promo, err := ph.promoUsecase.PromoByID(ctx, promoID)
 	if err != nil {
 		logger.Error(ctx, "Error fetching promo by Id:", err.Error())
 		response.Error(c, http.StatusInternalServerError, "Error fetching promo")

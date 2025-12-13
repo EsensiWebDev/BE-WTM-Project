@@ -16,7 +16,7 @@ func (ur *UserRepository) GetUsers(ctx context.Context, filter filter.UserFilter
 	query := db.WithContext(ctx).Model(&model.User{})
 
 	// Select default fields
-	selectFields := []string{"id", "username", "full_name", "email", "phone", "status_id"}
+	selectFields := []string{"id", "external_id", "username", "full_name", "email", "phone", "status_id"}
 
 	// Apply filters
 	if filter.RoleID != nil {
@@ -51,7 +51,9 @@ func (ur *UserRepository) GetUsers(ctx context.Context, filter filter.UserFilter
 	// Search
 	if strings.TrimSpace(filter.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		query = query.Where("LOWER(full_name) ILIKE ?  ", "%"+safeSearch+"%")
+		query = query.Where(db.Where("full_name ILIKE ?  ", "%"+safeSearch+"%").
+			Or("email ILIKE ?  ", "%"+safeSearch+"%").
+			Or("phone ILIKE ?  ", "%"+safeSearch+"%"))
 	}
 
 	// Count
@@ -95,6 +97,7 @@ func (ur *UserRepository) GetUsers(ctx context.Context, filter filter.UserFilter
 		if strings.TrimSpace(user.Status.Status) != "" {
 			entityUser.StatusName = user.Status.Status
 		}
+		entityUser.ExternalID = user.ExternalID.ExternalID
 
 		entityUsers = append(entityUsers, entityUser)
 	}

@@ -15,7 +15,7 @@ func (pgr *PromoGroupRepository) GetUnassignedPromos(ctx context.Context, filter
 
 	var promos []model.Promo
 	var total int64
-	query := db.WithContext(ctx).Model(&model.Promo{}).Select("id, name")
+	query := db.WithContext(ctx).Model(&model.Promo{}).Select("id, name, code")
 
 	// 🔍 Filter: belum berelasi dengan promoGroupID
 	query = query.Where("NOT EXISTS (?)",
@@ -28,7 +28,7 @@ func (pgr *PromoGroupRepository) GetUnassignedPromos(ctx context.Context, filter
 	// 🔍 Filter: search by name
 	if strings.TrimSpace(filterReq.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filterReq.Search)
-		query = query.Where("LOWER(promos.name) ILIKE ? ", "%"+safeSearch+"%")
+		query = query.Where("promos.name ILIKE ? ", "%"+safeSearch+"%")
 	}
 
 	// 🔢 Count total

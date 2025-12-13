@@ -85,9 +85,9 @@ func (rr *ReportRepository) ReportAgentBooking(ctx context.Context, filter filte
 	// Search filter
 	if strings.TrimSpace(filter.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
-		conditions = append(conditions, fmt.Sprintf("u.full_name ILIKE $%d", argIndex))
-		args = append(args, "%"+safeSearch+"%")
-		argIndex++
+		conditions = append(conditions, fmt.Sprintf("(u.full_name ILIKE $%d OR ac.name ILIKE $%d OR h.name ILIKE $%d)", argIndex, argIndex+1, argIndex+2))
+		args = append(args, "%"+safeSearch+"%", "%"+safeSearch+"%", "%"+safeSearch+"%")
+		argIndex += 3
 	}
 
 	// Hotel ID filter

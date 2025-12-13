@@ -52,6 +52,7 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 			return fmt.Errorf("failed to update booking status: %s", err.Error())
 		}
 
+		var countExpired int
 		// 4. Create Invoice Data
 		for _, detail := range booking.BookingDetails {
 			cancellationDate := detail.CheckInDate.AddDate(0, 0, detail.RoomPrice.RoomType.Hotel.CancellationPeriod)
@@ -88,6 +89,11 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 					SubBookingID: detail.SubBookingID,
 				},
 			}
+			timeNow := time.Now()
+			if detail.CheckInDate.Before(timeNow) {
+				countExpired++
+			}
+
 			var totalPrice float64
 			var descriptionItems []entity.DescriptionInvoice
 			var detailPromo entity.DetailPromo
@@ -160,6 +166,11 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 				logger.Error(ctx, "failed to update booking", err.Error())
 				return fmt.Errorf("failed to update booking: %s", err.Error())
 			}
+		}
+
+		if countExpired > 0 {
+			logger.Error(ctx, fmt.Sprintf("there are %d expired booking", countExpired))
+			return fmt.Errorf("there are %d expired booking", countExpired)
 		}
 
 		// Create Invoice

@@ -32,7 +32,7 @@ func HotelRoute(app *bootstrap.Application, mm MiddlewareMap, routerGroup *gin.R
 			agents := hotels.Group("/agent")
 			{
 				agents.GET("", hotelHandler.ListHotelsForAgent)
-				agents.GET("/:id", hotelHandler.DetailHotelForAgent)
+				agents.GET("/:id", mm.Auth, hotelHandler.DetailHotelForAgent)
 			}
 
 			roomTypes := hotels.Group("/room-types", mm.Auth)

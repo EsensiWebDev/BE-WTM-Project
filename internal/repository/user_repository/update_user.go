@@ -17,10 +17,26 @@ func (ur *UserRepository) UpdateUser(ctx context.Context, user *entity.User) (*e
 		return nil, err
 	}
 
+	updateData := map[string]interface{}{
+		"password":         modelUser.Password,
+		"full_name":        modelUser.FullName,
+		"username":         modelUser.Username,
+		"email":            modelUser.Email,
+		"phone":            modelUser.Phone,
+		"kakao_talk_id":    modelUser.KakaoTalkID,
+		"agent_company_id": modelUser.AgentCompanyID,
+		"certificate":      modelUser.Certificate,
+		"photo_selfie":     modelUser.PhotoSelfie,
+		"photo_id_card":    modelUser.PhotoIDCard,
+		"name_card":        modelUser.NameCard,
+		"status_id":        modelUser.StatusID,
+		"promo_group_id":   modelUser.PromoGroupID,
+	}
+
 	err := db.WithContext(ctx).
 		Model(&model.User{}).
 		Where("id = ?", user.ID).
-		Updates(modelUser).Error
+		Updates(updateData).Error
 	if err != nil {
 		logger.Error(ctx, "Error to update user", err.Error())
 		return nil, err

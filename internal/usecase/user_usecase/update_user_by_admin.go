@@ -87,6 +87,8 @@ func (uu *UserUsecase) UpdateUserByAdmin(ctx context.Context, req *userdto.Updat
 				}
 
 				userDB.AgentCompanyID = &agentCompany.ID
+			} else {
+				userDB.AgentCompanyID = nil
 			}
 
 			if req.PhotoSelfie != nil {

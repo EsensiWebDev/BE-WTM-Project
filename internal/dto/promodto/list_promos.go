@@ -15,7 +15,7 @@ type ListPromosResponse struct {
 }
 
 type PromoResponse struct {
-	ID               uint               `json:"id"`
+	ID               string             `json:"id"`
 	PromoCode        string             `json:"promo_code"`
 	PromoName        string             `json:"promo_name"`
 	Duration         int                `json:"duration"`

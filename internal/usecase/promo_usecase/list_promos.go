@@ -20,7 +20,7 @@ func (pu *PromoUsecase) ListPromos(ctx context.Context, req *promodto.ListPromos
 	for _, promo := range promoEntity {
 
 		promos = append(promos, promodto.PromoResponse{
-			ID:               promo.ID,
+			ID:               promo.ExternalID,
 			PromoName:        promo.Name,
 			PromoCode:        promo.Code,
 			Duration:         promo.PromoRoomTypes[0].TotalNights,

@@ -3,15 +3,15 @@ package hotel_repository
 import (
 	"context"
 	"encoding/json"
-	"gorm.io/gorm"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
-	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"gorm.io/gorm"
 )
 
-func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, scope string) (*entity.Hotel, error) {
+func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, agentID uint) (*entity.Hotel, error) {
 	db := hr.db.GetTx(ctx)
 
 	var hotelModel model.Hotel
@@ -29,13 +29,31 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, scope
 		Preload("RoomTypes.RoomTypeAdditionals.RoomAdditional").
 		Preload("RoomTypes.RoomPrices")
 
-	if scope == constant.RoleAgent {
-		query.Preload("RoomTypes.PromoRoomTypes").Preload("RoomTypes.PromoRoomTypes.Promo")
-	}
-
-	if err := query.First(&hotelModel, hotelID).Error; err != nil {
+	if err := query.Debug().First(&hotelModel, hotelID).Error; err != nil {
 		logger.Error(ctx, "Error fetching hotel by Id", err.Error())
 		return nil, err
+	}
+	var promoAgent []model.Promo
+	if agentID != 0 {
+		queryPromo := db.WithContext(ctx).
+			Model(&model.Promo{}).
+			Preload("PromoRoomTypes").
+			Where("is_active = ?", true).
+			Where("id IN (?)",
+				db.Table("detail_promo_groups").
+					Select("promo_id").
+					Where("promo_group_id IN (?)",
+						db.Table("users").
+							Select("promo_group_id").
+							Where("id = ?", agentID),
+					),
+			)
+
+		if err := queryPromo.Debug().Find(&promoAgent).Error; err != nil {
+			logger.Error(ctx, "Error fetching promo by Id", err.Error())
+			return nil, err
+		}
+
 	}
 
 	var hotelEntity entity.Hotel
@@ -44,9 +62,11 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, scope
 		return nil, err
 	}
 
-	if err := json.Unmarshal(hotelModel.SocialMedia, &hotelEntity.SocialMedia); err != nil {
-		logger.Error(ctx, "Failed to unmarshal social media JSON", err.Error())
-		return nil, err
+	if hotelModel.SocialMedia != nil {
+		if err := json.Unmarshal(hotelModel.SocialMedia, &hotelEntity.SocialMedia); err != nil {
+			logger.Error(ctx, "Failed to unmarshal social media JSON", err.Error())
+			return nil, err
+		}
 	}
 
 	hotelEntity.StatusHotel = hotelModel.Status.Status
@@ -71,13 +91,35 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, scope
 				Price: typeAdditional.Price,
 			})
 		}
-		for i2, promoRoomType := range roomType.PromoRoomTypes {
-			if len(promoRoomType.Promo.Detail) > 0 && promoRoomType.Promo.IsActive {
-				var detailPromo entity.PromoDetail
-				if err := json.Unmarshal(promoRoomType.Promo.Detail, &detailPromo); err != nil {
-					logger.Error(ctx, "Error marshalling promo detail to JSON", err.Error())
+
+		for _, promo := range promoAgent {
+			for _, promoRoomType := range promo.PromoRoomTypes {
+				if promoRoomType.RoomTypeID == roomType.ID {
+					var detailPromo entity.PromoDetail
+					if err := json.Unmarshal(promo.Detail, &detailPromo); err != nil {
+						logger.Error(ctx, "Error marshalling promo detail to JSON", err.Error())
+					}
+					hotelEntity.RoomTypes[i].PromoRoomTypes = append(hotelEntity.RoomTypes[i].PromoRoomTypes, entity.PromoRoomTypes{
+						ID:          promoRoomType.ID,
+						PromoID:     promo.ID,
+						RoomTypeID:  promoRoomType.RoomTypeID,
+						TotalNights: promoRoomType.TotalNights,
+						Promo: entity.Promo{
+							ID:            promo.ID,
+							ExternalID:    promo.ExternalID.ExternalID,
+							Name:          promo.Name,
+							StartDate:     promo.StartDate,
+							EndDate:       promo.EndDate,
+							Code:          promo.Code,
+							Description:   promo.Description,
+							PromoTypeID:   promo.PromoTypeID,
+							Detail:        detailPromo,
+							IsActive:      promo.IsActive,
+							PromoTypeName: promo.PromoType.Name,
+						},
+					})
+					break
 				}
-				hotelEntity.RoomTypes[i].PromoRoomTypes[i2].Promo.Detail = detailPromo
 			}
 		}
 		for _, price := range roomType.RoomPrices {

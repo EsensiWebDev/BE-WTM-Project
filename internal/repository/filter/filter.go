@@ -90,12 +90,12 @@ type BookingFilter struct {
 	GuestNameSearch  string
 	BookingStatusID  int
 	PaymentStatusID  int
-	ConfirmDateFrom  string
-	ConfirmDateTo    string
-	CheckInDateFrom  string
-	CheckInDateTo    string
-	CheckOutDateFrom string
-	CheckOutDateTo   string
+	ConfirmDateFrom  *time.Time
+	ConfirmDateTo    *time.Time
+	CheckInDateFrom  *time.Time
+	CheckInDateTo    *time.Time
+	CheckOutDateFrom *time.Time
+	CheckOutDateTo   *time.Time
 }
 
 type NotifFilter struct {
@@ -147,20 +147,6 @@ func cleanIntSlice(input []int) []int {
 		}
 	}
 
-	return out
-}
-
-func cleanUintSlice(input []uint) []uint {
-	if len(input) == 0 {
-		return nil
-	}
-
-	var out []uint
-	for _, v := range input {
-		if v > 0 {
-			out = append(out, v)
-		}
-	}
 	return out
 }
 

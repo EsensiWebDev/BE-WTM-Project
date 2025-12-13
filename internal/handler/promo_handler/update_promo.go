@@ -1,12 +1,13 @@
 package promo_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/dto/promodto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // UpdatePromo godoc
@@ -30,13 +31,6 @@ func (ph *PromoHandler) UpdatePromo(c *gin.Context) {
 		return
 	}
 
-	promoIDUint, err := utils.StringToUint(promoID)
-	if err != nil {
-		logger.Error(ctx, "Invalid Promo Id format:", err.Error())
-		response.Error(c, http.StatusBadRequest, "Invalid Promo Id format")
-		return
-	}
-
 	var req *promodto.UpsertPromoRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error(ctx, "Error binding request:", err.Error())
@@ -57,8 +51,7 @@ func (ph *PromoHandler) UpdatePromo(c *gin.Context) {
 		return
 	}
 
-	err = ph.promoUsecase.UpsertPromo(ctx, req, &promoIDUint)
-	if err != nil {
+	if err := ph.promoUsecase.UpsertPromo(ctx, req, promoID); err != nil {
 		logger.Error(ctx, "Error updating promo:", err.Error())
 		response.Error(c, http.StatusInternalServerError, "Error updating promo")
 		return

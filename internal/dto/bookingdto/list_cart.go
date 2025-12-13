@@ -1,7 +1,6 @@
 package bookingdto
 
 import (
-	"time"
 	"wtm-backend/internal/domain/entity"
 )
 
@@ -17,8 +16,8 @@ type CartDetail struct {
 	Photo                string                 `json:"photo"`
 	HotelName            string                 `json:"hotel_name"`
 	HotelRating          int                    `json:"hotel_rating"`
-	CheckInDate          time.Time              `json:"check_in_date"`
-	CheckOutDate         time.Time              `json:"check_out_date"`
+	CheckInDate          string                 `json:"check_in_date"`
+	CheckOutDate         string                 `json:"check_out_date"`
 	RoomTypeName         string                 `json:"room_type_name"`
 	IsBreakfast          bool                   `json:"is_breakfast"`
 	Guest                string                 `json:"guest"`

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"strings"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
@@ -13,6 +11,9 @@ import (
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var validateColumnSort = map[string]bool{
@@ -26,19 +27,22 @@ func (br *BookingRepository) GetBookings(ctx context.Context, filter *filter.Boo
 	query := db.WithContext(ctx).Model(&model.Booking{})
 
 	// Apply search filter
-	if strings.TrimSpace(filter.BookingIDSearch) != "" {
-		safeSearch := utils.EscapeAndNormalizeSearch(filter.BookingIDSearch)
-		query = query.Where("booking_code ILIKE ? ", "%"+safeSearch+"%")
-	}
-
-	if strings.TrimSpace(filter.GuestNameSearch) != "" {
-		safeSearch := utils.EscapeAndNormalizeSearch(filter.GuestNameSearch)
-		query = query.Where(`
+	if strings.TrimSpace(filter.Search) != "" {
+		safeSearch := utils.EscapeAndNormalizeSearch(filter.Search)
+		query = query.Where(db.Where("booking_code ILIKE ? ", "%"+safeSearch+"%").
+			Or(`
         EXISTS (
             SELECT 1 FROM booking_details bd
             WHERE bd.booking_id = bookings.id
             AND bd.guest ILIKE ? 
-        )`, "%"+safeSearch+"%")
+        )`, "%"+safeSearch+"%").
+			Or(`
+        EXISTS (
+            SELECT 1 FROM users u
+            JOIN agent_companies ac ON u.agent_company_id = ac.id
+            WHERE u.id = bookings.agent_id
+            AND (u.full_name ILIKE ? OR ac.name ILIKE ?) 
+        )`, "%"+safeSearch+"%", "%"+safeSearch+"%"))
 	}
 
 	if filter.BookingStatusID > 0 {
@@ -63,7 +67,7 @@ func (br *BookingRepository) GetBookings(ctx context.Context, filter *filter.Boo
 		query = query.Where("agent_id = ?", filter.AgentID)
 	}
 
-	if filter.ConfirmDateFrom != "" {
+	if filter.ConfirmDateFrom != nil {
 		query = query.Where("bookings.confirm_date >= ?", filter.ConfirmDateFrom)
 	}
 

@@ -4,13 +4,35 @@ import "time"
 
 // PromoGroup represents a group of promotions
 type PromoGroup struct {
-	Name string `json:"name"`
-	ID   uint   `json:"id"`
+	ExternalID string `json:"external_id"`
+	Name       string `json:"name"`
+	ID         uint   `json:"id"`
 }
 
 type Promo struct {
 	ID          uint        `json:"id"`
 	ExternalID  string      `json:"external_id"`
+	Name        string      `json:"name"`
+	StartDate   *time.Time  `json:"start_date,omitempty"`
+	EndDate     *time.Time  `json:"end_date,omitempty"`
+	Code        string      `json:"code,omitempty"`
+	Description string      `json:"description,omitempty"`
+	PromoTypeID uint        `json:"promo_type_id,omitempty"`
+	Detail      PromoDetail `json:"detail,omitempty"`
+	IsActive    bool        `json:"is_active,omitempty"`
+
+	PromoTypeName string `json:"promo_type_name,omitempty"`
+
+	PromoGroups []PromoGroup `json:"promo_groups,omitempty"`
+
+	PromoRoomTypes []PromoRoomType `json:"promo_room_types,omitempty"`
+
+	PromoGroupIDs []uint `json:"promo_group_ids,omitempty"`
+	Duration      int    `json:"duration,omitempty"`
+}
+
+type PromoWithExternalID struct {
+	ID          string      `json:"id"`
 	Name        string      `json:"name"`
 	StartDate   *time.Time  `json:"start_date,omitempty"`
 	EndDate     *time.Time  `json:"end_date,omitempty"`

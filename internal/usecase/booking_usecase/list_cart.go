@@ -3,6 +3,7 @@ package booking_usecase
 import (
 	"context"
 	"fmt"
+	"time"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
@@ -51,12 +52,29 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 			cancellationDate = detail.CheckInDate.AddDate(0, 0, detail.RoomPrice.RoomType.Hotel.CancellationPeriod).Format("2006-01-02")
 
 			nights := int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24)
+			var checkInHourDur, checkOutHourDur time.Duration
+			checkInHour := detail.RoomPrice.RoomType.Hotel.CheckInHour
+			if checkInHour != nil {
+				h, m, sec := checkInHour.Clock()
+				checkInHourDur = time.Duration(h)*time.Hour +
+					time.Duration(m)*time.Minute +
+					time.Duration(sec)*time.Second
+			}
+
+			checkOutHour := detail.RoomPrice.RoomType.Hotel.CheckOutHour
+			if checkOutHour != nil {
+				h, m, sec := checkOutHour.Clock()
+				checkOutHourDur = time.Duration(h)*time.Hour +
+					time.Duration(m)*time.Minute +
+					time.Duration(sec)*time.Second
+			}
+
 			cartDetail := bookingdto.CartDetail{
 				ID:                   detail.ID,
 				HotelName:            detail.RoomPrice.RoomType.Hotel.Name,
 				HotelRating:          detail.RoomPrice.RoomType.Hotel.Rating,
-				CheckInDate:          detail.CheckInDate,
-				CheckOutDate:         detail.CheckOutDate,
+				CheckInDate:          detail.CheckInDate.In(constant.AsiaJakarta).Add(checkInHourDur).Format(time.RFC3339),
+				CheckOutDate:         detail.CheckOutDate.In(constant.AsiaJakarta).Add(checkOutHourDur).Format(time.RFC3339),
 				RoomTypeName:         detail.RoomPrice.RoomType.Name,
 				IsBreakfast:          detail.RoomPrice.IsBreakfast,
 				Guest:                detail.Guest,

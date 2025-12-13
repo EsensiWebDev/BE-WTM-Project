@@ -45,6 +45,7 @@ func (pr *PromoRepository) GetPromoByID(ctx context.Context, promoID uint, selec
 		logger.Error(ctx, "Error marshalling promo detail to JSON", err.Error())
 	}
 	promoEntity.Detail = detailPromo
+	promoEntity.ExternalID = promo.ExternalID.ExternalID
 
 	if len(selectedFields) == 0 {
 		promoEntity.PromoTypeName = promo.PromoType.Name

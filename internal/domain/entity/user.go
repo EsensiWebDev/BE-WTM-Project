@@ -18,6 +18,7 @@ type User struct {
 
 	//additional fields
 	ID                       uint
+	ExternalID               string
 	StatusName               string
 	RoleName                 string
 	Permissions              []string

@@ -54,7 +54,7 @@ type HotelRepository interface {
 	GetFacilities(ctx context.Context, filter *filter.DefaultFilter) ([]string, int64, error)
 	GetAdditionalRooms(ctx context.Context, filter *filter.DefaultFilter) ([]string, int64, error)
 	GetBedTypes(ctx context.Context, filter *filter.DefaultFilter) ([]string, int64, error)
-	GetHotelByID(ctx context.Context, hotelID uint, scope string) (*entity.Hotel, error)
+	GetHotelByID(ctx context.Context, hotelID uint, agentID uint) (*entity.Hotel, error)
 	DeleteRoomType(ctx context.Context, roomTypeID uint) error
 	DeleteHotel(ctx context.Context, hotelID uint) error
 	GetRoomUnavailableByRoomTypeIDs(ctx context.Context, roomTypeIDs []uint, month time.Time) ([]entity.RoomUnavailable, error)
