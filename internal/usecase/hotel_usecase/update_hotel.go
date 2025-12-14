@@ -60,6 +60,9 @@ func (hu *HotelUsecase) UpdateHotel(ctx context.Context, req *hoteldto.UpdateHot
 		hotel.Email = req.Email
 
 		socialMediasMap := hotel.SocialMedia
+		if socialMediasMap == nil {
+			socialMediasMap = make(map[string]string)
+		}
 		for _, sosmed := range socialMedias {
 			socialMediasMap[sosmed.Platform] = sosmed.Link
 		}

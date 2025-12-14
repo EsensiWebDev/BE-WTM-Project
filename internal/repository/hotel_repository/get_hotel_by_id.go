@@ -29,7 +29,7 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, agent
 		Preload("RoomTypes.RoomTypeAdditionals.RoomAdditional").
 		Preload("RoomTypes.RoomPrices")
 
-	if err := query.Debug().First(&hotelModel, hotelID).Error; err != nil {
+	if err := query.First(&hotelModel, hotelID).Error; err != nil {
 		logger.Error(ctx, "Error fetching hotel by Id", err.Error())
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, agent
 					),
 			)
 
-		if err := queryPromo.Debug().Find(&promoAgent).Error; err != nil {
+		if err := queryPromo.Find(&promoAgent).Error; err != nil {
 			logger.Error(ctx, "Error fetching promo by Id", err.Error())
 			return nil, err
 		}

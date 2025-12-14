@@ -54,7 +54,7 @@ func (pr *PromoRepository) GetPromosWithHotels(ctx context.Context, filterReq *f
 	}
 
 	// Fetch promos
-	if err := query.Debug().Find(&promos).Error; err != nil {
+	if err := query.Find(&promos).Error; err != nil {
 		logger.Error(ctx, "Error finding promos", err.Error())
 		return nil, total, err
 	}

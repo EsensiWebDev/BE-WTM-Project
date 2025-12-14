@@ -57,7 +57,6 @@ type SMTPEmailSender struct {
 
 	// Retry & Timeout configuration
 	MaxRetries     int
-	RetryDelay     time.Duration
 	DialTimeout    time.Duration
 	SendTimeout    time.Duration
 	CommandTimeout time.Duration
@@ -84,8 +83,7 @@ func NewSMTPEmailSender(cfg *config.Config) *SMTPEmailSender {
 	return &SMTPEmailSender{
 		Routes:         routes,
 		SupportEmail:   cfg.EmailContactUs,
-		MaxRetries:     3,
-		RetryDelay:     cfg.RetryDelay,     // 2s
+		MaxRetries:     3,                  // 2s
 		DialTimeout:    cfg.DialTimeout,    // 10s
 		SendTimeout:    cfg.SendTimeout,    // 30s
 		CommandTimeout: cfg.CommandTimeout, // 5s
@@ -118,12 +116,24 @@ func buildAccounts(cfg *config.Config) map[string]SMTPAccount {
 			Password:       cfg.PasswordGmail,
 			DisableAuth:    cfg.DisableAuthGmail,
 			UseImplicitTLS: cfg.PortGmail == 465,
-			SkipSTARTTLS:   cfg.DisableAuthGmail, // Skip STARTTLS untuk Gmail Relay IP-based
-			TLSConfig:      &tls.Config{ServerName: cfg.HostGmail},
-			DefaultFrom:    cfg.DefaultFromGmail,
-			SupportEmail:   cfg.SupportEmailGmail,
-			SetReplyTo:     cfg.ProviderGmailReplyTo,
-			SetReturnPath:  cfg.ProviderGmailReturnPath,
+			SkipSTARTTLS:   false, // Skip STARTTLS untuk Gmail Relay IP-based
+			TLSConfig: &tls.Config{
+				ServerName:         cfg.HostGmail,
+				InsecureSkipVerify: false,
+				MinVersion:         tls.VersionTLS12,
+				// Tambahkan callback untuk debug (hapus di production)
+				VerifyConnection: func(cs tls.ConnectionState) error {
+					logger.Info(context.Background(), fmt.Sprintf("[tls-debug] Cipher: %s, Version: %s, ServerName: %s",
+						tls.CipherSuiteName(cs.CipherSuite),
+						tls.VersionName(cs.Version),
+						cs.ServerName))
+					return nil
+				},
+			},
+			DefaultFrom:   cfg.DefaultFromGmail,
+			SupportEmail:  cfg.SupportEmailGmail,
+			SetReplyTo:    cfg.ProviderGmailReplyTo,
+			SetReturnPath: cfg.ProviderGmailReturnPath,
 		},
 		"mailhog": {
 			Name:           ProviderMailhog,
@@ -172,22 +182,14 @@ func (s *SMTPEmailSender) Send(
 	var lastErr error
 
 	// Retry logic
-	for attempt := 0; attempt <= s.MaxRetries; attempt++ {
-		if attempt > 0 {
-			time.Sleep(s.RetryDelay)
-			logger.Info(ctx, fmt.Sprintf("[email] retry #%d for provider=%s", attempt, acc.Name))
-		}
-
-		err := s.sendEmail(ctx, acc, from, to, msg)
-		if err == nil {
-			logger.Info(ctx, fmt.Sprintf("[email] ✅ sent via %s to %s", acc.Name, to))
-			return nil
-		}
-
-		lastErr = err
-		logger.Error(ctx, fmt.Sprintf("[email] ❌ attempt=%d provider=%s error=%v",
-			attempt+1, acc.Name, err))
+	err := s.sendEmail(ctx, acc, from, to, msg)
+	if err == nil {
+		logger.Info(ctx, fmt.Sprintf("[email] ✅ sent via %s to %s", acc.Name, to))
+		return nil
 	}
+
+	lastErr = err
+	logger.Error(ctx, fmt.Sprintf("[email] ❌ provider=%s error=%v", acc.Name, err))
 
 	return fmt.Errorf("all attempts failed for %s: %w", acc.Name, lastErr)
 }
@@ -244,6 +246,8 @@ func (s *SMTPEmailSender) dialAndSend(
 		deadline = s.CommandTimeout * 3 // 15s untuk Gmail
 	}
 
+	logger.Info(ctx, fmt.Sprintf("[email-debug] Time Deadline: %v", deadline))
+
 	if err := conn.SetDeadline(time.Now().Add(deadline)); err != nil {
 		return fmt.Errorf("set deadline failed: %w", err)
 	}
@@ -299,7 +303,7 @@ func (s *SMTPEmailSender) dialAndSend(
 		actualFrom := extractEmail(from)
 		logger.Info(ctx, fmt.Sprintf("[email-debug] Step 6: Validating From=%s vs Username=%s", actualFrom, acc.Username))
 		if actualFrom != acc.Username {
-			return fmt.Errorf("From address (%s) must match authenticated user (%s) for Gmail", actualFrom, acc.Username)
+			return fmt.Errorf("from address (%s) must match authenticated user (%s) for Gmail", actualFrom, acc.Username)
 		}
 	} else if acc.Name == ProviderGmail && acc.DisableAuth {
 		logger.Info(ctx, fmt.Sprintf("[email-debug] Step 6: Skipping validation (Gmail Relay with IP auth), From=%s", from))
