@@ -86,9 +86,12 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, agent
 		}
 		for _, typeAdditional := range roomType.RoomTypeAdditionals {
 			hotelEntity.RoomTypes[i].RoomAdditions = append(hotelEntity.RoomTypes[i].RoomAdditions, entity.CustomRoomAdditionalWithID{
-				ID:    typeAdditional.ID,
-				Name:  typeAdditional.RoomAdditional.Name,
-				Price: typeAdditional.Price,
+				ID:         typeAdditional.ID,
+				Name:       typeAdditional.RoomAdditional.Name,
+				Category:   typeAdditional.Category,
+				Price:      typeAdditional.Price,
+				Pax:        typeAdditional.Pax,
+				IsRequired: typeAdditional.IsRequired,
 			})
 		}
 

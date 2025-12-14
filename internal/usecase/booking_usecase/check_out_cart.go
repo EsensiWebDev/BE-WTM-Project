@@ -14,6 +14,7 @@ import (
 
 func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOutCartResponse, error) {
 	var invoices []entity.Invoice
+	var bookingID uint
 
 	err := bu.dbTrx.WithTransaction(ctx, func(txCtx context.Context) error {
 		// Get agent Id from context
@@ -45,6 +46,8 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 			logger.Error(ctx, "card booking is nil")
 			return fmt.Errorf("no cart found")
 		}
+
+		bookingID = booking.ID // Capture booking ID for email function
 
 		// 3. Update status to "in review"
 		if err := bu.bookingRepo.UpdateBookingStatus(txCtx, booking.ID, constant.StatusBookingWaitingApprovalID); err != nil {
@@ -138,18 +141,33 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 			descriptionItems = append(descriptionItems, itemRoom)
 			var bookingDetailAdditionalName []string
 			for _, additional := range detail.BookingDetailsAdditional {
-				quantity := 1
-				price := additional.Price
-				priceAdditional := float64(quantity) * price
 				bookingDetailAdditionalName = append(bookingDetailAdditionalName, additional.NameAdditional)
+
 				itemAdditional := entity.DescriptionInvoice{
 					Description: additional.NameAdditional,
-					Quantity:    quantity,
-					Unit:        constant.UnitPax,
-					Price:       additional.Price,
-					Total:       priceAdditional,
+					Category:    additional.Category,
+					IsRequired:  additional.IsRequired,
 				}
-				totalPrice += priceAdditional
+
+				// Handle price-based additionals
+				if additional.Category == constant.AdditionalServiceCategoryPrice && additional.Price != nil {
+					quantity := 1
+					price := *additional.Price
+					priceAdditional := float64(quantity) * price
+					itemAdditional.Quantity = quantity
+					itemAdditional.Unit = constant.UnitPax
+					itemAdditional.Price = price
+					itemAdditional.Total = priceAdditional
+					totalPrice += priceAdditional
+				} else if additional.Category == constant.AdditionalServiceCategoryPax && additional.Pax != nil {
+					// Handle pax-based additionals (informational only, no charge)
+					itemAdditional.Quantity = *additional.Pax
+					itemAdditional.Unit = constant.UnitPax
+					itemAdditional.Price = 0
+					itemAdditional.Total = 0
+					itemAdditional.Pax = additional.Pax
+				}
+
 				descriptionItems = append(descriptionItems, itemAdditional)
 			}
 			//invoiceData.DetailInvoice.Promo = detail.Promo
@@ -192,11 +210,12 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 		Invoice: make([]bookingdto.DataInvoice, 0, len(invoices)),
 	}
 	for _, invoice := range invoices {
-		go func() {
+		invBookingID := bookingID // Capture booking ID for goroutine
+		go func(inv entity.Invoice) {
 			newCtx, cancel := context.WithTimeout(context.Background(), bu.config.DurationCtxTOSlow)
 			defer cancel()
-			bu.sendEmailNotificationHotelConfirm(newCtx, invoice.BookingDetail)
-		}()
+			bu.sendEmailNotificationHotelConfirm(newCtx, inv.BookingDetail, invBookingID)
+		}(invoice)
 		resp.Invoice = append(resp.Invoice, bookingdto.DataInvoice{
 			InvoiceNumber: invoice.InvoiceCode,
 			DetailInvoice: invoice.DetailInvoice,
@@ -207,7 +226,7 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 	return resp, nil
 }
 
-func (bu *BookingUsecase) sendEmailNotificationHotelConfirm(ctx context.Context, bd entity.BookingDetail) {
+func (bu *BookingUsecase) sendEmailNotificationHotelConfirm(ctx context.Context, bd entity.BookingDetail, bookingID uint) {
 
 	logger.Info(ctx, "Data details:", bd)
 
@@ -217,13 +236,38 @@ func (bu *BookingUsecase) sendEmailNotificationHotelConfirm(ctx context.Context,
 		return
 	}
 
+	// Get full guest information from database
+	guests := bu.getGuestsForEmail(ctx, bookingID)
+
+	// Format additional services with details
+	var additionalServices []AdditionalServiceEmailInfo
+	for _, additional := range bd.BookingDetailsAdditional {
+		serviceInfo := AdditionalServiceEmailInfo{
+			Name:       additional.NameAdditional,
+			Category:   additional.Category,
+			IsRequired: additional.IsRequired,
+		}
+		if additional.Category == constant.AdditionalServiceCategoryPrice && additional.Price != nil {
+			serviceInfo.Price = fmt.Sprintf("%.2f", *additional.Price)
+		} else if additional.Category == constant.AdditionalServiceCategoryPax && additional.Pax != nil {
+			serviceInfo.Pax = fmt.Sprintf("%d", *additional.Pax)
+		}
+		additionalServices = append(additionalServices, serviceInfo)
+	}
+
+	// Format bed types
+	bedTypesStr := strings.Join(bd.BedTypeNames, ", ")
+
 	data := HotelEmailData{
-		GuestName:   bd.Guest,
-		Period:      fmt.Sprintf("%s to %s", bd.CheckInDate.Format("02-01-2006"), bd.CheckOutDate.Format("02-01-2006")),
-		RoomType:    bd.DetailRooms.RoomTypeName,
-		Rate:        fmt.Sprintf("%.2f", bd.Price),
-		BookingCode: bd.Booking.BookingCode,
-		Additional:  strings.Join(bd.BookingDetailAdditionalName, ", "),
+		Guests:             guests,
+		GuestName:          bd.Guest, // Keep for backward compatibility
+		Period:             fmt.Sprintf("%s to %s", bd.CheckInDate.Format("02-01-2006"), bd.CheckOutDate.Format("02-01-2006")),
+		RoomType:           bd.DetailRooms.RoomTypeName,
+		BedTypes:           bedTypesStr,
+		Rate:               fmt.Sprintf("%.2f", bd.Price),
+		BookingCode:        bd.Booking.BookingCode,
+		Additional:         strings.Join(bd.BookingDetailAdditionalName, ", "), // Keep for backward compatibility
+		AdditionalServices: additionalServices,
 	}
 
 	if emailTemplate.IsSignatureImage && emailTemplate.Signature != "" {
@@ -280,13 +324,61 @@ func (bu *BookingUsecase) sendEmailNotificationHotelConfirm(ctx context.Context,
 
 }
 
+// GuestEmailInfo represents guest information for email template
+type GuestEmailInfo struct {
+	Name      string
+	Honorific string
+	Category  string
+	Age       string // formatted as string, empty if nil
+}
+
+// AdditionalServiceEmailInfo represents additional service information for email template
+type AdditionalServiceEmailInfo struct {
+	Name       string
+	Category   string
+	Price      string // formatted as string, empty if not price-based
+	Pax        string // formatted as string, empty if not pax-based
+	IsRequired bool
+}
+
+// getGuestsForEmail retrieves guest information from database for email template
+func (bu *BookingUsecase) getGuestsForEmail(ctx context.Context, bookingID uint) []GuestEmailInfo {
+	var guests []GuestEmailInfo
+
+	// Get full guest details from repository
+	bookingGuests, err := bu.bookingRepo.GetBookingGuests(ctx, bookingID)
+	if err != nil {
+		logger.Error(ctx, "Failed to get booking guests for email", err.Error())
+		return guests
+	}
+
+	// Convert model guests to email info
+	for _, g := range bookingGuests {
+		ageStr := ""
+		if g.Age != nil {
+			ageStr = fmt.Sprintf("%d", *g.Age)
+		}
+		guests = append(guests, GuestEmailInfo{
+			Name:      g.Name,
+			Honorific: g.Honorific,
+			Category:  g.Category,
+			Age:       ageStr,
+		})
+	}
+
+	return guests
+}
+
 type HotelEmailData struct {
-	GuestName       string
-	Period          string
-	RoomType        string
-	Rate            string
-	BookingCode     string
-	Remark          string
-	Additional      string
-	SystemSignature string // bisa berupa teks atau <img src="...">
+	Guests             []GuestEmailInfo
+	GuestName          string // Keep for backward compatibility
+	Period             string
+	RoomType           string
+	BedTypes           string
+	Rate               string
+	BookingCode        string
+	Remark             string
+	Additional         string // Keep for backward compatibility (comma-separated names)
+	AdditionalServices []AdditionalServiceEmailInfo
+	SystemSignature    string // bisa berupa teks atau <img src="...">
 }

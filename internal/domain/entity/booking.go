@@ -35,6 +35,7 @@ type BookingDetail struct {
 	DetailRooms                 DetailRoom
 	Price                       float64
 	Guest                       string
+	BedTypeNames                []string // Available bed types for selection
 	BookingDetailsAdditional    []BookingDetailAdditional
 	RoomPrice                   RoomPrice
 	StatusBookingID             uint
@@ -71,7 +72,10 @@ type BookingDetailAdditional struct {
 	ID                   uint
 	BookingDetailIDs     []uint
 	RoomTypeAdditionalID uint
-	Price                float64
+	Category             string   // "price" or "pax"
+	Price                *float64 // nullable, used when category="price"
+	Pax                  *int     // nullable, used when category="pax"
+	IsRequired           bool
 	NameAdditional       string
 }
 
@@ -156,4 +160,7 @@ type DescriptionInvoice struct {
 	Price            float64 `json:"price"`
 	Total            float64 `json:"total"`
 	TotalBeforePromo float64 `json:"total_before_promo,omitempty"`
+	Category         string  `json:"category,omitempty"`    // "price" or "pax" - only for additional services
+	Pax              *int    `json:"pax,omitempty"`         // nullable, used when category="pax"
+	IsRequired       bool    `json:"is_required,omitempty"` // only for additional services
 }

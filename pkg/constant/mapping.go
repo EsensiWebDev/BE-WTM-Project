@@ -42,3 +42,15 @@ var MapEmailType = map[string]string{
 	EmailHotelBookingRequest: BookingRequest,
 	EmailHotelBookingCancel:  BookingCancel,
 }
+
+// AdditionalServiceCategories contains all valid category values for additional services
+var AdditionalServiceCategories = []string{
+	AdditionalServiceCategoryPrice,
+	AdditionalServiceCategoryPax,
+}
+
+// GuestCategories contains all valid category values for guests
+var GuestCategories = []string{
+	GuestCategoryAdult,
+	GuestCategoryChild,
+}

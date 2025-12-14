@@ -137,6 +137,16 @@ const (
 	UnitPax   = "pax"
 )
 
+const (
+	AdditionalServiceCategoryPrice = "price"
+	AdditionalServiceCategoryPax   = "pax"
+)
+
+const (
+	GuestCategoryAdult = "Adult"
+	GuestCategoryChild = "Child"
+)
+
 type Scope string
 
 const (

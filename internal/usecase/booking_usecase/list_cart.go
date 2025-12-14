@@ -40,12 +40,23 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 			var additionals []bookingdto.CartDetailAdditional
 			var totalAdditional float64
 
-			for _, additional := range detail.BookingDetailsAdditional {
-				additionals = append(additionals, bookingdto.CartDetailAdditional{
-					Name:  additional.NameAdditional,
-					Price: additional.Price,
-				})
-				totalAdditional += additional.Price
+			// Map additional services with new structure (Category, Price/Pax, IsRequired)
+			// These fields are now stored directly in BookingDetailAdditional
+			for _, detailAdditional := range detail.BookingDetailsAdditional {
+				cartAdditional := bookingdto.CartDetailAdditional{
+					Name:       detailAdditional.NameAdditional,
+					Category:   detailAdditional.Category,
+					Price:      detailAdditional.Price,
+					Pax:        detailAdditional.Pax,
+					IsRequired: detailAdditional.IsRequired,
+				}
+
+				additionals = append(additionals, cartAdditional)
+
+				// Calculate total - only count price-based additionals
+				if cartAdditional.Category == constant.AdditionalServiceCategoryPrice && cartAdditional.Price != nil {
+					totalAdditional += *cartAdditional.Price
+				}
 			}
 
 			var cancellationDate string
@@ -78,6 +89,7 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 				RoomTypeName:         detail.RoomPrice.RoomType.Name,
 				IsBreakfast:          detail.RoomPrice.IsBreakfast,
 				Guest:                detail.Guest,
+				BedTypes:             detail.BedTypeNames, // Available bed types for selection
 				Additional:           additionals,
 				CancellationDate:     cancellationDate,
 				PriceBeforePromo:     detail.RoomPrice.Price * float64(nights),

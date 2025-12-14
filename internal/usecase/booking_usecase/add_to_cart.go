@@ -176,8 +176,11 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			additional := &entity.BookingDetailAdditional{
 				BookingDetailIDs:     bookingDetailIds,
 				RoomTypeAdditionalID: add.ID,
-				//Price:                add.Price,
-				//NameAdditional:       add.RoomAdditional.Name,
+				Category:             add.Category,
+				Price:                add.Price,
+				Pax:                  add.Pax,
+				IsRequired:           add.IsRequired,
+				NameAdditional:       add.RoomAdditional.Name,
 			}
 			if err := bu.bookingRepo.CreateBookingDetailAdditional(txCtx, additional); err != nil {
 				return fmt.Errorf("failed to create additional: %s", err.Error())

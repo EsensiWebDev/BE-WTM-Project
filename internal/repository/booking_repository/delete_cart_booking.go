@@ -23,7 +23,26 @@ func (br *BookingRepository) DeleteCartBooking(ctx context.Context, agentID uint
 		return fmt.Errorf("unauthorized or not found")
 	}
 
-	// 🗑️ Step 2: Hapus booking_detail secara hard delete
+	// 🗑️ Step 2: Hapus related records terlebih dahulu (cascade delete)
+	// Delete BookingDetailAdditional records
+	if err := db.WithContext(ctx).
+		Unscoped().
+		Where("booking_detail_id = ?", bookingDetailID).
+		Delete(&model.BookingDetailAdditional{}).Error; err != nil {
+		logger.Error(ctx, "failed to delete booking detail additionals", err.Error())
+		return err
+	}
+
+	// Delete Invoice records if any
+	if err := db.WithContext(ctx).
+		Unscoped().
+		Where("booking_detail_id = ?", bookingDetailID).
+		Delete(&model.Invoice{}).Error; err != nil {
+		logger.Error(ctx, "failed to delete invoice", err.Error())
+		return err
+	}
+
+	// 🗑️ Step 3: Hapus booking_detail secara hard delete
 	if err := db.WithContext(ctx).
 		Unscoped().
 		Where("id = ?", bookingDetailID).
@@ -32,7 +51,7 @@ func (br *BookingRepository) DeleteCartBooking(ctx context.Context, agentID uint
 		return err
 	}
 
-	// 🔍 Step 3: Cek apakah masih ada detail lain di booking yang sama
+	// 🔍 Step 4: Cek apakah masih ada detail lain di booking yang sama
 	var remaining int64
 	if err := db.WithContext(ctx).
 		Model(&model.BookingDetail{}).
@@ -42,7 +61,7 @@ func (br *BookingRepository) DeleteCartBooking(ctx context.Context, agentID uint
 		return err
 	}
 
-	// 🗑️ Step 4: Kalau kosong, hapus booking-nya juga
+	// 🗑️ Step 5: Kalau kosong, hapus booking-nya juga
 	if remaining == 0 {
 		if err := db.WithContext(ctx).
 			Unscoped().

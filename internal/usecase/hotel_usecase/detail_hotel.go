@@ -87,9 +87,12 @@ func (hu *HotelUsecase) DetailHotel(ctx context.Context, hotelID uint) (*hoteldt
 
 		for _, addition := range rt.RoomAdditions {
 			roomType.Additional = append(roomType.Additional, entity.CustomRoomAdditionalWithID{
-				ID:    addition.ID,
-				Name:  addition.Name,
-				Price: addition.Price,
+				ID:         addition.ID,
+				Name:       addition.Name,
+				Category:   addition.Category,
+				Price:      addition.Price,
+				Pax:        addition.Pax,
+				IsRequired: addition.IsRequired,
 			})
 		}
 

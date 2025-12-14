@@ -1,8 +1,9 @@
 package entity
 
 import (
-	"github.com/lib/pq"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type Hotel struct {
@@ -84,14 +85,20 @@ type PromoRoomTypes struct {
 }
 
 type CustomRoomAdditional struct {
-	Name  string  `json:"name" form:"name"`
-	Price float64 `json:"price" form:"price"`
+	Name       string   `json:"name" form:"name"`
+	Category   string   `json:"category" form:"category"`     // "price" or "pax"
+	Price      *float64 `json:"price,omitempty" form:"price"` // nullable, used when category="price"
+	Pax        *int     `json:"pax,omitempty" form:"pax"`     // nullable, used when category="pax"
+	IsRequired bool     `json:"is_required" form:"is_required"`
 }
 
 type CustomRoomAdditionalWithID struct {
-	ID    uint    `json:"id" form:"id"`
-	Name  string  `json:"name" form:"name"`
-	Price float64 `json:"price" form:"price"`
+	ID         uint     `json:"id" form:"id"`
+	Name       string   `json:"name" form:"name"`
+	Category   string   `json:"category" form:"category"`     // "price" or "pax"
+	Price      *float64 `json:"price,omitempty" form:"price"` // nullable, used when category="price"
+	Pax        *int     `json:"pax,omitempty" form:"pax"`     // nullable, used when category="pax"
+	IsRequired bool     `json:"is_required" form:"is_required"`
 }
 
 type CustomBreakfast struct {
@@ -148,7 +155,10 @@ type RoomTypeAdditional struct {
 	ID               uint
 	RoomTypeID       uint
 	RoomAdditionalID uint
-	Price            float64
+	Category         string   // "price" or "pax"
+	Price            *float64 // nullable, used when category="price"
+	Pax              *int     // nullable, used when category="pax"
+	IsRequired       bool
 
 	RoomAdditional RoomAdditional
 }

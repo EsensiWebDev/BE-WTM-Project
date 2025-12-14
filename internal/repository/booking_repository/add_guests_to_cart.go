@@ -3,11 +3,12 @@ package booking_repository
 import (
 	"context"
 	"fmt"
+	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/logger"
 )
 
-func (br *BookingRepository) AddGuestsToCart(ctx context.Context, agentID uint, bookingID uint, guests []string) error {
+func (br *BookingRepository) AddGuestsToCart(ctx context.Context, agentID uint, bookingID uint, guests []bookingdto.GuestInfo) error {
 	db := br.db.GetTx(ctx)
 
 	// Step 1: Validasi booking ID
@@ -25,12 +26,15 @@ func (br *BookingRepository) AddGuestsToCart(ctx context.Context, agentID uint, 
 		return fmt.Errorf("booking ID %d not found", bookingID)
 	}
 
-	// Step 2: Buat slice BookingGuest
+	// Step 2: Buat slice BookingGuest dengan fields baru
 	var guestModels []model.BookingGuest
-	for _, name := range guests {
+	for _, guest := range guests {
 		guestModels = append(guestModels, model.BookingGuest{
 			BookingID: bookingID,
-			Name:      name,
+			Name:      guest.Name,
+			Honorific: guest.Honorific,
+			Category:  guest.Category,
+			Age:       guest.Age,
 		})
 	}
 

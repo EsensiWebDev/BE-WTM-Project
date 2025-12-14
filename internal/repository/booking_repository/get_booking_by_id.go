@@ -14,6 +14,7 @@ func (br *BookingRepository) GetBookingByID(ctx context.Context, bookingID uint)
 	var booking model.Booking
 	if err := db.
 		Preload("BookingDetails").
+		Preload("BookingGuests").
 		Where("id = ?", bookingID).
 		First(&booking).Error; err != nil {
 		logger.Error(ctx, "failed to get booking by Id", err.Error())
@@ -25,6 +26,14 @@ func (br *BookingRepository) GetBookingByID(ctx context.Context, bookingID uint)
 		logger.Error(ctx, "failed to copy booking model to entity", err.Error())
 		return nil, err
 	}
+
+	// Map guests from model to entity (entity only has []string, but we need full details for email)
+	// For now, just map names - full guest details will be accessed from model in usecase
+	var guests []string
+	for _, guest := range booking.BookingGuests {
+		guests = append(guests, guest.Name)
+	}
+	result.Guests = guests
 
 	return &result, nil
 

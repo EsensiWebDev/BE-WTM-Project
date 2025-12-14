@@ -1,9 +1,10 @@
 package model
 
 import (
+	"time"
+
 	"github.com/lib/pq"
 	"gorm.io/gorm"
-	"time"
 )
 
 type RoomType struct {
@@ -64,7 +65,10 @@ type RoomTypeAdditional struct {
 	ExternalID       ExternalID `gorm:"embedded"`
 	RoomTypeID       uint       `json:"room_type_id" gorm:"index"`
 	RoomAdditionalID uint       `json:"room_additional_id" gorm:"index"`
-	Price            float64    `json:"price"`
+	Category         string     `json:"category" gorm:"type:varchar(10);default:'price'"` // "price" or "pax"
+	Price            *float64   `json:"price" gorm:"type:decimal(10,2)"`                  // nullable, used when category="price"
+	Pax              *int       `json:"pax"`                                              // nullable, used when category="pax"
+	IsRequired       bool       `json:"is_required" gorm:"default:false"`
 
 	RoomType       RoomType       `json:"room_type" gorm:"foreignkey:RoomTypeID"`
 	RoomAdditional RoomAdditional `json:"room_additional" gorm:"foreignkey:RoomAdditionalID"`

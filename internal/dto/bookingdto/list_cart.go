@@ -21,6 +21,7 @@ type CartDetail struct {
 	RoomTypeName         string                 `json:"room_type_name"`
 	IsBreakfast          bool                   `json:"is_breakfast"`
 	Guest                string                 `json:"guest"`
+	BedTypes             []string               `json:"bed_types"` // Available bed types for selection
 	Additional           []CartDetailAdditional `json:"additional"`
 	Promo                entity.DetailPromo     `json:"promo"`
 	CancellationDate     string                 `json:"cancellation_date,omitempty"`
@@ -31,6 +32,9 @@ type CartDetail struct {
 }
 
 type CartDetailAdditional struct {
-	Name  string  `json:"name"`
-	Price float64 `json:"price"`
+	Name       string   `json:"name"`
+	Category   string   `json:"category"`        // "price" or "pax"
+	Price      *float64 `json:"price,omitempty"` // nullable, used when category="price"
+	Pax        *int     `json:"pax,omitempty"`   // nullable, used when category="pax"
+	IsRequired bool     `json:"is_required"`
 }

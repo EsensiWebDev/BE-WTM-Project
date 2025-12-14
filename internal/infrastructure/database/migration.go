@@ -8,6 +8,7 @@ import (
 	"wtm-backend/config"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/internal/infrastructure/database/seed"
+	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
 )
 
@@ -67,6 +68,24 @@ func (dbs *DBPostgre) runMigrations(ctx context.Context, cfg *config.Config) err
 	if err := dbs.migrateAllExternalIDs(ctx, models); err != nil {
 		logger.Error(ctx, "ExternalID migration failed", err.Error())
 		return fmt.Errorf("external_id migration: %w", err)
+	}
+
+	// ✅ Migrate RoomTypeAdditional new fields (Category, Pax, IsRequired)
+	if err := dbs.migrateRoomTypeAdditional(ctx); err != nil {
+		logger.Error(ctx, "RoomTypeAdditional migration failed", err.Error())
+		return fmt.Errorf("room_type_additional migration: %w", err)
+	}
+
+	// ✅ Migrate BookingDetailAdditional new fields (Category, Pax, IsRequired, nullable Price)
+	if err := dbs.migrateBookingDetailAdditional(ctx); err != nil {
+		logger.Error(ctx, "BookingDetailAdditional migration failed", err.Error())
+		return fmt.Errorf("booking_detail_additional migration: %w", err)
+	}
+
+	// ✅ Migrate BookingGuest new fields (Honorific, Category, Age)
+	if err := dbs.migrateBookingGuest(ctx); err != nil {
+		logger.Error(ctx, "BookingGuest migration failed", err.Error())
+		return fmt.Errorf("booking_guest migration: %w", err)
 	}
 
 	logger.Info(ctx, "Database migration completed",
@@ -175,5 +194,321 @@ func (dbs *DBPostgre) migrateTableExternalID(ctx context.Context, tableName stri
 	}
 
 	logger.Info(ctx, fmt.Sprintf("✓ Successfully migrated ExternalID for %s", tableName))
+	return nil
+}
+
+// ✅ FUNGSI BARU: Migrasi RoomTypeAdditional untuk menambahkan Category, Pax, IsRequired
+func (dbs *DBPostgre) migrateRoomTypeAdditional(ctx context.Context) error {
+	logger.Info(ctx, "Starting RoomTypeAdditional migration")
+
+	tableName := "room_type_additionals"
+
+	// Step 1: Check and add Category column
+	var categoryExists bool
+	checkCategorySQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'category'
+		)
+	`
+	if err := dbs.DB.Raw(checkCategorySQL, tableName).Scan(&categoryExists).Error; err != nil {
+		return fmt.Errorf("failed to check category column: %w", err)
+	}
+
+	if !categoryExists {
+		logger.Info(ctx, "Adding category column to room_type_additionals")
+		addCategorySQL := fmt.Sprintf(`
+			ALTER TABLE room_type_additionals 
+			ADD COLUMN category VARCHAR(10) DEFAULT '%s'
+		`, "price")
+		if err := dbs.DB.Exec(addCategorySQL).Error; err != nil {
+			return fmt.Errorf("failed to add category column: %w", err)
+		}
+		// Set default value for existing records
+		updateCategorySQL := fmt.Sprintf(`
+			UPDATE room_type_additionals 
+			SET category = '%s' 
+			WHERE category IS NULL OR category = ''
+		`, "price")
+		if err := dbs.DB.Exec(updateCategorySQL).Error; err != nil {
+			return fmt.Errorf("failed to set default category: %w", err)
+		}
+	}
+
+	// Step 2: Check and add Pax column
+	var paxExists bool
+	checkPaxSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'pax'
+		)
+	`
+	if err := dbs.DB.Raw(checkPaxSQL, tableName).Scan(&paxExists).Error; err != nil {
+		return fmt.Errorf("failed to check pax column: %w", err)
+	}
+
+	if !paxExists {
+		logger.Info(ctx, "Adding pax column to room_type_additionals")
+		addPaxSQL := `
+			ALTER TABLE room_type_additionals 
+			ADD COLUMN pax INTEGER
+		`
+		if err := dbs.DB.Exec(addPaxSQL).Error; err != nil {
+			return fmt.Errorf("failed to add pax column: %w", err)
+		}
+	}
+
+	// Step 3: Check and add IsRequired column
+	var isRequiredExists bool
+	checkIsRequiredSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'is_required'
+		)
+	`
+	if err := dbs.DB.Raw(checkIsRequiredSQL, tableName).Scan(&isRequiredExists).Error; err != nil {
+		return fmt.Errorf("failed to check is_required column: %w", err)
+	}
+
+	if !isRequiredExists {
+		logger.Info(ctx, "Adding is_required column to room_type_additionals")
+		addIsRequiredSQL := `
+			ALTER TABLE room_type_additionals 
+			ADD COLUMN is_required BOOLEAN DEFAULT false
+		`
+		if err := dbs.DB.Exec(addIsRequiredSQL).Error; err != nil {
+			return fmt.Errorf("failed to add is_required column: %w", err)
+		}
+		// Set default value for existing records
+		updateIsRequiredSQL := `
+			UPDATE room_type_additionals 
+			SET is_required = false 
+			WHERE is_required IS NULL
+		`
+		if err := dbs.DB.Exec(updateIsRequiredSQL).Error; err != nil {
+			return fmt.Errorf("failed to set default is_required: %w", err)
+		}
+	}
+
+	// Step 4: Make Price nullable if it's not already
+	var priceNullable bool
+	checkPriceNullableSQL := `
+		SELECT is_nullable = 'YES'
+		FROM information_schema.columns 
+		WHERE table_name = $1 AND column_name = 'price'
+	`
+	if err := dbs.DB.Raw(checkPriceNullableSQL, tableName).Scan(&priceNullable).Error; err != nil {
+		return fmt.Errorf("failed to check price nullable: %w", err)
+	}
+
+	if !priceNullable {
+		logger.Info(ctx, "Making price column nullable in room_type_additionals")
+		alterPriceSQL := `
+			ALTER TABLE room_type_additionals 
+			ALTER COLUMN price DROP NOT NULL
+		`
+		if err := dbs.DB.Exec(alterPriceSQL).Error; err != nil {
+			logger.Warn(ctx, fmt.Sprintf("Price column might already be nullable: %v", err))
+		}
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated RoomTypeAdditional")
+	return nil
+}
+
+func (dbs *DBPostgre) migrateBookingDetailAdditional(ctx context.Context) error {
+	logger.Info(ctx, "Starting BookingDetailAdditional migration")
+
+	tableName := "booking_detail_additionals"
+
+	// Step 1: Check and add Category column
+	var categoryExists bool
+	checkCategorySQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'category'
+		)
+	`
+	if err := dbs.DB.Raw(checkCategorySQL, tableName).Scan(&categoryExists).Error; err != nil {
+		return fmt.Errorf("failed to check category column: %w", err)
+	}
+
+	if !categoryExists {
+		logger.Info(ctx, "Adding category column to booking_detail_additionals")
+		addCategorySQL := fmt.Sprintf(`
+			ALTER TABLE booking_detail_additionals 
+			ADD COLUMN category VARCHAR(10) DEFAULT '%s'
+		`, constant.AdditionalServiceCategoryPrice)
+		if err := dbs.DB.Exec(addCategorySQL).Error; err != nil {
+			return fmt.Errorf("failed to add category column: %w", err)
+		}
+		// Set default value for existing records
+		updateCategorySQL := fmt.Sprintf(`
+			UPDATE booking_detail_additionals 
+			SET category = '%s' 
+			WHERE category IS NULL OR category = ''
+		`, constant.AdditionalServiceCategoryPrice)
+		if err := dbs.DB.Exec(updateCategorySQL).Error; err != nil {
+			return fmt.Errorf("failed to set default category: %w", err)
+		}
+	}
+
+	// Step 2: Check and add Pax column
+	var paxExists bool
+	checkPaxSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'pax'
+		)
+	`
+	if err := dbs.DB.Raw(checkPaxSQL, tableName).Scan(&paxExists).Error; err != nil {
+		return fmt.Errorf("failed to check pax column: %w", err)
+	}
+
+	if !paxExists {
+		logger.Info(ctx, "Adding pax column to booking_detail_additionals")
+		addPaxSQL := `
+			ALTER TABLE booking_detail_additionals 
+			ADD COLUMN pax INTEGER
+		`
+		if err := dbs.DB.Exec(addPaxSQL).Error; err != nil {
+			return fmt.Errorf("failed to add pax column: %w", err)
+		}
+	}
+
+	// Step 3: Check and add IsRequired column
+	var isRequiredExists bool
+	checkIsRequiredSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'is_required'
+		)
+	`
+	if err := dbs.DB.Raw(checkIsRequiredSQL, tableName).Scan(&isRequiredExists).Error; err != nil {
+		return fmt.Errorf("failed to check is_required column: %w", err)
+	}
+
+	if !isRequiredExists {
+		logger.Info(ctx, "Adding is_required column to booking_detail_additionals")
+		addIsRequiredSQL := `
+			ALTER TABLE booking_detail_additionals 
+			ADD COLUMN is_required BOOLEAN DEFAULT false
+		`
+		if err := dbs.DB.Exec(addIsRequiredSQL).Error; err != nil {
+			return fmt.Errorf("failed to add is_required column: %w", err)
+		}
+	}
+
+	// Step 4: Make Price column nullable
+	var priceNullable bool
+	checkPriceNullableSQL := `
+		SELECT is_nullable FROM information_schema.columns 
+		WHERE table_name = $1 AND column_name = 'price'
+	`
+	var isNullableStr string
+	if err := dbs.DB.Raw(checkPriceNullableSQL, tableName).Scan(&isNullableStr).Error; err != nil {
+		return fmt.Errorf("failed to check price column nullability: %w", err)
+	}
+	priceNullable = (isNullableStr == "YES")
+
+	if !priceNullable {
+		logger.Info(ctx, "Making price column nullable in booking_detail_additionals")
+		alterPriceNullableSQL := `
+			ALTER TABLE booking_detail_additionals 
+			ALTER COLUMN price DROP NOT NULL
+		`
+		if err := dbs.DB.Exec(alterPriceNullableSQL).Error; err != nil {
+			return fmt.Errorf("failed to make price column nullable: %w", err)
+		}
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated BookingDetailAdditional")
+	return nil
+}
+
+func (dbs *DBPostgre) migrateBookingGuest(ctx context.Context) error {
+	logger.Info(ctx, "Starting BookingGuest migration")
+
+	tableName := "booking_guests"
+
+	// Step 1: Check and add Honorific column
+	var honorificExists bool
+	checkHonorificSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'honorific'
+		)
+	`
+	if err := dbs.DB.Raw(checkHonorificSQL, tableName).Scan(&honorificExists).Error; err != nil {
+		return fmt.Errorf("failed to check honorific column: %w", err)
+	}
+
+	if !honorificExists {
+		logger.Info(ctx, "Adding honorific column to booking_guests")
+		addHonorificSQL := `
+			ALTER TABLE booking_guests 
+			ADD COLUMN honorific VARCHAR(10)
+		`
+		if err := dbs.DB.Exec(addHonorificSQL).Error; err != nil {
+			return fmt.Errorf("failed to add honorific column: %w", err)
+		}
+	}
+
+	// Step 2: Check and add Category column
+	var categoryExists bool
+	checkCategorySQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'category'
+		)
+	`
+	if err := dbs.DB.Raw(checkCategorySQL, tableName).Scan(&categoryExists).Error; err != nil {
+		return fmt.Errorf("failed to check category column: %w", err)
+	}
+
+	if !categoryExists {
+		logger.Info(ctx, "Adding category column to booking_guests")
+		addCategorySQL := fmt.Sprintf(`
+			ALTER TABLE booking_guests 
+			ADD COLUMN category VARCHAR(20) DEFAULT '%s'
+		`, constant.GuestCategoryAdult)
+		if err := dbs.DB.Exec(addCategorySQL).Error; err != nil {
+			return fmt.Errorf("failed to add category column: %w", err)
+		}
+		// Set default value for existing records
+		updateCategorySQL := fmt.Sprintf(`
+			UPDATE booking_guests 
+			SET category = '%s' 
+			WHERE category IS NULL OR category = ''
+		`, constant.GuestCategoryAdult)
+		if err := dbs.DB.Exec(updateCategorySQL).Error; err != nil {
+			return fmt.Errorf("failed to set default category: %w", err)
+		}
+	}
+
+	// Step 3: Check and add Age column
+	var ageExists bool
+	checkAgeSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'age'
+		)
+	`
+	if err := dbs.DB.Raw(checkAgeSQL, tableName).Scan(&ageExists).Error; err != nil {
+		return fmt.Errorf("failed to check age column: %w", err)
+	}
+
+	if !ageExists {
+		logger.Info(ctx, "Adding age column to booking_guests")
+		addAgeSQL := `
+			ALTER TABLE booking_guests 
+			ADD COLUMN age INTEGER
+		`
+		if err := dbs.DB.Exec(addAgeSQL).Error; err != nil {
+			return fmt.Errorf("failed to add age column: %w", err)
+		}
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated BookingGuest")
 	return nil
 }

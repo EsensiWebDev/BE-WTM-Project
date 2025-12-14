@@ -19,7 +19,10 @@ func (hr *HotelRepository) AttachRoomAdditions(ctx context.Context, roomTypeID u
 		link := model.RoomTypeAdditional{
 			RoomTypeID:       roomTypeID,
 			RoomAdditionalID: ra.ID,
+			Category:         a.Category,
 			Price:            a.Price,
+			Pax:              a.Pax,
+			IsRequired:       a.IsRequired,
 		}
 		if err := db.Create(&link).Error; err != nil {
 			logger.Error(ctx, "Failed to attach room addition to room type", err.Error())

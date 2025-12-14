@@ -40,9 +40,12 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 			for _, addition := range roomType.RoomAdditions {
 				if addition.ID == id {
 					unchangedAdditions = append(unchangedAdditions, entity.CustomRoomAdditionalWithID{
-						ID:    addition.ID,
-						Name:  addition.Name,
-						Price: addition.Price,
+						ID:         addition.ID,
+						Name:       addition.Name,
+						Category:   addition.Category,
+						Price:      addition.Price,
+						Pax:        addition.Pax,
+						IsRequired: addition.IsRequired,
 					})
 					break
 				}
@@ -123,8 +126,11 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 		var additionalFeaturesEntity []entity.CustomRoomAdditional
 		for _, additional := range additionalFeatures {
 			additionalFeaturesEntity = append(additionalFeaturesEntity, entity.CustomRoomAdditional{
-				Name:  additional.Name,
-				Price: additional.Price,
+				Name:       additional.Name,
+				Category:   additional.Category,
+				Price:      additional.Price,
+				Pax:        additional.Pax,
+				IsRequired: additional.IsRequired,
 			})
 		}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/bookingdto"
+	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/internal/repository/filter"
 )
 
@@ -45,7 +46,7 @@ type BookingRepository interface {
 	GetSubBookingByCode(ctx context.Context, code string) (*entity.BookingDetail, error)
 	GetBookingIDs(ctx context.Context, agentID uint, filter *filter.DefaultFilter) ([]string, int64, error)
 	GetSubBookingIDs(ctx context.Context, agentID uint, bookingCode string) ([]string, error)
-	AddGuestsToCart(ctx context.Context, agentID uint, bookingID uint, guests []string) error
+	AddGuestsToCart(ctx context.Context, agentID uint, bookingID uint, guests []bookingdto.GuestInfo) error
 	RemoveGuestsFromCart(ctx context.Context, agentID uint, bookingID uint, guest []string) error
 	AddGuestToSubCart(ctx context.Context, agentID uint, bookingDetailID uint, guest string) error
 	CancelBooking(ctx context.Context, agentID uint, subBookingID string) (*entity.BookingDetail, error)
@@ -55,4 +56,5 @@ type BookingRepository interface {
 	GetIDBySubBookingID(ctx context.Context, subBookingID string) (uint, error)
 	GetListBookingLog(ctx context.Context, filter *filter.BookingFilter) ([]entity.BookingDetail, int64, error)
 	UpdateDetailBookingDetail(ctx context.Context, bookingDetailID uint, room *entity.DetailRoom, promo *entity.DetailPromo, price float64, additionals []entity.BookingDetailAdditional) error
+	GetBookingGuests(ctx context.Context, bookingID uint) ([]model.BookingGuest, error)
 }

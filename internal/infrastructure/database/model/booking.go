@@ -95,6 +95,9 @@ type BookingGuest struct {
 	ExternalID ExternalID `gorm:"embedded"`
 	BookingID  uint       `gorm:"index"`
 	Name       string     `gorm:"type:text"`
+	Honorific  string     `gorm:"type:varchar(10)"`                 // e.g., "Mr", "Mrs", "Miss", "Ms"
+	Category   string     `gorm:"type:varchar(20);default:'Adult'"` // "Adult" or "Child"
+	Age        *int       `gorm:"type:integer"`                     // nullable, required when category="Child"
 
 	Booking Booking `gorm:"foreignkey:BookingID"`
 }
@@ -108,8 +111,11 @@ type BookingDetailAdditional struct {
 	ExternalID           ExternalID `gorm:"embedded"`
 	BookingDetailID      uint       `gorm:"index"`
 	RoomTypeAdditionalID uint       `gorm:"index"`
-	Price                float64
-	NameAdditional       string `gorm:"type:text"`
+	Category             string     `gorm:"type:varchar(10);default:'price'"` // "price" or "pax"
+	Price                *float64   `gorm:"type:decimal(10,2)"`               // nullable, used when category="price"
+	Pax                  *int       `gorm:"type:integer"`                     // nullable, used when category="pax"
+	IsRequired           bool       `gorm:"default:false"`
+	NameAdditional       string     `gorm:"type:text"`
 	Quantity             int
 
 	BookingDetail      BookingDetail      `gorm:"foreignkey:BookingDetailID"`
