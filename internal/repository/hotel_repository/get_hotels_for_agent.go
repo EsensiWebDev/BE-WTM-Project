@@ -199,7 +199,7 @@ func (hr *HotelRepository) buildBaseHotelQuery(
 
 	// WHERE clause untuk hotel
 	if len(hotelConditions) > 0 {
-		queryBuilder.WriteString("\n\t\tWHERE ")
+		queryBuilder.WriteString("\n\t\tWHERE h.deleted_at IS NULL AND ")
 		queryBuilder.WriteString(strings.Join(hotelConditions, " AND "))
 	}
 
