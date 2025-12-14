@@ -67,7 +67,6 @@ type Config struct {
 	PortSES               int
 	PasswordSES           string
 	DisableAuthSES        bool
-	UseTLSSES             bool
 	HostNameSES           string
 	DefaultFromSES        string
 	SupportEmailSES       string
@@ -80,7 +79,6 @@ type Config struct {
 	PortGmail               int
 	PasswordGmail           string
 	DisableAuthGmail        bool
-	UseTLSGmail             bool
 	HostNameGmail           string
 	DefaultFromGmail        string
 	SupportEmailGmail       string
@@ -163,7 +161,6 @@ func LoadConfig() *Config {
 		PortSES:               utils.GetIntEnv("PORT_SES", 587),
 		PasswordSES:           utils.GetStringEnv("PASSWORD_SES", ""),
 		DisableAuthSES:        utils.GetBoolEnv("DISABLE_AUTH_SES", false),
-		UseTLSSES:             utils.GetBoolEnv("USE_TLS_SES", false),
 		HostNameSES:           utils.GetStringEnv("HOST_NAME_SES", ""),
 		DefaultFromSES:        utils.GetStringEnv("DEFAULT_FROM_SES", ""),
 		SupportEmailSES:       utils.GetStringEnv("SUPPORT_EMAIL_SES", ""),
@@ -176,7 +173,6 @@ func LoadConfig() *Config {
 		PortGmail:               utils.GetIntEnv("PORT_GMAIL", 587),
 		PasswordGmail:           utils.GetStringEnv("PASSWORD_GMAIL", ""),
 		DisableAuthGmail:        utils.GetBoolEnv("DISABLE_AUTH_GMAIL", false),
-		UseTLSGmail:             utils.GetBoolEnv("USE_TLS_GMAIL", false),
 		DefaultFromGmail:        utils.GetStringEnv("DEFAULT_FROM_GMAIL", ""),
 		SupportEmailGmail:       utils.GetStringEnv("SUPPORT_EMAIL_GMAIL", ""),
 		ProviderGmailReplyTo:    utils.GetBoolEnv("PROVIDER_GMAIL_REPLY_TO", false),
