@@ -11,6 +11,7 @@ import (
 	"wtm-backend/internal/usecase/auth_usecase"
 	"wtm-backend/internal/usecase/banner_usecase"
 	"wtm-backend/internal/usecase/booking_usecase"
+	"wtm-backend/internal/usecase/currency_usecase"
 	"wtm-backend/internal/usecase/email_usecase"
 	"wtm-backend/internal/usecase/file_usecase"
 	"wtm-backend/internal/usecase/hotel_usecase"
@@ -44,6 +45,7 @@ type AppUsecases struct {
 	NotificationUsecase *notification_usecase.NotificationUsecase
 	EmailUsecase        *email_usecase.EmailUsecase
 	FileUsecase         *file_usecase.FileUsecase
+	CurrencyUsecase     *currency_usecase.CurrencyUsecase
 }
 
 func NewApplication() *Application {

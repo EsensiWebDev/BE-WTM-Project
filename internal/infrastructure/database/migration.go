@@ -59,6 +59,7 @@ func (dbs *DBPostgre) runMigrations(ctx context.Context, cfg *config.Config) err
 		&model.StatusEmail{},
 		&model.EmailLog{},
 		&model.Invoice{},
+		&model.Currency{},
 	}
 
 	if err := dbs.DB.AutoMigrate(models...); err != nil {
@@ -106,6 +107,12 @@ func (dbs *DBPostgre) runMigrations(ctx context.Context, cfg *config.Config) err
 	if err := dbs.migrateBookingDetailAdminNotes(ctx); err != nil {
 		logger.Error(ctx, "BookingDetail admin_notes migration failed", err.Error())
 		return fmt.Errorf("booking_detail admin_notes migration: %w", err)
+	}
+
+	// ✅ Migrate Multi-Currency support
+	if err := dbs.migrateMultiCurrency(ctx); err != nil {
+		logger.Error(ctx, "Multi-currency migration failed", err.Error())
+		return fmt.Errorf("multi-currency migration: %w", err)
 	}
 
 	logger.Info(ctx, "Database migration completed",
@@ -637,5 +644,319 @@ func (dbs *DBPostgre) migrateBookingDetailAdminNotes(ctx context.Context) error 
 	}
 
 	logger.Info(ctx, "✓ Successfully migrated BookingDetail admin_notes")
+	return nil
+}
+
+// ✅ FUNGSI BARU: Migrasi Multi-Currency support
+func (dbs *DBPostgre) migrateMultiCurrency(ctx context.Context) error {
+	logger.Info(ctx, "Starting Multi-Currency migration")
+
+	// Step 1: Add Prices JSONB column to room_prices
+	if err := dbs.migrateRoomPricesJSONB(ctx); err != nil {
+		return fmt.Errorf("failed to migrate room_prices prices: %w", err)
+	}
+
+	// Step 2: Add Prices JSONB column to room_type_additionals
+	if err := dbs.migrateRoomTypeAdditionalsPricesJSONB(ctx); err != nil {
+		return fmt.Errorf("failed to migrate room_type_additionals prices: %w", err)
+	}
+
+	// Step 3: Add Currency column to users
+	if err := dbs.migrateUsersCurrency(ctx); err != nil {
+		return fmt.Errorf("failed to migrate users currency: %w", err)
+	}
+
+	// Step 4: Add Currency column to booking_details
+	if err := dbs.migrateBookingDetailsCurrency(ctx); err != nil {
+		return fmt.Errorf("failed to migrate booking_details currency: %w", err)
+	}
+
+	// Step 5: Migrate promos.detail structure to support per-currency prices
+	if err := dbs.migratePromoDetailStructure(ctx); err != nil {
+		return fmt.Errorf("failed to migrate promo detail structure: %w", err)
+	}
+
+	// Step 6: Create GIN indexes on JSONB columns
+	if err := dbs.createCurrencyIndexes(ctx); err != nil {
+		return fmt.Errorf("failed to create currency indexes: %w", err)
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated Multi-Currency support")
+	return nil
+}
+
+// Migrate room_prices: Add Prices JSONB and migrate existing Price to Prices
+func (dbs *DBPostgre) migrateRoomPricesJSONB(ctx context.Context) error {
+	logger.Info(ctx, "Migrating room_prices to support multi-currency")
+
+	tableName := "room_prices"
+
+	// Check if Prices column already exists
+	var pricesExists bool
+	checkPricesSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'prices'
+		)
+	`
+	if err := dbs.DB.Raw(checkPricesSQL, tableName).Scan(&pricesExists).Error; err != nil {
+		return fmt.Errorf("failed to check prices column: %w", err)
+	}
+
+	if !pricesExists {
+		logger.Info(ctx, "Adding prices JSONB column to room_prices")
+		addPricesSQL := `
+			ALTER TABLE room_prices 
+			ADD COLUMN prices JSONB
+		`
+		if err := dbs.DB.Exec(addPricesSQL).Error; err != nil {
+			return fmt.Errorf("failed to add prices column: %w", err)
+		}
+	}
+
+	// Migrate existing Price to Prices: {"IDR": price}
+	logger.Info(ctx, "Migrating existing price data to prices JSONB")
+	migratePriceSQL := `
+		UPDATE room_prices 
+		SET prices = jsonb_build_object('IDR', price)
+		WHERE prices IS NULL OR prices = '{}'::jsonb
+		AND price IS NOT NULL AND price > 0
+	`
+	if err := dbs.DB.Exec(migratePriceSQL).Error; err != nil {
+		return fmt.Errorf("failed to migrate price to prices: %w", err)
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated room_prices prices")
+	return nil
+}
+
+// Migrate room_type_additionals: Add Prices JSONB and migrate existing Price to Prices
+func (dbs *DBPostgre) migrateRoomTypeAdditionalsPricesJSONB(ctx context.Context) error {
+	logger.Info(ctx, "Migrating room_type_additionals to support multi-currency")
+
+	tableName := "room_type_additionals"
+
+	// Check if Prices column already exists
+	var pricesExists bool
+	checkPricesSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'prices'
+		)
+	`
+	if err := dbs.DB.Raw(checkPricesSQL, tableName).Scan(&pricesExists).Error; err != nil {
+		return fmt.Errorf("failed to check prices column: %w", err)
+	}
+
+	if !pricesExists {
+		logger.Info(ctx, "Adding prices JSONB column to room_type_additionals")
+		addPricesSQL := `
+			ALTER TABLE room_type_additionals 
+			ADD COLUMN prices JSONB
+		`
+		if err := dbs.DB.Exec(addPricesSQL).Error; err != nil {
+			return fmt.Errorf("failed to add prices column: %w", err)
+		}
+	}
+
+	// Migrate existing Price to Prices: {"IDR": price} (only for category="price" and price is not null)
+	logger.Info(ctx, "Migrating existing price data to prices JSONB")
+	migratePriceSQL := `
+		UPDATE room_type_additionals 
+		SET prices = jsonb_build_object('IDR', price)
+		WHERE prices IS NULL OR prices = '{}'::jsonb
+		AND category = 'price'
+		AND price IS NOT NULL AND price > 0
+	`
+	if err := dbs.DB.Exec(migratePriceSQL).Error; err != nil {
+		return fmt.Errorf("failed to migrate price to prices: %w", err)
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated room_type_additionals prices")
+	return nil
+}
+
+// Migrate users: Add Currency column with default 'IDR'
+func (dbs *DBPostgre) migrateUsersCurrency(ctx context.Context) error {
+	logger.Info(ctx, "Migrating users to support currency preference")
+
+	tableName := "users"
+
+	// Check if Currency column already exists
+	var currencyExists bool
+	checkCurrencySQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'currency'
+		)
+	`
+	if err := dbs.DB.Raw(checkCurrencySQL, tableName).Scan(&currencyExists).Error; err != nil {
+		return fmt.Errorf("failed to check currency column: %w", err)
+	}
+
+	if !currencyExists {
+		logger.Info(ctx, "Adding currency column to users")
+		addCurrencySQL := `
+			ALTER TABLE users 
+			ADD COLUMN currency VARCHAR(3) DEFAULT 'IDR'
+		`
+		if err := dbs.DB.Exec(addCurrencySQL).Error; err != nil {
+			return fmt.Errorf("failed to add currency column: %w", err)
+		}
+	}
+
+	// Set default 'IDR' for existing records
+	logger.Info(ctx, "Setting default currency 'IDR' for existing users")
+	updateCurrencySQL := `
+		UPDATE users 
+		SET currency = 'IDR' 
+		WHERE currency IS NULL OR currency = ''
+	`
+	if err := dbs.DB.Exec(updateCurrencySQL).Error; err != nil {
+		return fmt.Errorf("failed to set default currency: %w", err)
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated users currency")
+	return nil
+}
+
+// Migrate booking_details: Add Currency column with default 'IDR'
+func (dbs *DBPostgre) migrateBookingDetailsCurrency(ctx context.Context) error {
+	logger.Info(ctx, "Migrating booking_details to support currency")
+
+	tableName := "booking_details"
+
+	// Check if Currency column already exists
+	var currencyExists bool
+	checkCurrencySQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'currency'
+		)
+	`
+	if err := dbs.DB.Raw(checkCurrencySQL, tableName).Scan(&currencyExists).Error; err != nil {
+		return fmt.Errorf("failed to check currency column: %w", err)
+	}
+
+	if !currencyExists {
+		logger.Info(ctx, "Adding currency column to booking_details")
+		addCurrencySQL := `
+			ALTER TABLE booking_details 
+			ADD COLUMN currency VARCHAR(3) DEFAULT 'IDR'
+		`
+		if err := dbs.DB.Exec(addCurrencySQL).Error; err != nil {
+			return fmt.Errorf("failed to add currency column: %w", err)
+		}
+	}
+
+	// Set default 'IDR' for existing records
+	logger.Info(ctx, "Setting default currency 'IDR' for existing booking_details")
+	updateCurrencySQL := `
+		UPDATE booking_details 
+		SET currency = 'IDR' 
+		WHERE currency IS NULL OR currency = ''
+	`
+	if err := dbs.DB.Exec(updateCurrencySQL).Error; err != nil {
+		return fmt.Errorf("failed to set default currency: %w", err)
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated booking_details currency")
+	return nil
+}
+
+// Create GIN indexes on JSONB columns for better query performance
+func (dbs *DBPostgre) createCurrencyIndexes(ctx context.Context) error {
+	logger.Info(ctx, "Creating GIN indexes on JSONB price columns")
+
+	// Index on room_prices.prices
+	indexName1 := "idx_room_prices_prices"
+	checkIndex1SQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM pg_indexes 
+			WHERE indexname = $1
+		)
+	`
+	var index1Exists bool
+	if err := dbs.DB.Raw(checkIndex1SQL, indexName1).Scan(&index1Exists).Error; err != nil {
+		return fmt.Errorf("failed to check index existence: %w", err)
+	}
+
+	if !index1Exists {
+		logger.Info(ctx, "Creating GIN index on room_prices.prices")
+		createIndex1SQL := `
+			CREATE INDEX idx_room_prices_prices ON room_prices USING GIN (prices)
+		`
+		if err := dbs.DB.Exec(createIndex1SQL).Error; err != nil {
+			return fmt.Errorf("failed to create index on room_prices.prices: %w", err)
+		}
+	}
+
+	// Index on room_type_additionals.prices
+	indexName2 := "idx_room_type_additionals_prices"
+	var index2Exists bool
+	if err := dbs.DB.Raw(checkIndex1SQL, indexName2).Scan(&index2Exists).Error; err != nil {
+		return fmt.Errorf("failed to check index existence: %w", err)
+	}
+
+	if !index2Exists {
+		logger.Info(ctx, "Creating GIN index on room_type_additionals.prices")
+		createIndex2SQL := `
+			CREATE INDEX idx_room_type_additionals_prices ON room_type_additionals USING GIN (prices)
+		`
+		if err := dbs.DB.Exec(createIndex2SQL).Error; err != nil {
+			return fmt.Errorf("failed to create index on room_type_additionals.prices: %w", err)
+		}
+	}
+
+	logger.Info(ctx, "✓ Successfully created currency indexes")
+	return nil
+}
+
+// Migrate promos.detail JSONB structure to support per-currency prices
+// Old structure: {"fixed_price": 100, "discount_percentage": 10}
+// New structure: {"prices": {"IDR": 1200000, "USD": 75}, "discount_percentage": 10}
+func (dbs *DBPostgre) migratePromoDetailStructure(ctx context.Context) error {
+	logger.Info(ctx, "Migrating promos.detail structure to support multi-currency")
+
+	tableName := "promos"
+
+	// Check if detail column exists (it should, but let's be safe)
+	var detailExists bool
+	checkDetailSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'detail'
+		)
+	`
+	if err := dbs.DB.Raw(checkDetailSQL, tableName).Scan(&detailExists).Error; err != nil {
+		return fmt.Errorf("failed to check detail column: %w", err)
+	}
+
+	if !detailExists {
+		logger.Warn(ctx, "Detail column does not exist in promos table, skipping migration")
+		return nil
+	}
+
+	// Migrate existing fixed_price to prices structure
+	// For promos with fixed_price, add prices: {"IDR": fixed_price}
+	// Keep fixed_price field for backward compatibility during transition
+	logger.Info(ctx, "Migrating existing fixed_price to prices structure in promo details")
+	migratePromoDetailSQL := `
+		UPDATE promos
+		SET detail = jsonb_set(
+			detail,
+			'{prices}',
+			jsonb_build_object('IDR', (detail->>'fixed_price')::float)
+		)
+		WHERE detail ? 'fixed_price'
+		AND (detail->>'fixed_price') IS NOT NULL
+		AND (detail->>'fixed_price')::float > 0
+		AND (detail->'prices' IS NULL OR detail->'prices' = '{}'::jsonb)
+	`
+	if err := dbs.DB.Exec(migratePromoDetailSQL).Error; err != nil {
+		return fmt.Errorf("failed to migrate promo detail structure: %w", err)
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated promo detail structure")
 	return nil
 }

@@ -44,6 +44,7 @@ type BookingDetail struct {
 	DetailPromos                DetailPromo
 	DetailRooms                 DetailRoom
 	Price                       float64
+	Currency                    string // Snapshot of currency at booking time
 	Guest                       string
 	OtherPreferences            string
 	BedType                     string   // Selected bed type (singular)

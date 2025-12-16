@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
 
@@ -135,10 +136,29 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, agent
 			}
 		}
 		for _, price := range roomType.RoomPrices {
+			// Convert Prices JSONB to map
+			var pricesMap map[string]float64
+			if len(price.Prices) > 0 {
+				prices, err := currency.JSONToPrices(price.Prices)
+				if err != nil {
+					logger.Error(ctx, "Failed to convert prices JSONB to map", err.Error())
+					// Fallback to Price field if JSONB conversion fails
+					if price.Price > 0 {
+						pricesMap = map[string]float64{"IDR": price.Price}
+					}
+				} else {
+					pricesMap = prices
+				}
+			} else if price.Price > 0 {
+				// Fallback: use Price field if Prices JSONB is empty
+				pricesMap = map[string]float64{"IDR": price.Price}
+			}
+
 			customBreakfast := entity.CustomBreakfastWithID{
 				ID:     price.ID,
 				Pax:    price.Pax,
-				Price:  price.Price,
+				Price:  price.Price, // Keep for backward compatibility
+				Prices: pricesMap,
 				IsShow: price.IsShow,
 			}
 			if price.IsBreakfast {

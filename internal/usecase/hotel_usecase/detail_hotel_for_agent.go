@@ -6,6 +6,7 @@ import (
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/pkg/constant"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 )
 
@@ -110,10 +111,27 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 			if prt.Promo.IsActive {
 				var priceWithBreakfast, priceWithoutBreakfast float64
 				var notes string
+
+				// Get agent's currency preference (default to IDR, currency utility will handle fallback)
+				// Note: The hotel repository already handles currency conversion for room prices
+				// For promos, we use IDR as default and let the currency utility handle fallback
+				agentCurrency := "IDR" // Default fallback
+
 				if prt.Promo.Detail.DiscountPercentage > 0 {
 					priceWithBreakfast = (100 - prt.Promo.Detail.DiscountPercentage) / 100 * roomType.WithBreakfast.Price
 					priceWithoutBreakfast = (100 - prt.Promo.Detail.DiscountPercentage) / 100 * roomType.WithoutBreakfast.Price
+				} else if len(prt.Promo.Detail.Prices) > 0 {
+					// Use Prices map for multi-currency support
+					if price, _, err := currency.GetPriceForCurrency(prt.Promo.Detail.Prices, agentCurrency); err == nil {
+						priceWithBreakfast = price
+						priceWithoutBreakfast = price
+					} else if prt.Promo.Detail.FixedPrice > 0 {
+						// Fallback to FixedPrice if Prices not available (backward compatibility)
+						priceWithBreakfast = prt.Promo.Detail.FixedPrice
+						priceWithoutBreakfast = prt.Promo.Detail.FixedPrice
+					}
 				} else if prt.Promo.Detail.FixedPrice > 0 {
+					// Backward compatibility: use FixedPrice if Prices not set
 					priceWithBreakfast = prt.Promo.Detail.FixedPrice
 					priceWithoutBreakfast = prt.Promo.Detail.FixedPrice
 				} else if prt.Promo.Detail.BenefitNote != "" {

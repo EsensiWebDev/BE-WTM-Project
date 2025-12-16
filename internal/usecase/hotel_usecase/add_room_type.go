@@ -104,8 +104,13 @@ func (hu *HotelUsecase) AddRoomType(ctx context.Context, hotelID uint, req *hote
 			}
 
 			withoutBreakfastEntity := &entity.CustomBreakfast{
-				Price:  withoutBreakfast.Price,
+				Price:  withoutBreakfast.Price, // DEPRECATED: Keep for backward compatibility
+				Prices: withoutBreakfast.Prices,
 				IsShow: withoutBreakfast.IsShow,
+			}
+			// Fallback: if Prices is empty but Price is set, convert Price to Prices
+			if len(withoutBreakfastEntity.Prices) == 0 && withoutBreakfastEntity.Price > 0 {
+				withoutBreakfastEntity.Prices = map[string]float64{"IDR": withoutBreakfastEntity.Price}
 			}
 
 			if err := hu.hotelRepo.CreateRoomPrice(txCtx, rt.ID, withoutBreakfastEntity, false); err != nil {
@@ -122,9 +127,14 @@ func (hu *HotelUsecase) AddRoomType(ctx context.Context, hotelID uint, req *hote
 			}
 
 			withBreakfastEntity := &entity.CustomBreakfast{
-				Price:  withBreakfast.Price,
+				Price:  withBreakfast.Price, // DEPRECATED: Keep for backward compatibility
+				Prices: withBreakfast.Prices,
 				Pax:    withBreakfast.Pax,
 				IsShow: withBreakfast.IsShow,
+			}
+			// Fallback: if Prices is empty but Price is set, convert Price to Prices
+			if len(withBreakfastEntity.Prices) == 0 && withBreakfastEntity.Price > 0 {
+				withBreakfastEntity.Prices = map[string]float64{"IDR": withBreakfastEntity.Price}
 			}
 
 			if err := hu.hotelRepo.CreateRoomPrice(txCtx, rt.ID, withBreakfastEntity, true); err != nil {

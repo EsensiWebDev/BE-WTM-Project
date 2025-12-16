@@ -7,6 +7,7 @@ import (
 	"time"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/pkg/constant"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 )
 
@@ -111,6 +112,13 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 			}
 			basePrice := detail.RoomPrice.Price
 			roomPrice := basePrice
+
+			// Get currency from booking detail (snapshot at booking time)
+			bookingCurrency := detail.Currency
+			if bookingCurrency == "" {
+				bookingCurrency = "IDR" // Default fallback
+			}
+
 			if detail.Promo != nil {
 				promo := detail.Promo
 				detailPromo, err := bu.generateDetailPromo(promo)
@@ -120,7 +128,21 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 				cartDetail.Promo = detailPromo
 				switch detail.Promo.PromoTypeID {
 				case constant.PromoTypeFixedPriceID:
-					roomPrice = promo.Detail.FixedPrice
+					// Use Prices map for multi-currency support
+					if len(promo.Detail.Prices) > 0 {
+						// Get price for the booking currency
+						if price, _, err := currency.GetPriceForCurrency(promo.Detail.Prices, bookingCurrency); err == nil {
+							roomPrice = price
+						} else {
+							// Fallback to FixedPrice if Prices not available (backward compatibility)
+							if promo.Detail.FixedPrice > 0 {
+								roomPrice = promo.Detail.FixedPrice
+							}
+						}
+					} else if promo.Detail.FixedPrice > 0 {
+						// Backward compatibility: use FixedPrice if Prices not set
+						roomPrice = promo.Detail.FixedPrice
+					}
 					if promo.Duration > nights {
 						roomPrice += float64(nights-promo.Duration) * basePrice
 					}

@@ -100,8 +100,13 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 
 			withoutBreakfastEntity := entity.CustomBreakfastWithID{
 				ID:     roomType.WithoutBreakfast.ID,
-				Price:  withoutBreakfast.Price,
+				Price:  withoutBreakfast.Price, // DEPRECATED: Keep for backward compatibility
+				Prices: withoutBreakfast.Prices,
 				IsShow: withoutBreakfast.IsShow,
+			}
+			// Fallback: if Prices is empty but Price is set, convert Price to Prices
+			if len(withoutBreakfastEntity.Prices) == 0 && withoutBreakfastEntity.Price > 0 {
+				withoutBreakfastEntity.Prices = map[string]float64{"IDR": withoutBreakfastEntity.Price}
 			}
 			roomType.WithoutBreakfast = withoutBreakfastEntity
 		}
@@ -115,9 +120,14 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 
 			withBreakfastEntity := entity.CustomBreakfastWithID{
 				ID:     roomType.WithBreakfast.ID,
-				Price:  withBreakfast.Price,
+				Price:  withBreakfast.Price, // DEPRECATED: Keep for backward compatibility
+				Prices: withBreakfast.Prices,
 				Pax:    withBreakfast.Pax,
 				IsShow: withBreakfast.IsShow,
+			}
+			// Fallback: if Prices is empty but Price is set, convert Price to Prices
+			if len(withBreakfastEntity.Prices) == 0 && withBreakfastEntity.Price > 0 {
+				withBreakfastEntity.Prices = map[string]float64{"IDR": withBreakfastEntity.Price}
 			}
 			roomType.WithBreakfast = withBreakfastEntity
 		}

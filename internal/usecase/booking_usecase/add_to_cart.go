@@ -159,6 +159,17 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 		// Trim additional notes (admin-only field)
 		additionalNotes := strings.TrimSpace(req.AdditionalNotes)
 
+		// Get agent's currency preference
+		user, err := bu.userRepo.GetUserByID(txCtx, agentID)
+		if err != nil {
+			logger.Error(ctx, "failed to get user for currency", err.Error())
+			return fmt.Errorf("failed to get user: %s", err.Error())
+		}
+		agentCurrency := "IDR" // Default fallback
+		if user != nil && user.Currency != "" {
+			agentCurrency = user.Currency
+		}
+
 		detailBooking := &entity.BookingDetail{
 			BookingID:        bookingID,
 			RoomPriceID:      roomPrice.ID,
@@ -170,6 +181,7 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			BedType:          req.BedType,
 			OtherPreferences: otherPrefsJoined,
 			AdditionalNotes:  additionalNotes,
+			Currency:         agentCurrency, // Store agent's currency at booking time
 		}
 
 		if promo != nil {

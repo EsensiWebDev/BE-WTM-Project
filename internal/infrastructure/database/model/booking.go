@@ -67,7 +67,8 @@ type BookingDetail struct {
 	DetailRoom  datatypes.JSON `gorm:"type:jsonb"` // snapshot of room details
 
 	// Pricing
-	Price float64 `gorm:"type:float"`
+	Price    float64 `gorm:"type:float"`
+	Currency string  `json:"currency" gorm:"type:varchar(3);default:'IDR'"` // Snapshot of currency at booking time
 
 	// Guest per kamar
 	Guest            string `gorm:"type:text"`

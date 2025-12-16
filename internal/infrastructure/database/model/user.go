@@ -42,6 +42,7 @@ type User struct {
 	NameCard       string     `json:"name_card"`
 	PhotoSelfie    string     `json:"photo_selfie"`
 	PhotoIDCard    string     `json:"photo_id_card"`
+	Currency       string     `json:"currency" gorm:"type:varchar(3);default:'IDR'"` // Agent currency preference (set by admin)
 	ExternalID     ExternalID `gorm:"embedded"`
 
 	Status       StatusUser    `gorm:"foreignKey:StatusID"`

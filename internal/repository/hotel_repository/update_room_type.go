@@ -5,6 +5,7 @@ import (
 	"errors"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
 )
@@ -34,18 +35,48 @@ func (hr *HotelRepository) UpdateRoomType(ctx context.Context, roomType *entity.
 		return err
 	}
 
+	// Helper function to convert Prices map to JSONB
+	convertPricesToJSONB := func(prices map[string]float64, fallbackPrice float64) ([]byte, error) {
+		if prices != nil && len(prices) > 0 {
+			// Validate prices
+			if err := currency.ValidatePrices(prices); err != nil {
+				return nil, err
+			}
+			return currency.PricesToJSON(prices)
+		} else if fallbackPrice > 0 {
+			// Fallback: convert single Price to Prices JSONB with IDR
+			return currency.PricesToJSON(map[string]float64{"IDR": fallbackPrice})
+		}
+		return nil, errors.New("price or prices must be provided")
+	}
+
+	// Prepare room price with breakfast
+	withBreakfastPricesJSON, err := convertPricesToJSONB(roomType.WithBreakfast.Prices, roomType.WithBreakfast.Price)
+	if err != nil {
+		logger.Error(ctx, "Failed to convert with breakfast prices to JSONB", err.Error())
+		return err
+	}
 	roomPriceWithBreakfast := model.RoomPrice{
 		RoomTypeID:  roomType.ID,
 		IsBreakfast: true,
 		Pax:         roomType.WithBreakfast.Pax,
-		Price:       roomType.WithBreakfast.Price,
+		Price:       roomType.WithBreakfast.Price, // Keep for backward compatibility
+		Prices:      withBreakfastPricesJSON,
 		IsShow:      roomType.WithBreakfast.IsShow,
 	}
 	roomPriceWithBreakfast.ID = roomType.WithBreakfast.ID
+
+	// Prepare room price without breakfast
+	withoutBreakfastPricesJSON, err := convertPricesToJSONB(roomType.WithoutBreakfast.Prices, roomType.WithoutBreakfast.Price)
+	if err != nil {
+		logger.Error(ctx, "Failed to convert without breakfast prices to JSONB", err.Error())
+		return err
+	}
 	roomPriceWithoutBreakfast := model.RoomPrice{
 		RoomTypeID:  roomType.ID,
 		IsBreakfast: false,
-		Price:       roomType.WithoutBreakfast.Price,
+		Price:       roomType.WithoutBreakfast.Price, // Keep for backward compatibility
+		Prices:      withoutBreakfastPricesJSON,
 		IsShow:      roomType.WithoutBreakfast.IsShow,
 	}
 	roomPriceWithoutBreakfast.ID = roomType.WithoutBreakfast.ID
@@ -55,15 +86,17 @@ func (hr *HotelRepository) UpdateRoomType(ctx context.Context, roomType *entity.
 	for _, rp := range roomPrices {
 		if rp.ID > 0 {
 			// Update existing
+			updateMap := map[string]interface{}{
+				"price":        rp.Price,
+				"prices":       rp.Prices,
+				"is_show":      rp.IsShow,
+				"pax":          rp.Pax,
+				"is_breakfast": rp.IsBreakfast,
+			}
 			if err := db.WithContext(ctx).
 				Model(&model.RoomPrice{}).
 				Where("id = ?", rp.ID).
-				Updates(map[string]interface{}{
-					"price":        rp.Price,
-					"is_show":      rp.IsShow,
-					"pax":          rp.Pax,
-					"is_breakfast": rp.IsBreakfast,
-				}).Error; err != nil {
+				Updates(updateMap).Error; err != nil {
 				return err
 			}
 		} else {

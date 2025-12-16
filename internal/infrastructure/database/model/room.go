@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/lib/pq"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -35,12 +36,13 @@ func (b *RoomType) BeforeCreate(tx *gorm.DB) error {
 
 type RoomPrice struct {
 	gorm.Model
-	ExternalID  ExternalID `gorm:"embedded"`
-	RoomTypeID  uint       `json:"room_type_id_id" gorm:"index"`
-	IsBreakfast bool       `json:"is_breakfast"`
-	Pax         int        `json:"pax"`
-	Price       float64    `json:"price"`
-	IsShow      bool       `json:"is_show"`
+	ExternalID  ExternalID     `gorm:"embedded"`
+	RoomTypeID  uint           `json:"room_type_id_id" gorm:"index"`
+	IsBreakfast bool           `json:"is_breakfast"`
+	Pax         int            `json:"pax"`
+	Price       float64        `json:"price"`      // DEPRECATED: Keep for backward compatibility during migration
+	Prices      datatypes.JSON `gorm:"type:jsonb"` // NEW: Multi-currency prices {"IDR": 1600000, "USD": 100}
+	IsShow      bool           `json:"is_show"`
 
 	RoomType RoomType `gorm:"foreignKey:RoomTypeID"`
 }
@@ -63,13 +65,14 @@ func (b *RoomAdditional) BeforeCreate(tx *gorm.DB) error {
 
 type RoomTypeAdditional struct {
 	gorm.Model
-	ExternalID       ExternalID `gorm:"embedded"`
-	RoomTypeID       uint       `json:"room_type_id" gorm:"index"`
-	RoomAdditionalID uint       `json:"room_additional_id" gorm:"index"`
-	Category         string     `json:"category" gorm:"type:varchar(10);default:'price'"` // "price" or "pax"
-	Price            *float64   `json:"price" gorm:"type:decimal(10,2)"`                  // nullable, used when category="price"
-	Pax              *int       `json:"pax"`                                              // nullable, used when category="pax"
-	IsRequired       bool       `json:"is_required" gorm:"default:false"`
+	ExternalID       ExternalID     `gorm:"embedded"`
+	RoomTypeID       uint           `json:"room_type_id" gorm:"index"`
+	RoomAdditionalID uint           `json:"room_additional_id" gorm:"index"`
+	Category         string         `json:"category" gorm:"type:varchar(10);default:'price'"` // "price" or "pax"
+	Price            *float64       `json:"price" gorm:"type:decimal(10,2)"`                  // DEPRECATED: Keep for backward compatibility
+	Prices           datatypes.JSON `gorm:"type:jsonb"`                                       // NEW: Multi-currency prices {"IDR": 50000, "USD": 3.50}
+	Pax              *int           `json:"pax"`                                              // nullable, used when category="pax"
+	IsRequired       bool           `json:"is_required" gorm:"default:false"`
 
 	RoomType       RoomType       `json:"room_type" gorm:"foreignkey:RoomTypeID"`
 	RoomAdditional RoomAdditional `json:"room_additional" gorm:"foreignkey:RoomAdditionalID"`

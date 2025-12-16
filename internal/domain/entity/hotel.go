@@ -94,12 +94,13 @@ type CustomRoomAdditional struct {
 }
 
 type CustomRoomAdditionalWithID struct {
-	ID         uint     `json:"id" form:"id"`
-	Name       string   `json:"name" form:"name"`
-	Category   string   `json:"category" form:"category"`     // "price" or "pax"
-	Price      *float64 `json:"price,omitempty" form:"price"` // nullable, used when category="price"
-	Pax        *int     `json:"pax,omitempty" form:"pax"`     // nullable, used when category="pax"
-	IsRequired bool     `json:"is_required" form:"is_required"`
+	ID         uint               `json:"id" form:"id"`
+	Name       string             `json:"name" form:"name"`
+	Category   string             `json:"category" form:"category"`       // "price" or "pax"
+	Price      *float64           `json:"price,omitempty" form:"price"`   // DEPRECATED: Keep for backward compatibility
+	Prices     map[string]float64 `json:"prices,omitempty" form:"prices"` // NEW: Multi-currency prices {"IDR": 50000, "USD": 3.50}
+	Pax        *int               `json:"pax,omitempty" form:"pax"`       // nullable, used when category="pax"
+	IsRequired bool               `json:"is_required" form:"is_required"`
 }
 
 type CustomOtherPreference struct {
@@ -112,16 +113,18 @@ type CustomOtherPreferenceWithID struct {
 }
 
 type CustomBreakfast struct {
-	Price  float64 `json:"price" form:"price"`
-	Pax    int     `json:"pax,omitempty" form:"pax"`
-	IsShow bool    `json:"is_show" form:"is_show"`
+	Price  float64            `json:"price" form:"price"`             // DEPRECATED: Use Prices instead
+	Prices map[string]float64 `json:"prices,omitempty" form:"prices"` // NEW: Multi-currency prices {"IDR": 1600000, "USD": 100}
+	Pax    int                `json:"pax,omitempty" form:"pax"`
+	IsShow bool               `json:"is_show" form:"is_show"`
 }
 
 type CustomBreakfastWithID struct {
-	ID     uint    `json:"id" form:"id"`
-	Price  float64 `json:"price" form:"price"`
-	Pax    int     `json:"pax,omitempty" form:"pax"`
-	IsShow bool    `json:"is_show" form:"is_show"`
+	ID     uint               `json:"id" form:"id"`
+	Price  float64            `json:"price" form:"price"`             // DEPRECATED: Use Prices instead
+	Prices map[string]float64 `json:"prices,omitempty" form:"prices"` // NEW: Multi-currency prices {"IDR": 1600000, "USD": 100}
+	Pax    int                `json:"pax,omitempty" form:"pax"`
+	IsShow bool               `json:"is_show" form:"is_show"`
 }
 
 type RoomUnavailable struct {
@@ -155,7 +158,8 @@ type RoomPrice struct {
 	RoomTypeID  uint
 	IsBreakfast bool
 	Pax         int
-	Price       float64
+	Price       float64            // DEPRECATED: Keep for backward compatibility
+	Prices      map[string]float64 // NEW: Multi-currency prices {"IDR": 1600000, "USD": 100}
 	IsShow      bool
 
 	RoomType RoomType
@@ -165,9 +169,10 @@ type RoomTypeAdditional struct {
 	ID               uint
 	RoomTypeID       uint
 	RoomAdditionalID uint
-	Category         string   // "price" or "pax"
-	Price            *float64 // nullable, used when category="price"
-	Pax              *int     // nullable, used when category="pax"
+	Category         string             // "price" or "pax"
+	Price            *float64           // DEPRECATED: Keep for backward compatibility
+	Prices           map[string]float64 // NEW: Multi-currency prices {"IDR": 50000, "USD": 3.50}
+	Pax              *int               // nullable, used when category="pax"
 	IsRequired       bool
 
 	RoomAdditional RoomAdditional

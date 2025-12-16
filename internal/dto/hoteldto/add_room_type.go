@@ -94,8 +94,9 @@ func isJSON(s string) bool {
 }
 
 type BreakfastBase struct {
-	Price  float64 `json:"price" form:"price"`
-	IsShow bool    `json:"is_show" form:"is_show"`
+	Price  float64            `json:"price,omitempty" form:"price"`   // DEPRECATED: Use Prices instead
+	Prices map[string]float64 `json:"prices,omitempty" form:"prices"` // NEW: Multi-currency prices {"IDR": 1600000, "USD": 100}
+	IsShow bool               `json:"is_show" form:"is_show"`
 }
 
 type BreakfastWith struct {
