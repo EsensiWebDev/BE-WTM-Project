@@ -17,4 +17,5 @@ type PromosForAgent struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Hotel       []string `json:"hotel"`
+	TotalNights *int     `json:"total_nights,omitempty"` // Optional: Minimum nights required for this promo (exact match)
 }

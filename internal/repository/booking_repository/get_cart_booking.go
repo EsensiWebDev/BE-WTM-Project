@@ -46,11 +46,24 @@ func (br *BookingRepository) GetCartBooking(ctx context.Context, agentID uint) (
 	}
 
 	var guests []string
+	var bookingGuests []entity.BookingGuest
 	for _, guest := range booking.BookingGuests {
 		guests = append(guests, guest.Name)
+		bookingGuests = append(bookingGuests, entity.BookingGuest{
+			ID:        guest.ID,
+			BookingID: guest.BookingID,
+			Name:      guest.Name,
+			Honorific: guest.Honorific,
+			Category:  guest.Category,
+			Age:       guest.Age,
+		})
 	}
+	bookingEntity.BookingGuests = bookingGuests
 	for i, detail := range booking.BookingDetails {
-		// Map bed types from RoomType
+		// Map selected bed type from database
+		bookingEntity.BookingDetails[i].BedType = detail.BedType
+
+		// Map bed types from RoomType (available bed types for reference)
 		var bedTypeNames []string
 		for _, bedType := range detail.RoomPrice.RoomType.BedTypes {
 			bedTypeNames = append(bedTypeNames, bedType.Name)

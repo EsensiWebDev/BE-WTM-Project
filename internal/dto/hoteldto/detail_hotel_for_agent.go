@@ -28,17 +28,18 @@ type NearbyPlaceForAgent struct {
 }
 
 type DetailRoomTypeForAgent struct {
-	Name             string                              `json:"name"`
-	WithoutBreakfast entity.CustomBreakfastWithID        `json:"without_breakfast"`
-	WithBreakfast    entity.CustomBreakfastWithID        `json:"with_breakfast"`
-	RoomSize         float64                             `json:"room_size"`
-	MaxOccupancy     int                                 `json:"max_occupancy"`
-	BedTypes         []string                            `json:"bed_types"`
-	IsSmokingRoom    bool                                `json:"is_smoking_room"`
-	Additional       []entity.CustomRoomAdditionalWithID `json:"additional"`
-	Description      string                              `json:"description"`
-	Photos           []string                            `json:"photos"`
-	Promos           []PromoDetailRoom                   `json:"promos"`
+	Name             string                               `json:"name"`
+	WithoutBreakfast entity.CustomBreakfastWithID         `json:"without_breakfast"`
+	WithBreakfast    entity.CustomBreakfastWithID         `json:"with_breakfast"`
+	RoomSize         float64                              `json:"room_size"`
+	MaxOccupancy     int                                  `json:"max_occupancy"`
+	BedTypes         []string                             `json:"bed_types"`
+	IsSmokingRoom    bool                                 `json:"is_smoking_room"`
+	Additional       []entity.CustomRoomAdditionalWithID  `json:"additional"`
+	OtherPreferences []entity.CustomOtherPreferenceWithID `json:"other_preferences"`
+	Description      string                               `json:"description"`
+	Photos           []string                             `json:"photos"`
+	Promos           []PromoDetailRoom                    `json:"promos"`
 }
 
 type PromoDetailRoom struct {

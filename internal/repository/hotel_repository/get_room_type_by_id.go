@@ -16,6 +16,8 @@ func (hr *HotelRepository) GetRoomTypeByID(ctx context.Context, roomTypeID uint)
 		Preload("BedTypes").
 		Preload("RoomTypeAdditionals").
 		Preload("RoomTypeAdditionals.RoomAdditional").
+		Preload("RoomTypePreferences").
+		Preload("RoomTypePreferences.OtherPreference").
 		Preload("RoomPrices").
 		First(&roomType).Error
 	if err != nil {
@@ -59,6 +61,13 @@ func (hr *HotelRepository) GetRoomTypeByID(ctx context.Context, roomTypeID uint)
 			Price:      additional.Price,
 			Pax:        additional.Pax,
 			IsRequired: additional.IsRequired,
+		})
+	}
+
+	for _, pref := range roomType.RoomTypePreferences {
+		roomTypeEntity.OtherPreferences = append(roomTypeEntity.OtherPreferences, entity.CustomOtherPreferenceWithID{
+			ID:   pref.ID,
+			Name: pref.OtherPreference.Name,
 		})
 	}
 

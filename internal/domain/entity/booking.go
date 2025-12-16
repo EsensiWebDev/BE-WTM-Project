@@ -12,7 +12,8 @@ type Booking struct {
 	StatusPaymentID uint
 	BookingDetails  []BookingDetail
 
-	Guests           []string
+	Guests           []string       // Keep for backward compatibility
+	BookingGuests    []BookingGuest // Full guest details
 	BookingStatus    string
 	PaymentStatus    string
 	AgentName        string
@@ -20,6 +21,15 @@ type Booking struct {
 	AgentEmail       string
 	AgentPhoneNumber string
 	PromoGroupAgent  string
+}
+
+type BookingGuest struct {
+	ID        uint
+	BookingID uint
+	Name      string
+	Honorific string // e.g., "Mr", "Mrs", "Miss", "Ms"
+	Category  string // "Adult" or "Child"
+	Age       *int   // nullable, required when category="Child"
 }
 
 type BookingDetail struct {
@@ -35,6 +45,8 @@ type BookingDetail struct {
 	DetailRooms                 DetailRoom
 	Price                       float64
 	Guest                       string
+	OtherPreferences            string
+	BedType                     string   // Selected bed type (singular)
 	BedTypeNames                []string // Available bed types for selection
 	BookingDetailsAdditional    []BookingDetailAdditional
 	RoomPrice                   RoomPrice
@@ -147,6 +159,7 @@ type DetailInvoice struct {
 	CheckIn            string               `json:"check_in"`
 	CheckOut           string               `json:"check_out"`
 	SubBookingID       string               `json:"sub_booking_id"`
+	BedType            string               `json:"bed_type,omitempty"` // Selected bed type (e.g., "Kid Ogre Size")
 	DescriptionInvoice []DescriptionInvoice `json:"description_invoice"`
 	Promo              DetailPromo          `json:"promo"`
 	Description        string               `json:"description"`

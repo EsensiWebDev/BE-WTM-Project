@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
+	"strings"
 	"wtm-backend/pkg/constant"
 
 	validation "github.com/go-ozzo/ozzo-validation"
@@ -21,6 +22,7 @@ type AddRoomTypeRequest struct {
 	BedTypes         []string                `json:"bed_types" form:"bed_types"`
 	IsSmokingRoom    bool                    `json:"is_smoking_room" form:"is_smoking_room"`
 	Additional       string                  `json:"additional" form:"additional"`
+	OtherPreferences string                  `json:"other_preferences" form:"other_preferences"`
 	Description      string                  `json:"description" form:"description"`
 	//TotalUnit        int                     `json:"total_unit" form:"total_unit"`
 }
@@ -60,6 +62,20 @@ func (r *AddRoomTypeRequest) Validate() error {
 			for i, additional := range additionalFeatures {
 				if err := additional.Validate(); err != nil {
 					errs[fmt.Sprintf("additional[%d]", i)] = err
+				}
+			}
+		}
+	}
+
+	// Validate OtherPreferences field if provided (expects JSON array of strings)
+	if len(r.OtherPreferences) > 0 {
+		var prefs []string
+		if err := json.Unmarshal([]byte(r.OtherPreferences), &prefs); err != nil {
+			errs["other_preferences"] = validation.NewInternalError(fmt.Errorf("other_preferences must be a valid JSON array of strings"))
+		} else {
+			for i, name := range prefs {
+				if strings.TrimSpace(name) == "" {
+					errs[fmt.Sprintf("other_preferences[%d]", i)] = validation.NewInternalError(fmt.Errorf("preference name is required"))
 				}
 			}
 		}

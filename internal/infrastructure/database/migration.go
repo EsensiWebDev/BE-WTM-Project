@@ -31,6 +31,8 @@ func (dbs *DBPostgre) runMigrations(ctx context.Context, cfg *config.Config) err
 		&model.BedType{},
 		&model.RoomAdditional{},
 		&model.RoomTypeAdditional{},
+		&model.OtherPreference{},
+		&model.RoomTypePreference{},
 		&model.RoomUnavailable{},
 		&model.PromoType{},
 		&model.Promo{},
@@ -86,6 +88,12 @@ func (dbs *DBPostgre) runMigrations(ctx context.Context, cfg *config.Config) err
 	if err := dbs.migrateBookingGuest(ctx); err != nil {
 		logger.Error(ctx, "BookingGuest migration failed", err.Error())
 		return fmt.Errorf("booking_guest migration: %w", err)
+	}
+
+	// ✅ Migrate BookingDetail bed_type field
+	if err := dbs.migrateBookingDetailBedType(ctx); err != nil {
+		logger.Error(ctx, "BookingDetail bed_type migration failed", err.Error())
+		return fmt.Errorf("booking_detail bed_type migration: %w", err)
 	}
 
 	logger.Info(ctx, "Database migration completed",
@@ -422,6 +430,17 @@ func (dbs *DBPostgre) migrateBookingDetailAdditional(ctx context.Context) error 
 		}
 	}
 
+	// Step 5: Drop foreign key constraint to room_type_additionals to allow deleting room_type_additionals
+	// without affecting historical booking_detail_additionals (they already store a full snapshot).
+	logger.Info(ctx, "Dropping foreign key constraint from booking_detail_additionals to room_type_additionals if exists")
+	dropFKSQL := `
+		ALTER TABLE booking_detail_additionals 
+		DROP CONSTRAINT IF EXISTS fk_booking_detail_additionals_room_type_additional
+	`
+	if err := dbs.DB.Exec(dropFKSQL).Error; err != nil {
+		logger.Warn(ctx, fmt.Sprintf("Failed to drop foreign key constraint (might not exist): %v", err))
+	}
+
 	logger.Info(ctx, "✓ Successfully migrated BookingDetailAdditional")
 	return nil
 }
@@ -510,5 +529,37 @@ func (dbs *DBPostgre) migrateBookingGuest(ctx context.Context) error {
 	}
 
 	logger.Info(ctx, "✓ Successfully migrated BookingGuest")
+	return nil
+}
+
+func (dbs *DBPostgre) migrateBookingDetailBedType(ctx context.Context) error {
+	logger.Info(ctx, "Starting BookingDetail bed_type migration")
+
+	tableName := "booking_details"
+
+	// Check and add BedType column
+	var bedTypeExists bool
+	checkBedTypeSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'bed_type'
+		)
+	`
+	if err := dbs.DB.Raw(checkBedTypeSQL, tableName).Scan(&bedTypeExists).Error; err != nil {
+		return fmt.Errorf("failed to check bed_type column: %w", err)
+	}
+
+	if !bedTypeExists {
+		logger.Info(ctx, "Adding bed_type column to booking_details")
+		addBedTypeSQL := `
+			ALTER TABLE booking_details 
+			ADD COLUMN bed_type TEXT
+		`
+		if err := dbs.DB.Exec(addBedTypeSQL).Error; err != nil {
+			return fmt.Errorf("failed to add bed_type column: %w", err)
+		}
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated BookingDetail bed_type")
 	return nil
 }

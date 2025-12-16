@@ -9,7 +9,9 @@ type AddToCartRequest struct {
 	CheckInDate           string `json:"check_in_date"`
 	CheckOutDate          string `json:"check_out_date"`
 	Quantity              int    `json:"quantity"`
+	BedType               string `json:"bed_type"` // Selected bed type (e.g., "Kid Ogre Size")
 	RoomTypeAdditionalIDs []uint `json:"room_type_additional_ids"`
+	OtherPreferenceIDs    []uint `json:"other_preference_ids"`
 	PromoID               uint   `json:"promo_id"`
 	CapacityGuest         string `json:"capacity_guest"`
 }

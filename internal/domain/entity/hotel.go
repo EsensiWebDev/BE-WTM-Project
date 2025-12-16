@@ -68,10 +68,11 @@ type RoomType struct {
 	WithoutBreakfast CustomBreakfastWithID
 	WithBreakfast    CustomBreakfastWithID
 
-	BedTypeNames   []string
-	RoomAdditions  []CustomRoomAdditionalWithID
-	Hotel          Hotel
-	PromoRoomTypes []PromoRoomTypes
+	BedTypeNames     []string
+	RoomAdditions    []CustomRoomAdditionalWithID
+	OtherPreferences []CustomOtherPreferenceWithID
+	Hotel            Hotel
+	PromoRoomTypes   []PromoRoomTypes
 
 	TotalUnit int
 }
@@ -99,6 +100,15 @@ type CustomRoomAdditionalWithID struct {
 	Price      *float64 `json:"price,omitempty" form:"price"` // nullable, used when category="price"
 	Pax        *int     `json:"pax,omitempty" form:"pax"`     // nullable, used when category="pax"
 	IsRequired bool     `json:"is_required" form:"is_required"`
+}
+
+type CustomOtherPreference struct {
+	Name string `json:"name" form:"name"`
+}
+
+type CustomOtherPreferenceWithID struct {
+	ID   uint   `json:"id" form:"id"`
+	Name string `json:"name" form:"name"`
 }
 
 type CustomBreakfast struct {
@@ -164,6 +174,19 @@ type RoomTypeAdditional struct {
 }
 
 type RoomAdditional struct {
+	ID   uint
+	Name string
+}
+
+type RoomTypePreference struct {
+	ID                uint
+	RoomTypeID        uint
+	OtherPreferenceID uint
+
+	OtherPreference OtherPreference
+}
+
+type OtherPreference struct {
 	ID   uint
 	Name string
 }

@@ -7,8 +7,15 @@ import (
 type ListCartResponse struct {
 	ID         uint         `json:"id"`
 	Detail     []CartDetail `json:"detail"`
-	Guest      []string     `json:"guest"`
+	Guest      []CartGuest  `json:"guest"`
 	GrandTotal float64      `json:"grand_total"`
+}
+
+type CartGuest struct {
+	Name      string `json:"name"`
+	Honorific string `json:"honorific"`
+	Category  string `json:"category"`      // "Adult" or "Child"
+	Age       *int   `json:"age,omitempty"` // nullable, only present when category="Child"
 }
 
 type CartDetail struct {
@@ -21,7 +28,9 @@ type CartDetail struct {
 	RoomTypeName         string                 `json:"room_type_name"`
 	IsBreakfast          bool                   `json:"is_breakfast"`
 	Guest                string                 `json:"guest"`
-	BedTypes             []string               `json:"bed_types"` // Available bed types for selection
+	BedType              string                 `json:"bed_type,omitempty"`  // Selected bed type (singular) - REQUIRED
+	BedTypes             []string               `json:"bed_types,omitempty"` // Available bed types for reference (plural) - OPTIONAL
+	OtherPreferences     []string               `json:"other_preferences"`
 	Additional           []CartDetailAdditional `json:"additional"`
 	Promo                entity.DetailPromo     `json:"promo"`
 	CancellationDate     string                 `json:"cancellation_date,omitempty"`

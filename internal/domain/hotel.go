@@ -67,4 +67,7 @@ type HotelRepository interface {
 	UpdateHotel(ctx context.Context, hotel *entity.Hotel) error
 	GetRoomTypeByID(ctx context.Context, roomTypeID uint) (*entity.RoomType, error)
 	UpdateRoomType(ctx context.Context, roomType *entity.RoomType) error
+	AttachRoomPreferences(ctx context.Context, roomTypeID uint, preferenceNames []string) error
+	UpdateRoomPreferences(ctx context.Context, roomTypeID uint, unchangedPreferenceIDs []uint, newPreferenceNames []string) error
+	GetRoomTypePreferencesByIDs(ctx context.Context, ids []uint) ([]entity.RoomTypePreference, error)
 }

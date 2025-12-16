@@ -25,6 +25,7 @@ type RoomType struct {
 	RoomPrices []RoomPrice `gorm:"foreignKey:RoomTypeID"`
 
 	RoomTypeAdditionals []RoomTypeAdditional `gorm:"foreignKey:RoomTypeID"`
+	RoomTypePreferences []RoomTypePreference `gorm:"foreignKey:RoomTypeID"`
 	PromoRoomTypes      []PromoRoomType      `gorm:"foreignkey:RoomTypeID"`
 }
 
@@ -76,6 +77,32 @@ type RoomTypeAdditional struct {
 
 func (b *RoomTypeAdditional) BeforeCreate(tx *gorm.DB) error {
 	return b.ExternalID.BeforeCreate(tx)
+}
+
+type OtherPreference struct {
+	gorm.Model
+	ExternalID ExternalID `gorm:"embedded"`
+	Name       string     `json:"name"`
+
+	RoomTypePreferences []RoomTypePreference `gorm:"foreignKey:OtherPreferenceID"`
+}
+
+func (p *OtherPreference) BeforeCreate(tx *gorm.DB) error {
+	return p.ExternalID.BeforeCreate(tx)
+}
+
+type RoomTypePreference struct {
+	gorm.Model
+	ExternalID        ExternalID `gorm:"embedded"`
+	RoomTypeID        uint       `json:"room_type_id" gorm:"index"`
+	OtherPreferenceID uint       `json:"other_preference_id" gorm:"index"`
+
+	RoomType        RoomType        `json:"room_type" gorm:"foreignkey:RoomTypeID"`
+	OtherPreference OtherPreference `json:"other_preference" gorm:"foreignkey:OtherPreferenceID"`
+}
+
+func (p *RoomTypePreference) BeforeCreate(tx *gorm.DB) error {
+	return p.ExternalID.BeforeCreate(tx)
 }
 
 type BedType struct {

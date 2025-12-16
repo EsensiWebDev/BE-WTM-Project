@@ -3,6 +3,7 @@ package booking_usecase
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/pkg/constant"
@@ -59,8 +60,7 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 				}
 			}
 
-			var cancellationDate string
-			cancellationDate = detail.CheckInDate.AddDate(0, 0, detail.RoomPrice.RoomType.Hotel.CancellationPeriod).Format("2006-01-02")
+			cancellationDate := detail.CheckInDate.AddDate(0, 0, detail.RoomPrice.RoomType.Hotel.CancellationPeriod).Format("2006-01-02")
 
 			nights := int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24)
 			var checkInHourDur, checkOutHourDur time.Duration
@@ -80,6 +80,16 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 					time.Duration(sec)*time.Second
 			}
 
+			// Parse other preferences from comma-separated snapshot
+			var otherPrefs []string
+			if strings.TrimSpace(detail.OtherPreferences) != "" {
+				for _, p := range strings.Split(detail.OtherPreferences, ",") {
+					if name := strings.TrimSpace(p); name != "" {
+						otherPrefs = append(otherPrefs, name)
+					}
+				}
+			}
+
 			cartDetail := bookingdto.CartDetail{
 				ID:                   detail.ID,
 				HotelName:            detail.RoomPrice.RoomType.Hotel.Name,
@@ -89,7 +99,9 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 				RoomTypeName:         detail.RoomPrice.RoomType.Name,
 				IsBreakfast:          detail.RoomPrice.IsBreakfast,
 				Guest:                detail.Guest,
-				BedTypes:             detail.BedTypeNames, // Available bed types for selection
+				BedType:              detail.BedType,      // Selected bed type (singular)
+				BedTypes:             detail.BedTypeNames, // Available bed types for reference (plural)
+				OtherPreferences:     otherPrefs,
 				Additional:           additionals,
 				CancellationDate:     cancellationDate,
 				PriceBeforePromo:     detail.RoomPrice.Price * float64(nights),
@@ -140,7 +152,21 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 
 		result.Detail = details
 
-		result.Guest = cart.Guests
+		// Map BookingGuests to CartGuest DTOs
+		var cartGuests []bookingdto.CartGuest
+		for _, guest := range cart.BookingGuests {
+			cartGuest := bookingdto.CartGuest{
+				Name:      guest.Name,
+				Honorific: guest.Honorific,
+				Category:  guest.Category,
+			}
+			// Only include age if category is "Child"
+			if guest.Category == constant.GuestCategoryChild && guest.Age != nil {
+				cartGuest.Age = guest.Age
+			}
+			cartGuests = append(cartGuests, cartGuest)
+		}
+		result.Guest = cartGuests
 		result.GrandTotal = grandTotal
 	}
 

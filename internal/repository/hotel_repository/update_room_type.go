@@ -79,14 +79,40 @@ func (hr *HotelRepository) UpdateRoomType(ctx context.Context, roomType *entity.
 		addIDs = append(addIDs, add.ID)
 	}
 
-	if err := db.WithContext(ctx).
-		Debug().
+	// Delete RoomTypeAdditional records that are no longer attached to this room type,
+	// regardless of whether they have been used in historical bookings.
+	deleteQuery := db.WithContext(ctx).
 		Unscoped().
-		Where("room_type_id = ?", roomType.ID).
-		Where("id NOT IN (?)", addIDs).
-		Delete(&model.RoomTypeAdditional{}).Error; err != nil {
+		Where("room_type_id = ?", roomType.ID)
+
+	if len(addIDs) > 0 {
+		deleteQuery = deleteQuery.Where("id NOT IN (?)", addIDs)
+	}
+
+	if err := deleteQuery.Delete(&model.RoomTypeAdditional{}).Error; err != nil {
 		logger.Error(ctx, "Failed to delete existing room type additionals", err.Error())
 		return err
+	}
+
+	// Clean up orphan RoomAdditional records that are no longer referenced
+	var orphanAdditionalIDs []uint
+	if err := db.WithContext(ctx).
+		Model(&model.RoomAdditional{}).
+		Joins("LEFT JOIN room_type_additionals rta ON rta.room_additional_id = room_additionals.id").
+		Where("rta.id IS NULL").
+		Pluck("room_additionals.id", &orphanAdditionalIDs).Error; err != nil {
+		logger.Error(ctx, "Failed to find orphan room additionals", err.Error())
+		return err
+	}
+
+	if len(orphanAdditionalIDs) > 0 {
+		if err := db.WithContext(ctx).
+			Unscoped().
+			Where("id IN (?)", orphanAdditionalIDs).
+			Delete(&model.RoomAdditional{}).Error; err != nil {
+			logger.Error(ctx, "Failed to delete orphan room additionals", err.Error())
+			return err
+		}
 	}
 
 	return nil

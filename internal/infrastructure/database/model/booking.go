@@ -70,7 +70,9 @@ type BookingDetail struct {
 	Price float64 `gorm:"type:float"`
 
 	// Guest per kamar
-	Guest string `gorm:"type:text"`
+	Guest            string `gorm:"type:text"`
+	BedType          string `gorm:"type:text"` // Selected bed type (e.g., "Kid Ogre Size")
+	OtherPreferences string `gorm:"type:text"` // comma-separated list of selected other preferences
 
 	// Status
 	StatusBookingID uint `gorm:"index"`
@@ -118,8 +120,7 @@ type BookingDetailAdditional struct {
 	NameAdditional       string     `gorm:"type:text"`
 	Quantity             int
 
-	BookingDetail      BookingDetail      `gorm:"foreignkey:BookingDetailID"`
-	RoomTypeAdditional RoomTypeAdditional `gorm:"foreignkey:RoomTypeAdditionalID"`
+	BookingDetail BookingDetail `gorm:"foreignkey:BookingDetailID"`
 }
 
 func (b *BookingDetailAdditional) BeforeCreate(tx *gorm.DB) error {

@@ -47,7 +47,7 @@ type BookingRepository interface {
 	GetBookingIDs(ctx context.Context, agentID uint, filter *filter.DefaultFilter) ([]string, int64, error)
 	GetSubBookingIDs(ctx context.Context, agentID uint, bookingCode string) ([]string, error)
 	AddGuestsToCart(ctx context.Context, agentID uint, bookingID uint, guests []bookingdto.GuestInfo) error
-	RemoveGuestsFromCart(ctx context.Context, agentID uint, bookingID uint, guest []string) error
+	RemoveGuestsFromCart(ctx context.Context, agentID uint, bookingID uint, guests []bookingdto.GuestInfo) error
 	AddGuestToSubCart(ctx context.Context, agentID uint, bookingDetailID uint, guest string) error
 	CancelBooking(ctx context.Context, agentID uint, subBookingID string) (*entity.BookingDetail, error)
 	CreateInvoice(ctx context.Context, invoices []entity.Invoice) error

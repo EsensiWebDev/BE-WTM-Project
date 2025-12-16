@@ -27,6 +27,8 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, agent
 		Preload("RoomTypes.BedTypes").
 		Preload("RoomTypes.RoomTypeAdditionals").
 		Preload("RoomTypes.RoomTypeAdditionals.RoomAdditional").
+		Preload("RoomTypes.RoomTypePreferences").
+		Preload("RoomTypes.RoomTypePreferences.OtherPreference").
 		Preload("RoomTypes.RoomPrices")
 
 	if err := query.First(&hotelModel, hotelID).Error; err != nil {
@@ -92,6 +94,13 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, agent
 				Price:      typeAdditional.Price,
 				Pax:        typeAdditional.Pax,
 				IsRequired: typeAdditional.IsRequired,
+			})
+		}
+
+		for _, pref := range roomType.RoomTypePreferences {
+			hotelEntity.RoomTypes[i].OtherPreferences = append(hotelEntity.RoomTypes[i].OtherPreferences, entity.CustomOtherPreferenceWithID{
+				ID:   pref.ID,
+				Name: pref.OtherPreference.Name,
 			})
 		}
 

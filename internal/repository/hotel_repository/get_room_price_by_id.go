@@ -15,6 +15,7 @@ func (hr *HotelRepository) GetRoomPriceByID(ctx context.Context, id uint) (*enti
 		Where("id = ?", id).
 		Preload("RoomType").
 		Preload("RoomType.Hotel").
+		Preload("RoomType.BedTypes").
 		First(&rp).Error; err != nil {
 		return nil, err
 	}
@@ -23,6 +24,13 @@ func (hr *HotelRepository) GetRoomPriceByID(ctx context.Context, id uint) (*enti
 	if err := utils.CopyStrict(&roomPrice, rp); err != nil {
 		return nil, err
 	}
+
+	// Map bed types from RoomType
+	var bedTypeNames []string
+	for _, bedType := range rp.RoomType.BedTypes {
+		bedTypeNames = append(bedTypeNames, bedType.Name)
+	}
+	roomPrice.RoomType.BedTypeNames = bedTypeNames
 
 	return &roomPrice, nil
 }

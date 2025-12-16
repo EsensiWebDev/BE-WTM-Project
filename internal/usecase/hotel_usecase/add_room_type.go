@@ -22,6 +22,15 @@ func (hu *HotelUsecase) AddRoomType(ctx context.Context, hotelID uint, req *hote
 			}
 		}
 
+		// Parse OtherPreferences (simple list of names)
+		var otherPreferences []string
+		if strings.TrimSpace(req.OtherPreferences) != "" {
+			if err := json.Unmarshal([]byte(req.OtherPreferences), &otherPreferences); err != nil {
+				logger.Error(txCtx, "Failed to unmarshal AddRoomTypeRequest-other_preferences", err.Error())
+				return err
+			}
+		}
+
 		rt := &entity.RoomType{
 			HotelID:          hotelID,
 			Name:             req.Name,
@@ -68,6 +77,14 @@ func (hu *HotelUsecase) AddRoomType(ctx context.Context, hotelID uint, req *hote
 		if len(additionalFeaturesEntity) > 0 {
 			if err := hu.hotelRepo.AttachRoomAdditions(txCtx, rt.ID, additionalFeaturesEntity); err != nil {
 				logger.Error(ctx, "Failed to attach facilities", err.Error())
+				return err
+			}
+		}
+
+		// Attach "Other Preferences" if provided
+		if len(otherPreferences) > 0 {
+			if err := hu.hotelRepo.AttachRoomPreferences(txCtx, rt.ID, otherPreferences); err != nil {
+				logger.Error(ctx, "Failed to attach other preferences", err.Error())
 				return err
 			}
 		}

@@ -96,6 +96,13 @@ func (hu *HotelUsecase) DetailHotel(ctx context.Context, hotelID uint) (*hoteldt
 			})
 		}
 
+		for _, pref := range rt.OtherPreferences {
+			roomType.OtherPreferences = append(roomType.OtherPreferences, entity.CustomOtherPreferenceWithID{
+				ID:   pref.ID,
+				Name: pref.Name,
+			})
+		}
+
 		roomTypeList = append(roomTypeList, roomType)
 	}
 

@@ -90,6 +90,7 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 					CheckIn:      detail.CheckInDate.Format(time.DateOnly),
 					CheckOut:     detail.CheckOutDate.Format(time.DateOnly),
 					SubBookingID: detail.SubBookingID,
+					BedType:      detail.BedType, // Selected bed type from cart
 				},
 			}
 			timeNow := time.Now()
@@ -140,6 +141,7 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 			totalPrice += itemRoom.Total
 			descriptionItems = append(descriptionItems, itemRoom)
 			var bookingDetailAdditionalName []string
+			var otherPreferences []string
 			for _, additional := range detail.BookingDetailsAdditional {
 				bookingDetailAdditionalName = append(bookingDetailAdditionalName, additional.NameAdditional)
 
@@ -169,6 +171,23 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 				}
 
 				descriptionItems = append(descriptionItems, itemAdditional)
+			}
+
+			// Add "Other Preferences" as informational invoice lines (no charge)
+			if strings.TrimSpace(detail.OtherPreferences) != "" {
+				for _, p := range strings.Split(detail.OtherPreferences, ",") {
+					if name := strings.TrimSpace(p); name != "" {
+						otherPreferences = append(otherPreferences, name)
+						itemPref := entity.DescriptionInvoice{
+							Description: name,
+							Quantity:    1,
+							Unit:        "preference",
+							Price:       0,
+							Total:       0,
+						}
+						descriptionItems = append(descriptionItems, itemPref)
+					}
+				}
 			}
 			//invoiceData.DetailInvoice.Promo = detail.Promo
 			invoiceData.DetailInvoice.DescriptionInvoice = descriptionItems

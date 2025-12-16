@@ -22,6 +22,15 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 			}
 		}
 
+		// Parse OtherPreferences (simple list of names)
+		var otherPreferences []string
+		if strings.TrimSpace(req.OtherPreferences) != "" {
+			if err := json.Unmarshal([]byte(req.OtherPreferences), &otherPreferences); err != nil {
+				logger.Error(txCtx, "Failed to unmarshal UpdateRoomTypeRequest-other_preferences", err.Error())
+				return err
+			}
+		}
+
 		// Get existing room type
 		roomType, err := hu.hotelRepo.GetRoomTypeByID(txCtx, req.RoomTypeID)
 		if err != nil {
@@ -136,6 +145,12 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 
 		if err := hu.hotelRepo.AttachRoomAdditions(txCtx, roomType.ID, additionalFeaturesEntity); err != nil {
 			logger.Error(txCtx, "Failed to attach facilities", err.Error())
+			return err
+		}
+
+		// Update "Other Preferences" links for this room type
+		if err := hu.hotelRepo.UpdateRoomPreferences(txCtx, roomType.ID, req.UnchangedPreferenceIDs, otherPreferences); err != nil {
+			logger.Error(txCtx, "Failed to update other preferences", err.Error())
 			return err
 		}
 

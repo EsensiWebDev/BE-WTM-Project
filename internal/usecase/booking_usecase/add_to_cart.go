@@ -3,6 +3,7 @@ package booking_usecase
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/bookingdto"
@@ -34,6 +35,21 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			return fmt.Errorf("room price not found: %s", err.Error())
 		}
 
+		// Validate bed type if provided
+		if req.BedType != "" {
+			bedTypeValid := false
+			for _, bedTypeName := range roomPrice.RoomType.BedTypeNames {
+				if bedTypeName == req.BedType {
+					bedTypeValid = true
+					break
+				}
+			}
+			if !bedTypeValid {
+				logger.Error(ctx, "Invalid bed type selected", req.BedType)
+				return fmt.Errorf("invalid bed type selected: %s", req.BedType)
+			}
+		}
+
 		//Get Promo (optional)
 		var promo *entity.Promo
 		if req.PromoID > 0 {
@@ -49,6 +65,16 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 		if err != nil {
 			logger.Error(ctx, "failed to get room type additional", err.Error())
 			return fmt.Errorf("additionals not found: %s", err.Error())
+		}
+
+		//Get Other Preferences
+		var preferences []entity.RoomTypePreference
+		if len(req.OtherPreferenceIDs) > 0 {
+			preferences, err = bu.hotelRepo.GetRoomTypePreferencesByIDs(txCtx, req.OtherPreferenceIDs)
+			if err != nil {
+				logger.Error(ctx, "failed to get room type preferences", err.Error())
+				return fmt.Errorf("preferences not found: %s", err.Error())
+			}
 		}
 
 		// Create BookingDetail
@@ -120,16 +146,26 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			}
 		}
 
+		// Join selected "Other Preferences" into a comma-separated string snapshot
+		var otherPrefsJoined string
+		if len(preferences) > 0 {
+			var preferenceNames []string
+			for _, pref := range preferences {
+				preferenceNames = append(preferenceNames, pref.OtherPreference.Name)
+			}
+			otherPrefsJoined = strings.Join(preferenceNames, ", ")
+		}
+
 		detailBooking := &entity.BookingDetail{
-			BookingID:   bookingID,
-			RoomPriceID: roomPrice.ID,
-			//RoomTypeID:      roomPrice.RoomType.ID,
-			CheckInDate:  checkInDate,
-			CheckOutDate: checkOutDate,
-			Quantity:     req.Quantity,
-			//DetailRooms:     detailRoom,
-			StatusBookingID: constant.StatusBookingWaitingApprovalID,
-			StatusPaymentID: constant.StatusPaymentUnpaidID,
+			BookingID:        bookingID,
+			RoomPriceID:      roomPrice.ID,
+			CheckInDate:      checkInDate,
+			CheckOutDate:     checkOutDate,
+			Quantity:         req.Quantity,
+			StatusBookingID:  constant.StatusBookingWaitingApprovalID,
+			StatusPaymentID:  constant.StatusPaymentUnpaidID,
+			BedType:          req.BedType,
+			OtherPreferences: otherPrefsJoined,
 		}
 
 		if promo != nil {
