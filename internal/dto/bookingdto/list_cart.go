@@ -32,6 +32,8 @@ type CartDetail struct {
 	BedTypes             []string               `json:"bed_types,omitempty"` // Available bed types for reference (plural) - OPTIONAL
 	OtherPreferences     []string               `json:"other_preferences"`
 	Additional           []CartDetailAdditional `json:"additional"`
+	AdditionalNotes      string                 `json:"additional_notes,omitempty"` // Notes from agent to admin
+	AdminNotes           string                 `json:"admin_notes,omitempty"`      // Notes from admin to agent
 	Promo                entity.DetailPromo     `json:"promo"`
 	CancellationDate     string                 `json:"cancellation_date,omitempty"`
 	Price                float64                `json:"price"`

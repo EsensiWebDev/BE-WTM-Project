@@ -14,6 +14,7 @@ type AddToCartRequest struct {
 	OtherPreferenceIDs    []uint `json:"other_preference_ids"`
 	PromoID               uint   `json:"promo_id"`
 	CapacityGuest         string `json:"capacity_guest"`
+	AdditionalNotes       string `json:"additional_notes"` // Optional notes for admin only (max 500 characters)
 }
 
 func (r *AddToCartRequest) Validate() error {
@@ -22,5 +23,6 @@ func (r *AddToCartRequest) Validate() error {
 		validation.Field(&r.CheckInDate, validation.Required.Error("Check In Date is required")),
 		validation.Field(&r.CheckOutDate, validation.Required.Error("Check Out Date is required")),
 		validation.Field(&r.Quantity, validation.Required.Error("Quantity is required")),
+		validation.Field(&r.AdditionalNotes, validation.Length(0, 500).Error("Additional notes must be 500 characters or less")),
 	)
 }

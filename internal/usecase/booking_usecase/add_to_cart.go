@@ -156,6 +156,9 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			otherPrefsJoined = strings.Join(preferenceNames, ", ")
 		}
 
+		// Trim additional notes (admin-only field)
+		additionalNotes := strings.TrimSpace(req.AdditionalNotes)
+
 		detailBooking := &entity.BookingDetail{
 			BookingID:        bookingID,
 			RoomPriceID:      roomPrice.ID,
@@ -166,6 +169,7 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			StatusPaymentID:  constant.StatusPaymentUnpaidID,
 			BedType:          req.BedType,
 			OtherPreferences: otherPrefsJoined,
+			AdditionalNotes:  additionalNotes,
 		}
 
 		if promo != nil {

@@ -226,6 +226,15 @@ definitions:
           type: string
         type: array
     type: object
+  bookingdto.UpdateCartAdditionalNotesRequest:
+    properties:
+      sub_cart_id:
+        format: int64
+        type: integer
+      additional_notes:
+        type: string
+        maxLength: 500
+    type: object
   bookingdto.DataBookingHistory:
     properties:
       booking_code:
@@ -294,6 +303,14 @@ definitions:
         items:
           type: string
         type: array
+      other_preferences:
+        items:
+          type: string
+        type: array
+      additional_services:
+        items:
+          type: string
+        type: array
       booking_status:
         type: string
       cancelled_date:
@@ -301,6 +318,8 @@ definitions:
       guest_name:
         type: string
       hotel_name:
+        type: string
+      additional_notes:
         type: string
       invoice:
         $ref: '#/definitions/bookingdto.DataInvoice'
@@ -331,11 +350,17 @@ definitions:
         type: string
       hotel_name:
         type: string
+      other_preferences:
+        items:
+          type: string
+        type: array
       invoice:
         $ref: '#/definitions/bookingdto.DataInvoice'
       payment_status:
         type: string
       receipt:
+        type: string
+      additional_notes:
         type: string
       sub_booking_id:
         type: string
@@ -1791,6 +1816,29 @@ paths:
       summary: Add item to cart
       tags:
       - Booking
+  /bookings/cart/sub-notes:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      summary: Update additional notes for a cart detail item
+      description: Update the admin/agent-only additional_notes field for a specific sub-cart (booking_detail) item
+      tags:
+      - Booking
+      parameters:
+      - in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/bookingdto.UpdateCartAdditionalNotesRequest'
+      responses:
+        "200":
+          description: Additional notes have been successfully updated
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
   /bookings/cart/{id}:
     delete:
       consumes:

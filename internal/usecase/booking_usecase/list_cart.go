@@ -103,6 +103,8 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 				BedTypes:             detail.BedTypeNames, // Available bed types for reference (plural)
 				OtherPreferences:     otherPrefs,
 				Additional:           additionals,
+				AdditionalNotes:      detail.AdditionalNotes, // Notes from agent to admin
+				AdminNotes:           detail.AdminNotes,      // Notes from admin to agent
 				CancellationDate:     cancellationDate,
 				PriceBeforePromo:     detail.RoomPrice.Price * float64(nights),
 				TotalAdditionalPrice: totalAdditional,

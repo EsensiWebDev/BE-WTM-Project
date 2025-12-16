@@ -20,6 +20,8 @@ func BookingRoute(app *bootstrap.Application, mm MiddlewareMap, routerGroup *gin
 			cart.POST("/guests", bookingHandler.AddGuestsToCart)
 			cart.POST("/sub-guest", bookingHandler.AddGuestToSubCart)
 			cart.DELETE("/guests", bookingHandler.RemoveGuestsFromCart)
+			// Update additional notes per sub-cart (booking_detail) item
+			cart.POST("/sub-notes", bookingHandler.UpdateCartAdditionalNotes)
 		}
 		bookingRouter.GET("/ids", bookingHandler.ListBookingIDs)
 		bookingRouter.GET("/:booking_id/sub-ids", bookingHandler.ListSubBookingIDs)
@@ -33,5 +35,7 @@ func BookingRoute(app *bootstrap.Application, mm MiddlewareMap, routerGroup *gin
 		bookingRouter.GET("/logs", mm.RequirePermission("promo:view"), bookingHandler.ListBookingLog)
 		bookingRouter.POST("/receipt", bookingHandler.UploadReceipt)
 		bookingRouter.POST("/:sub_booking_id/cancel", bookingHandler.CancelBooking)
+		// Update admin notes for booking detail (admin to agent)
+		bookingRouter.POST("/admin-notes", mm.RequirePermission("booking:edit"), bookingHandler.UpdateAdminNotes)
 	}
 }

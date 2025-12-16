@@ -1,6 +1,9 @@
 package bookingdto
 
-import "wtm-backend/internal/dto"
+import (
+	"wtm-backend/internal/domain/entity"
+	"wtm-backend/internal/dto"
+)
 
 type ListBookingsRequest struct {
 	dto.PaginationRequest `json:",inline"`
@@ -14,27 +17,33 @@ type ListBookingsResponse struct {
 }
 
 type DataBooking struct {
-	BookingID     string          `json:"booking_id"`
-	GuestName     []string        `json:"guest_name"`
-	AgentName     string          `json:"agent_name"`
-	AgentCompany  string          `json:"agent_company"`
-	GroupPromo    string          `json:"group_promo"`
-	BookingStatus string          `json:"booking_status"`
-	PaymentStatus string          `json:"payment_status"`
-	Receipts      []string        `json:"receipts"`
-	Detail        []DetailBooking `json:"detail"`
+	BookingID     string             `json:"booking_id"`
+	GuestName     []string           `json:"guest_name"`
+	AgentName     string             `json:"agent_name"`
+	AgentCompany  string             `json:"agent_company"`
+	GroupPromo    string             `json:"group_promo"`
+	PromoName     string             `json:"promo_name,omitempty"`
+	DetailPromo   entity.DetailPromo `json:"detail_promo,omitempty"`
+	BookingStatus string             `json:"booking_status"`
+	PaymentStatus string             `json:"payment_status"`
+	Receipts      []string           `json:"receipts"`
+	Detail        []DetailBooking    `json:"detail"`
 }
 
 type DetailBooking struct {
-	GuestName     string      `json:"guest_name"`
-	HotelName     string      `json:"hotel_name"`
-	Additional    []string    `json:"additional"`
-	SubBookingID  string      `json:"sub_booking_id"`
-	BookingStatus string      `json:"booking_status"`
-	PaymentStatus string      `json:"payment_status"`
-	IsAPI         bool        `json:"is_api,omitempty"`
-	CancelledDate string      `json:"cancelled_date,omitempty"`
-	PromoCode     string      `json:"promo_code,omitempty"`
-	Receipt       string      `json:"receipt_url,omitempty"`
-	Invoice       DataInvoice `json:"invoice,omitempty"`
+	GuestName          string                     `json:"guest_name"`
+	HotelName          string                     `json:"hotel_name"`
+	Additional         []string                   `json:"additional"` // Deprecated: use AdditionalServices for detailed info
+	OtherPreferences   []string                   `json:"other_preferences,omitempty"`
+	AdditionalServices []BookingHistoryAdditional `json:"additional_services,omitempty"` // Detailed additional services with price, category, pax, etc.
+	SubBookingID       string                     `json:"sub_booking_id"`
+	BookingStatus      string                     `json:"booking_status"`
+	PaymentStatus      string                     `json:"payment_status"`
+	IsAPI              bool                       `json:"is_api,omitempty"`
+	CancelledDate      string                     `json:"cancelled_date,omitempty"`
+	PromoCode          string                     `json:"promo_code,omitempty"`
+	Receipt            string                     `json:"receipt_url,omitempty"`
+	AdditionalNotes    string                     `json:"additional_notes,omitempty"` // Notes from agent to admin
+	AdminNotes         string                     `json:"admin_notes,omitempty"`      // Notes from admin to agent
+	Invoice            DataInvoice                `json:"invoice,omitempty"`
 }

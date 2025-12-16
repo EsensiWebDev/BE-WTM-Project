@@ -73,6 +73,8 @@ type BookingDetail struct {
 	Guest            string `gorm:"type:text"`
 	BedType          string `gorm:"type:text"` // Selected bed type (e.g., "Kid Ogre Size")
 	OtherPreferences string `gorm:"type:text"` // comma-separated list of selected other preferences
+	AdditionalNotes  string `gorm:"type:text"` // Optional notes from agent to admin (max 500 characters)
+	AdminNotes       string `gorm:"type:text"` // Optional notes from admin to agent (max 500 characters)
 
 	// Status
 	StatusBookingID uint `gorm:"index"`

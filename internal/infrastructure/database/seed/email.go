@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"log"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/constant"
 	"wtm-backend/pkg/logger"
+
+	"gorm.io/gorm"
 )
 
 func (s *Seed) SeedEmailTemplate() {
@@ -138,12 +139,40 @@ Many thanks for your kind attention and assistance.</p>
 <p>Please kindly assist us to <strong>BOOK & CONFIRM</strong> reservation with details as below:</p>
 
 <ul>
-    <li><strong>NAME:</strong> {{.GuestName}}</li>
+    <li><strong>GUESTS:</strong>
+        <ul>
+            {{range .Guests}}
+            <li>{{.Honorific}} {{.Name}}{{if eq .Category "Child"}} (Child{{if .Age}}, Age: {{.Age}}{{end}}){{end}}</li>
+            {{else}}
+            <li>{{$.GuestName}}</li>
+            {{end}}
+        </ul>
+    </li>
     <li><strong>PERIOD:</strong> {{.Period}}</li>
     <li><strong>ROOM:</strong> {{.RoomType}}</li>
+    {{if .BedTypes}}
+    <li><strong>BED TYPE:</strong> {{.BedTypes}}</li>
+    {{end}}
     <li><strong>RATE:</strong> {{.Rate}}</li>
     <li><strong>BOOKING CODE:</strong> {{.BookingCode}}</li>
+    {{if .AdditionalServices}}
+    <li><strong>ADDITIONAL SERVICES:</strong>
+        <ul>
+            {{range .AdditionalServices}}
+            <li>
+                {{.Name}}
+                {{if eq .Category "price"}}
+                    - Price: {{.Price}}{{if .IsRequired}} <strong>(Required)</strong>{{end}}
+                {{else if eq .Category "pax"}}
+                    - Pax: {{.Pax}}{{if .IsRequired}} <strong>(Required)</strong>{{end}}
+                {{end}}
+            </li>
+            {{end}}
+        </ul>
+    </li>
+    {{else if .Additional}}
     <li><strong>ADDITIONAL:</strong> {{.Additional}}</li>
+    {{end}}
 </ul>
 
 <p>We are looking forward to hearing back from you soon.<br>
@@ -314,6 +343,4 @@ func (s *Seed) SeedingEmailLog() {
 			logger.Info(ctx, fmt.Sprintf("⚠️ Error checking StatusEmail ID %d: %s", se.ID, err.Error()))
 		}
 	}
-
-	logger.Info(ctx, fmt.Sprintf("📦 Seeding StatusEmail completed with insert/update checks"))
 }

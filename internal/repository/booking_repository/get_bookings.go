@@ -115,6 +115,7 @@ func (br *BookingRepository) GetBookings(ctx context.Context, filter *filter.Boo
 		Preload("BookingDetails", func(db *gorm.DB) *gorm.DB {
 			return db.Order("created_at DESC")
 		}).
+		Preload("BookingDetails.BookingDetailsAdditional").
 		Preload("BookingDetails.Invoice").
 		Preload("BookingDetails.StatusBooking").
 		Preload("BookingDetails.StatusPayment").
@@ -137,18 +138,59 @@ func (br *BookingRepository) GetBookings(ctx context.Context, filter *filter.Boo
 		result[i].BookingStatus = booking.StatusBooking.Status
 		result[i].PaymentStatus = booking.StatusPayment.Status
 		for i2, detail := range booking.BookingDetails {
+			// Unmarshal promo snapshot from booking_details.detail_promo (JSONB) into entity.DetailPromo
+			if len(detail.DetailPromo) > 0 {
+				var promoSnap entity.DetailPromo
+				if err := json.Unmarshal(detail.DetailPromo, &promoSnap); err != nil {
+					logger.Error(ctx, fmt.Sprintf("Error unmarshalling detail promo to JSON: %s with detail ID %d", err.Error(), detail.ID), err)
+				} else {
+					result[i].BookingDetails[i2].DetailPromos = promoSnap
+				}
+			}
+
 			if detail.Invoice != nil {
 				var invoiceEntity entity.DetailInvoice
 				if err := json.Unmarshal(detail.Invoice.Detail, &invoiceEntity); err != nil {
 					logger.Error(ctx, fmt.Sprintf("Error unmarshalling invoice detail to JSON: %s with detail ID %d", err.Error(), detail.ID), err)
 				}
+				// Backfill promo into invoice detail from booking detail snapshot if missing
+				if invoiceEntity.Promo.Name == "" && result[i].BookingDetails[i2].DetailPromos.Name != "" {
+					invoiceEntity.Promo = result[i].BookingDetails[i2].DetailPromos
+				}
 				result[i].BookingDetails[i2].Invoice.DetailInvoice = invoiceEntity
 			}
+
 			var detailRoom entity.DetailRoom
 			if err := json.Unmarshal(detail.DetailRoom, &detailRoom); err != nil {
 				logger.Error(ctx, "Error unmarshalling detail room to JSON", err.Error())
 			}
 			result[i].BookingDetails[i2].DetailRooms = detailRoom
+
+			// Map additional services snapshot from booking_detail_additionals
+			// Copy full BookingDetailsAdditional objects (for detailed info)
+			if len(detail.BookingDetailsAdditional) > 0 {
+				// Copy the full objects for detailed information
+				additionalEntities := make([]entity.BookingDetailAdditional, 0, len(detail.BookingDetailsAdditional))
+				names := make([]string, 0, len(detail.BookingDetailsAdditional))
+				for _, add := range detail.BookingDetailsAdditional {
+					additionalEntity := entity.BookingDetailAdditional{
+						ID:                   add.ID,
+						RoomTypeAdditionalID: add.RoomTypeAdditionalID,
+						Category:             add.Category,
+						Price:                add.Price,
+						Pax:                  add.Pax,
+						IsRequired:           add.IsRequired,
+						NameAdditional:       add.NameAdditional,
+					}
+					additionalEntities = append(additionalEntities, additionalEntity)
+					if strings.TrimSpace(add.NameAdditional) != "" {
+						names = append(names, add.NameAdditional)
+					}
+				}
+				result[i].BookingDetails[i2].BookingDetailsAdditional = additionalEntities
+				result[i].BookingDetails[i2].BookingDetailAdditionalName = names
+			}
+
 			result[i].BookingDetails[i2].BookingStatus = detail.StatusBooking.Status
 			result[i].BookingDetails[i2].PaymentStatus = detail.StatusPayment.Status
 		}

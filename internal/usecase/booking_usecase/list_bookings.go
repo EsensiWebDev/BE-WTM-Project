@@ -40,14 +40,44 @@ func (bu *BookingUsecase) ListBookings(ctx context.Context, req *bookingdto.List
 		}
 
 		for j, detail := range booking.BookingDetails {
+			// Parse other preferences from comma-separated snapshot (same logic as cart & history)
+			var otherPrefs []string
+			if strings.TrimSpace(detail.OtherPreferences) != "" {
+				for _, p := range strings.Split(detail.OtherPreferences, ",") {
+					if name := strings.TrimSpace(p); name != "" {
+						otherPrefs = append(otherPrefs, name)
+					}
+				}
+			}
+
+			// Map detailed additional services (with price, category, pax, etc.)
+			var additionalServices []bookingdto.BookingHistoryAdditional
+			if len(detail.BookingDetailsAdditional) > 0 {
+				additionalServices = make([]bookingdto.BookingHistoryAdditional, 0, len(detail.BookingDetailsAdditional))
+				for _, add := range detail.BookingDetailsAdditional {
+					additionalService := bookingdto.BookingHistoryAdditional{
+						Name:       add.NameAdditional,
+						Category:   add.Category,
+						Price:      add.Price,
+						Pax:        add.Pax,
+						IsRequired: add.IsRequired,
+					}
+					additionalServices = append(additionalServices, additionalService)
+				}
+			}
+
 			resp.Data[i].Detail[j] = bookingdto.DetailBooking{
-				HotelName:     detail.DetailRooms.HotelName,
-				Additional:    detail.BookingDetailAdditionalName,
-				SubBookingID:  detail.SubBookingID,
-				BookingStatus: detail.BookingStatus,
-				PaymentStatus: detail.PaymentStatus,
-				IsAPI:         detail.DetailRooms.IsAPI,
-				PromoCode:     detail.DetailPromos.PromoCode,
+				HotelName:          detail.DetailRooms.HotelName,
+				Additional:         detail.BookingDetailAdditionalName, // Keep for backward compatibility
+				OtherPreferences:   otherPrefs,
+				AdditionalServices: additionalServices, // Detailed additional services
+				SubBookingID:       detail.SubBookingID,
+				BookingStatus:      detail.BookingStatus,
+				PaymentStatus:      detail.PaymentStatus,
+				IsAPI:              detail.DetailRooms.IsAPI,
+				PromoCode:          detail.DetailPromos.PromoCode,
+				AdditionalNotes:    detail.AdditionalNotes,
+				AdminNotes:         detail.AdminNotes,
 			}
 			var receiptUrl string
 			if detail.ReceiptUrl != "" {
@@ -65,6 +95,15 @@ func (bu *BookingUsecase) ListBookings(ctx context.Context, req *bookingdto.List
 					DetailInvoice: detail.Invoice.DetailInvoice,
 					InvoiceDate:   detail.Invoice.CreatedAt.Format(time.DateOnly),
 					Receipt:       receiptUrl,
+				}
+				// Populate top-level promo fields once, using the promo applied on the invoice (if any)
+				if detail.Invoice.DetailInvoice.Promo.Name != "" {
+					if resp.Data[i].PromoName == "" {
+						resp.Data[i].PromoName = detail.Invoice.DetailInvoice.Promo.Name
+					}
+					if resp.Data[i].DetailPromo.Name == "" {
+						resp.Data[i].DetailPromo = detail.Invoice.DetailInvoice.Promo
+					}
 				}
 			}
 			if detail.StatusBookingID != constant.StatusBookingRejectedID {

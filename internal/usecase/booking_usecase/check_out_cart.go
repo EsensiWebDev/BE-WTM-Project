@@ -82,15 +82,16 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 				BookingDetailID: detail.ID,
 				InvoiceCode:     invoiceCode,
 				DetailInvoice: entity.DetailInvoice{
-					CompanyAgent: user.AgentCompanyName,
-					Agent:        user.FullName,
-					Email:        user.Email,
-					Hotel:        detail.DetailRooms.HotelName,
-					Guest:        detail.Guest,
-					CheckIn:      detail.CheckInDate.Format(time.DateOnly),
-					CheckOut:     detail.CheckOutDate.Format(time.DateOnly),
-					SubBookingID: detail.SubBookingID,
-					BedType:      detail.BedType, // Selected bed type from cart
+					CompanyAgent:    user.AgentCompanyName,
+					Agent:           user.FullName,
+					Email:           user.Email,
+					Hotel:           detail.DetailRooms.HotelName,
+					Guest:           detail.Guest,
+					CheckIn:         detail.CheckInDate.Format(time.DateOnly),
+					CheckOut:        detail.CheckOutDate.Format(time.DateOnly),
+					SubBookingID:    detail.SubBookingID,
+					BedType:         detail.BedType,         // Selected bed type from cart
+					AdditionalNotes: detail.AdditionalNotes, // Admin/agent notes from cart/booking
 				},
 			}
 			timeNow := time.Now()
@@ -112,7 +113,9 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 				if err != nil {
 					logger.Error(ctx, "failed to generate detail promo", err.Error())
 				}
+				// snapshot promo both on booking detail and on invoice detail
 				detail.DetailPromos = detailPromo
+				invoiceData.DetailInvoice.Promo = detailPromo
 				nights := int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24)
 				switch detail.Promo.PromoTypeID {
 				case constant.PromoTypeFixedPriceID:

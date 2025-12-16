@@ -48,6 +48,8 @@ type BookingDetail struct {
 	OtherPreferences            string
 	BedType                     string   // Selected bed type (singular)
 	BedTypeNames                []string // Available bed types for selection
+	AdditionalNotes             string   // Optional notes from agent to admin (max 500 characters)
+	AdminNotes                  string   // Optional notes from admin to agent (max 500 characters)
 	BookingDetailsAdditional    []BookingDetailAdditional
 	RoomPrice                   RoomPrice
 	StatusBookingID             uint
@@ -159,7 +161,8 @@ type DetailInvoice struct {
 	CheckIn            string               `json:"check_in"`
 	CheckOut           string               `json:"check_out"`
 	SubBookingID       string               `json:"sub_booking_id"`
-	BedType            string               `json:"bed_type,omitempty"` // Selected bed type (e.g., "Kid Ogre Size")
+	BedType            string               `json:"bed_type,omitempty"`         // Selected bed type (e.g., "Kid Ogre Size")
+	AdditionalNotes    string               `json:"additional_notes,omitempty"` // Optional notes for admin/agent only
 	DescriptionInvoice []DescriptionInvoice `json:"description_invoice"`
 	Promo              DetailPromo          `json:"promo"`
 	Description        string               `json:"description"`

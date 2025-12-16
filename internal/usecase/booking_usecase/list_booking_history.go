@@ -3,6 +3,7 @@ package booking_usecase
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/internal/repository/filter"
@@ -60,15 +61,45 @@ func (bu *BookingUsecase) ListBookingHistory(ctx context.Context, req *bookingdt
 		}
 
 		for j, detail := range booking.BookingDetails {
+			// Parse other preferences from comma-separated snapshot (same logic as cart)
+			var otherPrefs []string
+			if strings.TrimSpace(detail.OtherPreferences) != "" {
+				for _, p := range strings.Split(detail.OtherPreferences, ",") {
+					if name := strings.TrimSpace(p); name != "" {
+						otherPrefs = append(otherPrefs, name)
+					}
+				}
+			}
+
+			// Map detailed additional services (with price, category, pax, etc.)
+			var additionalServices []bookingdto.BookingHistoryAdditional
+			if len(detail.BookingDetailsAdditional) > 0 {
+				additionalServices = make([]bookingdto.BookingHistoryAdditional, 0, len(detail.BookingDetailsAdditional))
+				for _, add := range detail.BookingDetailsAdditional {
+					additionalService := bookingdto.BookingHistoryAdditional{
+						Name:       add.NameAdditional,
+						Category:   add.Category,
+						Price:      add.Price,
+						Pax:        add.Pax,
+						IsRequired: add.IsRequired,
+					}
+					additionalServices = append(additionalServices, additionalService)
+				}
+			}
+
 			resp.Data[i].Detail[j] = bookingdto.DetailBookingHistory{
-				GuestName:        detail.Guest,
-				AgentName:        booking.AgentName,
-				HotelName:        detail.DetailRooms.HotelName,
-				Additional:       detail.BookingDetailAdditionalName,
-				SubBookingID:     detail.SubBookingID,
-				BookingStatus:    detail.BookingStatus,
-				PaymentStatus:    detail.PaymentStatus,
-				CancellationDate: detail.DetailRooms.CancelledDate,
+				GuestName:          detail.Guest,
+				AgentName:          booking.AgentName,
+				HotelName:          detail.DetailRooms.HotelName,
+				Additional:         detail.BookingDetailAdditionalName, // Keep for backward compatibility
+				AdditionalServices: additionalServices,                 // Detailed additional services
+				OtherPreferences:   otherPrefs,
+				SubBookingID:       detail.SubBookingID,
+				BookingStatus:      detail.BookingStatus,
+				PaymentStatus:      detail.PaymentStatus,
+				CancellationDate:   detail.DetailRooms.CancelledDate,
+				AdditionalNotes:    detail.AdditionalNotes,
+				AdminNotes:         detail.AdminNotes,
 			}
 			statusBooking = append(statusBooking, detail.BookingStatus)
 			statusPayment = append(statusPayment, detail.PaymentStatus)

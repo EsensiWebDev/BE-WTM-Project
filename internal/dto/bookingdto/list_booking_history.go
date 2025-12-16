@@ -26,14 +26,26 @@ type DataBookingHistory struct {
 }
 
 type DetailBookingHistory struct {
-	GuestName        string      `json:"guest_name"`
-	AgentName        string      `json:"agent_name"`
-	HotelName        string      `json:"hotel_name"`
-	Additional       []string    `json:"additional"`
-	SubBookingID     string      `json:"sub_booking_id"`
-	BookingStatus    string      `json:"booking_status"`
-	PaymentStatus    string      `json:"payment_status"`
-	CancellationDate string      `json:"cancellation_date"`
-	Invoice          DataInvoice `json:"invoice"`
-	Receipt          string      `json:"receipt"`
+	GuestName          string                     `json:"guest_name"`
+	AgentName          string                     `json:"agent_name"`
+	HotelName          string                     `json:"hotel_name"`
+	Additional         []string                   `json:"additional"`                    // Deprecated: use AdditionalServices for detailed info
+	AdditionalServices []BookingHistoryAdditional `json:"additional_services,omitempty"` // Detailed additional services with price, category, pax, etc.
+	OtherPreferences   []string                   `json:"other_preferences,omitempty"`
+	SubBookingID       string                     `json:"sub_booking_id"`
+	BookingStatus      string                     `json:"booking_status"`
+	PaymentStatus      string                     `json:"payment_status"`
+	CancellationDate   string                     `json:"cancellation_date"`
+	Invoice            DataInvoice                `json:"invoice"`
+	Receipt            string                     `json:"receipt"`
+	AdditionalNotes    string                     `json:"additional_notes,omitempty"` // Notes from agent to admin
+	AdminNotes         string                     `json:"admin_notes,omitempty"`      // Notes from admin to agent
+}
+
+type BookingHistoryAdditional struct {
+	Name       string   `json:"name"`
+	Category   string   `json:"category"`        // "price" or "pax"
+	Price      *float64 `json:"price,omitempty"` // nullable, used when category="price"
+	Pax        *int     `json:"pax,omitempty"`   // nullable, used when category="pax"
+	IsRequired bool     `json:"is_required"`
 }

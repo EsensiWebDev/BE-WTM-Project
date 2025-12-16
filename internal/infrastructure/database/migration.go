@@ -96,6 +96,18 @@ func (dbs *DBPostgre) runMigrations(ctx context.Context, cfg *config.Config) err
 		return fmt.Errorf("booking_detail bed_type migration: %w", err)
 	}
 
+	// ✅ Migrate BookingDetail additional_notes field
+	if err := dbs.migrateBookingDetailAdditionalNotes(ctx); err != nil {
+		logger.Error(ctx, "BookingDetail additional_notes migration failed", err.Error())
+		return fmt.Errorf("booking_detail additional_notes migration: %w", err)
+	}
+
+	// ✅ Migrate BookingDetail admin_notes field
+	if err := dbs.migrateBookingDetailAdminNotes(ctx); err != nil {
+		logger.Error(ctx, "BookingDetail admin_notes migration failed", err.Error())
+		return fmt.Errorf("booking_detail admin_notes migration: %w", err)
+	}
+
 	logger.Info(ctx, "Database migration completed",
 		fmt.Sprintf("models: %d", len(models)))
 
@@ -561,5 +573,69 @@ func (dbs *DBPostgre) migrateBookingDetailBedType(ctx context.Context) error {
 	}
 
 	logger.Info(ctx, "✓ Successfully migrated BookingDetail bed_type")
+	return nil
+}
+
+func (dbs *DBPostgre) migrateBookingDetailAdditionalNotes(ctx context.Context) error {
+	logger.Info(ctx, "Starting BookingDetail additional_notes migration")
+
+	tableName := "booking_details"
+
+	// Check and add AdditionalNotes column
+	var additionalNotesExists bool
+	checkAdditionalNotesSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'additional_notes'
+		)
+	`
+	if err := dbs.DB.Raw(checkAdditionalNotesSQL, tableName).Scan(&additionalNotesExists).Error; err != nil {
+		return fmt.Errorf("failed to check additional_notes column: %w", err)
+	}
+
+	if !additionalNotesExists {
+		logger.Info(ctx, "Adding additional_notes column to booking_details")
+		addAdditionalNotesSQL := `
+			ALTER TABLE booking_details 
+			ADD COLUMN additional_notes TEXT
+		`
+		if err := dbs.DB.Exec(addAdditionalNotesSQL).Error; err != nil {
+			return fmt.Errorf("failed to add additional_notes column: %w", err)
+		}
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated BookingDetail additional_notes")
+	return nil
+}
+
+func (dbs *DBPostgre) migrateBookingDetailAdminNotes(ctx context.Context) error {
+	logger.Info(ctx, "Starting BookingDetail admin_notes migration")
+
+	tableName := "booking_details"
+
+	// Check and add AdminNotes column
+	var adminNotesExists bool
+	checkAdminNotesSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns 
+			WHERE table_name = $1 AND column_name = 'admin_notes'
+		)
+	`
+	if err := dbs.DB.Raw(checkAdminNotesSQL, tableName).Scan(&adminNotesExists).Error; err != nil {
+		return fmt.Errorf("failed to check admin_notes column: %w", err)
+	}
+
+	if !adminNotesExists {
+		logger.Info(ctx, "Adding admin_notes column to booking_details")
+		addAdminNotesSQL := `
+			ALTER TABLE booking_details 
+			ADD COLUMN admin_notes TEXT
+		`
+		if err := dbs.DB.Exec(addAdminNotesSQL).Error; err != nil {
+			return fmt.Errorf("failed to add admin_notes column: %w", err)
+		}
+	}
+
+	logger.Info(ctx, "✓ Successfully migrated BookingDetail admin_notes")
 	return nil
 }
