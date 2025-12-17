@@ -105,11 +105,12 @@ type BreakfastWith struct {
 }
 
 type RoomAdditional struct {
-	Name       string   `json:"name" form:"name"`
-	Category   string   `json:"category" form:"category"`     // "price" or "pax"
-	Price      *float64 `json:"price,omitempty" form:"price"` // nullable, used when category="price"
-	Pax        *int     `json:"pax,omitempty" form:"pax"`     // nullable, used when category="pax"
-	IsRequired bool     `json:"is_required" form:"is_required"`
+	Name       string             `json:"name" form:"name"`
+	Category   string             `json:"category" form:"category"`     // "price" or "pax"
+	Price      *float64           `json:"price,omitempty" form:"price"` // DEPRECATED: Keep for backward compatibility
+	Prices     map[string]float64 `json:"prices,omitempty" form:"prices"` // NEW: Multi-currency prices {"IDR": 50000, "USD": 3.50}
+	Pax        *int               `json:"pax,omitempty" form:"pax"`     // nullable, used when category="pax"
+	IsRequired bool               `json:"is_required" form:"is_required"`
 }
 
 func (r *RoomAdditional) Validate() error {

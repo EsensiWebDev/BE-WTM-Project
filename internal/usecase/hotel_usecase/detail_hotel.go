@@ -75,13 +75,15 @@ func (hu *HotelUsecase) DetailHotel(ctx context.Context, hotelID uint) (*hoteldt
 
 		roomType.WithoutBreakfast = entity.CustomBreakfast{
 			Pax:    rt.WithoutBreakfast.Pax,
-			Price:  rt.WithoutBreakfast.Price,
+			Price:  rt.WithoutBreakfast.Price,  // DEPRECATED: Keep for backward compatibility
+			Prices: rt.WithoutBreakfast.Prices, // NEW: Multi-currency prices
 			IsShow: rt.WithoutBreakfast.IsShow,
 		}
 
 		roomType.WithBreakfast = entity.CustomBreakfast{
 			Pax:    rt.WithBreakfast.Pax,
-			Price:  rt.WithBreakfast.Price,
+			Price:  rt.WithBreakfast.Price,  // DEPRECATED: Keep for backward compatibility
+			Prices: rt.WithBreakfast.Prices, // NEW: Multi-currency prices
 			IsShow: rt.WithBreakfast.IsShow,
 		}
 
@@ -90,7 +92,8 @@ func (hu *HotelUsecase) DetailHotel(ctx context.Context, hotelID uint) (*hoteldt
 				ID:         addition.ID,
 				Name:       addition.Name,
 				Category:   addition.Category,
-				Price:      addition.Price,
+				Price:      addition.Price,  // DEPRECATED: Keep for backward compatibility
+				Prices:     addition.Prices, // NEW: Multi-currency prices
 				Pax:        addition.Pax,
 				IsRequired: addition.IsRequired,
 			})

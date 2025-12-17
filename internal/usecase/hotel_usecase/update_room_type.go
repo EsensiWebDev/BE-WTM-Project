@@ -52,7 +52,8 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 						ID:         addition.ID,
 						Name:       addition.Name,
 						Category:   addition.Category,
-						Price:      addition.Price,
+						Price:      addition.Price, // DEPRECATED: Keep for backward compatibility
+						Prices:     addition.Prices,
 						Pax:        addition.Pax,
 						IsRequired: addition.IsRequired,
 					})
@@ -98,15 +99,37 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 				return err
 			}
 
+			// Merge new prices with existing prices (new currencies added, existing currencies updated)
+			mergedPrices := make(map[string]float64)
+			if len(roomType.WithoutBreakfast.Prices) > 0 {
+				// Start with existing prices
+				for currency, price := range roomType.WithoutBreakfast.Prices {
+					mergedPrices[currency] = price
+				}
+			} else if roomType.WithoutBreakfast.Price > 0 {
+				// Fallback: use existing Price field if Prices is empty
+				mergedPrices["IDR"] = roomType.WithoutBreakfast.Price
+			}
+
+			// Merge new prices from request
+			if len(withoutBreakfast.Prices) > 0 {
+				for currency, price := range withoutBreakfast.Prices {
+					mergedPrices[currency] = price
+				}
+			} else if withoutBreakfast.Price > 0 {
+				// Fallback: if only Price is provided, update/add IDR
+				mergedPrices["IDR"] = withoutBreakfast.Price
+			}
+
 			withoutBreakfastEntity := entity.CustomBreakfastWithID{
 				ID:     roomType.WithoutBreakfast.ID,
 				Price:  withoutBreakfast.Price, // DEPRECATED: Keep for backward compatibility
-				Prices: withoutBreakfast.Prices,
+				Prices: mergedPrices,
 				IsShow: withoutBreakfast.IsShow,
 			}
-			// Fallback: if Prices is empty but Price is set, convert Price to Prices
-			if len(withoutBreakfastEntity.Prices) == 0 && withoutBreakfastEntity.Price > 0 {
-				withoutBreakfastEntity.Prices = map[string]float64{"IDR": withoutBreakfastEntity.Price}
+			// Update Price field with IDR price from merged prices for backward compatibility
+			if idrPrice, exists := mergedPrices["IDR"]; exists {
+				withoutBreakfastEntity.Price = idrPrice
 			}
 			roomType.WithoutBreakfast = withoutBreakfastEntity
 		}
@@ -118,16 +141,38 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 				return err
 			}
 
+			// Merge new prices with existing prices (new currencies added, existing currencies updated)
+			mergedPrices := make(map[string]float64)
+			if len(roomType.WithBreakfast.Prices) > 0 {
+				// Start with existing prices
+				for currency, price := range roomType.WithBreakfast.Prices {
+					mergedPrices[currency] = price
+				}
+			} else if roomType.WithBreakfast.Price > 0 {
+				// Fallback: use existing Price field if Prices is empty
+				mergedPrices["IDR"] = roomType.WithBreakfast.Price
+			}
+
+			// Merge new prices from request
+			if len(withBreakfast.Prices) > 0 {
+				for currency, price := range withBreakfast.Prices {
+					mergedPrices[currency] = price
+				}
+			} else if withBreakfast.Price > 0 {
+				// Fallback: if only Price is provided, update/add IDR
+				mergedPrices["IDR"] = withBreakfast.Price
+			}
+
 			withBreakfastEntity := entity.CustomBreakfastWithID{
 				ID:     roomType.WithBreakfast.ID,
 				Price:  withBreakfast.Price, // DEPRECATED: Keep for backward compatibility
-				Prices: withBreakfast.Prices,
+				Prices: mergedPrices,
 				Pax:    withBreakfast.Pax,
 				IsShow: withBreakfast.IsShow,
 			}
-			// Fallback: if Prices is empty but Price is set, convert Price to Prices
-			if len(withBreakfastEntity.Prices) == 0 && withBreakfastEntity.Price > 0 {
-				withBreakfastEntity.Prices = map[string]float64{"IDR": withBreakfastEntity.Price}
+			// Update Price field with IDR price from merged prices for backward compatibility
+			if idrPrice, exists := mergedPrices["IDR"]; exists {
+				withBreakfastEntity.Price = idrPrice
 			}
 			roomType.WithBreakfast = withBreakfastEntity
 		}
@@ -147,7 +192,8 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 			additionalFeaturesEntity = append(additionalFeaturesEntity, entity.CustomRoomAdditional{
 				Name:       additional.Name,
 				Category:   additional.Category,
-				Price:      additional.Price,
+				Price:      additional.Price, // DEPRECATED: Keep for backward compatibility
+				Prices:     additional.Prices,
 				Pax:        additional.Pax,
 				IsRequired: additional.IsRequired,
 			})

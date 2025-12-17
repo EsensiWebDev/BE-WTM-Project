@@ -88,11 +88,35 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, agent
 			hotelEntity.RoomTypes[i].BedTypeNames = append(hotelEntity.RoomTypes[i].BedTypeNames, bedType.Name)
 		}
 		for _, typeAdditional := range roomType.RoomTypeAdditionals {
+			// Convert Prices JSONB to map for additional services
+			var pricesMap map[string]float64
+			if len(typeAdditional.Prices) > 0 {
+				prices, err := currency.JSONToPrices(typeAdditional.Prices)
+				if err != nil {
+					logger.Error(ctx, "Failed to convert additional prices JSONB to map", err.Error())
+					// Fallback to Price field if JSONB conversion fails
+					if typeAdditional.Price != nil && *typeAdditional.Price > 0 {
+						pricesMap = map[string]float64{"IDR": *typeAdditional.Price}
+					} else {
+						pricesMap = make(map[string]float64)
+					}
+				} else {
+					pricesMap = prices
+				}
+			} else if typeAdditional.Price != nil && *typeAdditional.Price > 0 {
+				// Fallback: use Price field if Prices JSONB is empty
+				pricesMap = map[string]float64{"IDR": *typeAdditional.Price}
+			} else {
+				// Initialize empty map to avoid nil
+				pricesMap = make(map[string]float64)
+			}
+
 			hotelEntity.RoomTypes[i].RoomAdditions = append(hotelEntity.RoomTypes[i].RoomAdditions, entity.CustomRoomAdditionalWithID{
 				ID:         typeAdditional.ID,
 				Name:       typeAdditional.RoomAdditional.Name,
 				Category:   typeAdditional.Category,
-				Price:      typeAdditional.Price,
+				Price:      typeAdditional.Price, // DEPRECATED: Keep for backward compatibility
+				Prices:     pricesMap,            // NEW: Multi-currency prices
 				Pax:        typeAdditional.Pax,
 				IsRequired: typeAdditional.IsRequired,
 			})
@@ -145,6 +169,8 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, agent
 					// Fallback to Price field if JSONB conversion fails
 					if price.Price > 0 {
 						pricesMap = map[string]float64{"IDR": price.Price}
+					} else {
+						pricesMap = make(map[string]float64)
 					}
 				} else {
 					pricesMap = prices
@@ -152,6 +178,9 @@ func (hr *HotelRepository) GetHotelByID(ctx context.Context, hotelID uint, agent
 			} else if price.Price > 0 {
 				// Fallback: use Price field if Prices JSONB is empty
 				pricesMap = map[string]float64{"IDR": price.Price}
+			} else {
+				// Initialize empty map to avoid nil
+				pricesMap = make(map[string]float64)
 			}
 
 			customBreakfast := entity.CustomBreakfastWithID{

@@ -68,7 +68,8 @@ func (hu *HotelUsecase) AddRoomType(ctx context.Context, hotelID uint, req *hote
 			additionalFeaturesEntity = append(additionalFeaturesEntity, entity.CustomRoomAdditional{
 				Name:       additional.Name,
 				Category:   additional.Category,
-				Price:      additional.Price,
+				Price:      additional.Price, // DEPRECATED: Keep for backward compatibility
+				Prices:     additional.Prices,
 				Pax:        additional.Pax,
 				IsRequired: additional.IsRequired,
 			})
