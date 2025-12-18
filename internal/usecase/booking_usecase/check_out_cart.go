@@ -219,6 +219,7 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 			//invoiceData.DetailInvoice.Promo = detail.Promo
 			invoiceData.DetailInvoice.DescriptionInvoice = descriptionItems
 			invoiceData.DetailInvoice.TotalPrice = totalPrice
+			invoiceData.DetailInvoice.Currency = bookingCurrency // Set currency for invoice
 			invoiceData.BookingDetail = detail
 			invoiceData.BookingDetail.Price = detail.Price
 			invoiceData.BookingDetail.Booking.BookingCode = booking.BookingCode

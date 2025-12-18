@@ -23,7 +23,7 @@ func (ur *UserRepository) GetUsers(ctx context.Context, filter filter.UserFilter
 		query = query.Where("role_id = ?", *filter.RoleID).Preload("Status")
 
 		if *filter.RoleID == constant.DefaultRoleAgent {
-			selectFields = append(selectFields, "agent_company_id", "kakao_talk_id", "photo_selfie", "certificate", "name_card", "photo_id_card")
+			selectFields = append(selectFields, "agent_company_id", "kakao_talk_id", "photo_selfie", "certificate", "name_card", "photo_id_card", "currency")
 			query = query.Preload("AgentCompany")
 
 			if filter.Scope == constant.ScopeManagement {
@@ -98,6 +98,7 @@ func (ur *UserRepository) GetUsers(ctx context.Context, filter filter.UserFilter
 			entityUser.StatusName = user.Status.Status
 		}
 		entityUser.ExternalID = user.ExternalID.ExternalID
+		entityUser.Currency = user.Currency
 
 		entityUsers = append(entityUsers, entityUser)
 	}

@@ -8,6 +8,7 @@ import (
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/pkg/constant"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 )
 
@@ -225,11 +226,29 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 
 		// 6. Create BookingDetailAdditionals
 		for _, add := range additionals {
+			var price *float64
+
+			// Convert price to agent's currency if it's a price-based additional
+			if add.Category == constant.AdditionalServiceCategoryPrice {
+				if len(add.Prices) > 0 {
+					// Use Prices map for multi-currency support
+					if convertedPrice, _, _ := currency.GetPriceForCurrency(add.Prices, agentCurrency); convertedPrice > 0 {
+						price = &convertedPrice
+					} else if add.Price != nil && *add.Price > 0 {
+						// Fallback to Price field if Prices not available (backward compatibility)
+						price = add.Price
+					}
+				} else if add.Price != nil && *add.Price > 0 {
+					// Backward compatibility: use Price field if Prices not set
+					price = add.Price
+				}
+			}
+
 			additional := &entity.BookingDetailAdditional{
 				BookingDetailIDs:     bookingDetailIds,
 				RoomTypeAdditionalID: add.ID,
 				Category:             add.Category,
-				Price:                add.Price,
+				Price:                price,
 				Pax:                  add.Pax,
 				IsRequired:           add.IsRequired,
 				NameAdditional:       add.RoomAdditional.Name,
@@ -249,8 +268,11 @@ func (bu *BookingUsecase) generateDetailPromo(promo *entity.Promo) (entity.Detai
 		Name:            promo.Name,
 		PromoCode:       promo.Code,
 		Type:            promo.PromoTypeName,
+		Description:     promo.Description,
+		PromoTypeID:     promo.PromoTypeID,
 		DiscountPercent: promo.Detail.DiscountPercentage,
 		FixedPrice:      promo.Detail.FixedPrice,
+		Prices:          promo.Detail.Prices,
 		UpgradedToID:    promo.Detail.UpgradedToID,
 		BenefitNote:     promo.Detail.BenefitNote,
 	}

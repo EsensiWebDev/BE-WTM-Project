@@ -157,6 +157,7 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 			}
 			cartDetail.Price = roomPrice
 			cartDetail.TotalPrice = cartDetail.Price + cartDetail.TotalAdditionalPrice
+			cartDetail.Currency = bookingCurrency
 			for _, photo := range detail.RoomPrice.RoomType.Photos {
 				if photo != "" {
 					bucketName := fmt.Sprintf("%s-%s", constant.ConstHotel, constant.ConstPublic)
@@ -192,6 +193,19 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 		}
 		result.Guest = cartGuests
 		result.GrandTotal = grandTotal
+
+		// Set currency from first detail or agent's currency
+		if len(details) > 0 && details[0].Currency != "" {
+			result.Currency = details[0].Currency
+		} else {
+			// Get agent's currency from context
+			userCtx, err := bu.middleware.GenerateUserFromContext(ctx)
+			if err == nil && userCtx != nil && userCtx.Currency != "" {
+				result.Currency = userCtx.Currency
+			} else {
+				result.Currency = "IDR" // Default fallback
+			}
+		}
 	}
 
 	return result, nil

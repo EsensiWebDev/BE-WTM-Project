@@ -66,13 +66,16 @@ type BookingDetail struct {
 }
 
 type DetailPromo struct {
-	Name            string  `json:"name,omitempty"`
-	PromoCode       string  `json:"promo_code,omitempty"`
-	Type            string  `json:"type,omitempty"`
-	DiscountPercent float64 `json:"discount_percent,omitempty"`
-	FixedPrice      float64 `json:"fixed_price,omitempty"`
-	UpgradedToID    uint    `json:"upgraded_to_id,omitempty"`
-	BenefitNote     string  `json:"benefit_note,omitempty"`
+	Name            string             `json:"name,omitempty"`
+	PromoCode       string             `json:"promo_code,omitempty"`
+	Type            string             `json:"type,omitempty"`
+	Description     string             `json:"description,omitempty"`
+	PromoTypeID     uint               `json:"promo_type_id,omitempty"`
+	DiscountPercent float64            `json:"discount_percent,omitempty"`
+	FixedPrice      float64            `json:"fixed_price,omitempty"`
+	Prices          map[string]float64 `json:"prices,omitempty"` // Multi-currency prices
+	UpgradedToID    uint               `json:"upgraded_to_id,omitempty"`
+	BenefitNote     string             `json:"benefit_note,omitempty"`
 }
 
 type DetailRoom struct {
@@ -168,6 +171,7 @@ type DetailInvoice struct {
 	Promo              DetailPromo          `json:"promo"`
 	Description        string               `json:"description"`
 	TotalPrice         float64              `json:"total_price"`
+	Currency           string               `json:"currency,omitempty"` // Currency code for the invoice (e.g. "IDR", "USD")
 }
 
 type DescriptionInvoice struct {

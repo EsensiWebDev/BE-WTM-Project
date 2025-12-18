@@ -30,6 +30,7 @@ func (br *BookingRepository) GetCartBooking(ctx context.Context, agentID uint) (
 		Preload("BookingDetails.RoomPrice.RoomType").
 		Preload("BookingDetails.RoomPrice.RoomType.Hotel").
 		Preload("BookingDetails.Promo").
+		Preload("BookingDetails.Promo.PromoType").
 		First(&booking).Error; err != nil {
 		if br.db.ErrRecordNotFound(ctx, err) {
 			logger.Warn(ctx, "No cart booking found for agent Id", agentID)
@@ -106,6 +107,10 @@ func (br *BookingRepository) GetCartBooking(ctx context.Context, agentID uint) (
 				logger.Error(ctx, "Error marshalling promo detail to JSON", err.Error())
 			}
 			bookingEntity.BookingDetails[i].Promo.Detail = detailPromo
+			// Set PromoTypeName from the preloaded PromoType
+			if detail.Promo.PromoType.Name != "" {
+				bookingEntity.BookingDetails[i].Promo.PromoTypeName = detail.Promo.PromoType.Name
+			}
 		}
 	}
 	bookingEntity.Guests = guests

@@ -29,6 +29,14 @@ type DetailBookingHistory struct {
 	GuestName          string                     `json:"guest_name"`
 	AgentName          string                     `json:"agent_name"`
 	HotelName          string                     `json:"hotel_name"`
+	RoomTypeName       string                     `json:"room_type_name,omitempty"`      // Room type selected
+	IsBreakfast        bool                       `json:"is_breakfast"`                  // Whether breakfast is included
+	BedType            string                     `json:"bed_type,omitempty"`            // Selected bed type
+	RoomPrice          float64                    `json:"room_price"`                    // Room price per night (after promo if any)
+	TotalPrice         float64                    `json:"total_price"`                   // Total price including room and additional services
+	Currency           string                     `json:"currency,omitempty"`            // Currency code for prices
+	CheckInDate        string                     `json:"check_in_date,omitempty"`       // Check-in date
+	CheckOutDate       string                     `json:"check_out_date,omitempty"`      // Check-out date
 	Additional         []string                   `json:"additional"`                    // Deprecated: use AdditionalServices for detailed info
 	AdditionalServices []BookingHistoryAdditional `json:"additional_services,omitempty"` // Detailed additional services with price, category, pax, etc.
 	OtherPreferences   []string                   `json:"other_preferences,omitempty"`

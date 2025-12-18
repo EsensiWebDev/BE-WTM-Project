@@ -48,4 +48,5 @@ type ListUserData struct {
 	Certificate      string `json:"certificate,omitempty"`
 	NameCard         string `json:"name_card,omitempty"`
 	IdCard           string `json:"id_card,omitempty"`
+	Currency         string `json:"currency"`
 }

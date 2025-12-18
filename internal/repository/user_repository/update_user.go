@@ -24,6 +24,7 @@ func (ur *UserRepository) UpdateUser(ctx context.Context, user *entity.User) (*e
 		"email":            modelUser.Email,
 		"phone":            modelUser.Phone,
 		"kakao_talk_id":    modelUser.KakaoTalkID,
+		"currency":         modelUser.Currency,
 		"agent_company_id": modelUser.AgentCompanyID,
 		"certificate":      modelUser.Certificate,
 		"photo_selfie":     modelUser.PhotoSelfie,

@@ -43,11 +43,14 @@ type DetailRoomTypeForAgent struct {
 }
 
 type PromoDetailRoom struct {
-	PromoID               uint    `json:"promo_id"`
-	Description           string  `json:"description"`
-	CodePromo             string  `json:"code_promo"`
-	PriceWithBreakfast    float64 `json:"price_with_breakfast"`
-	PriceWithoutBreakfast float64 `json:"price_without_breakfast"`
-	TotalNights           int     `json:"total_nights"`
-	OtherNotes            string  `json:"other_notes,omitempty"`
+	PromoID               uint                    `json:"promo_id"`
+	Description           string                  `json:"description"`
+	CodePromo             string                  `json:"code_promo"`
+	PriceWithBreakfast    float64                 `json:"price_with_breakfast"`
+	PriceWithoutBreakfast float64                 `json:"price_without_breakfast"`
+	TotalNights           int                     `json:"total_nights"`
+	OtherNotes            string                  `json:"other_notes,omitempty"`
+	PromoTypeID           uint                    `json:"promo_type_id,omitempty"`
+	PromoTypeName         string                  `json:"promo_type_name,omitempty"`
+	Detail                entity.PromoDetail      `json:"detail,omitempty"`
 }

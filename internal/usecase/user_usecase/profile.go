@@ -79,6 +79,7 @@ func (uu *UserUsecase) Profile(ctx context.Context) (*dtouser.ProfileResponse, e
 		KakaoTalkID:         user.KakaoTalkID,
 		Status:              user.StatusName,
 		AgentCompany:        user.AgentCompanyName,
+		Currency:            user.Currency,
 		NotificationSetting: summarizeNotificationSettings(user.UserNotificationSettings),
 	}
 

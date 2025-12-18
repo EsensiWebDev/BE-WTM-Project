@@ -57,12 +57,10 @@ func (pu *PromoUsecase) UpsertPromo(ctx context.Context, req *promodto.UpsertPro
 					logger.Error(ctx, "Error validating prices", err.Error())
 					return fmt.Errorf("invalid prices: %w", err)
 				}
+				// Only save Prices, do not set FixedPrice
+				// Agents will use the currency-specific price from Prices map
 				detail = entity.PromoDetail{
 					Prices: req.Prices,
-				}
-				// For backward compatibility, also set FixedPrice from IDR if available
-				if idrPrice, ok := req.Prices["IDR"]; ok {
-					detail.FixedPrice = idrPrice
 				}
 			} else if req.Detail != "" {
 				// Backward compatibility: parse from Detail string

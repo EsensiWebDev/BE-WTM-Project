@@ -9,6 +9,7 @@ type ListCartResponse struct {
 	Detail     []CartDetail `json:"detail"`
 	Guest      []CartGuest  `json:"guest"`
 	GrandTotal float64      `json:"grand_total"`
+	Currency   string       `json:"currency,omitempty"` // Currency code for the cart (from first detail or agent's currency)
 }
 
 type CartGuest struct {
@@ -40,6 +41,7 @@ type CartDetail struct {
 	PriceBeforePromo     float64                `json:"price_before_promo"`
 	TotalAdditionalPrice float64                `json:"total_additional_price"`
 	TotalPrice           float64                `json:"total_price"`
+	Currency             string                 `json:"currency,omitempty"` // Currency code for this cart item (snapshot at booking time)
 }
 
 type CartDetailAdditional struct {

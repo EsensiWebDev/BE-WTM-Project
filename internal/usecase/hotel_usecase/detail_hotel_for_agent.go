@@ -96,6 +96,7 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 			ID:     rt.WithoutBreakfast.ID,
 			Pax:    rt.WithoutBreakfast.Pax,
 			Price:  rt.WithoutBreakfast.Price,
+			Prices: rt.WithoutBreakfast.Prices,
 			IsShow: rt.WithoutBreakfast.IsShow,
 		}
 
@@ -103,6 +104,7 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 			ID:     rt.WithBreakfast.ID,
 			Pax:    rt.WithBreakfast.Pax,
 			Price:  rt.WithBreakfast.Price,
+			Prices: rt.WithBreakfast.Prices,
 			IsShow: rt.WithBreakfast.IsShow,
 		}
 
@@ -112,17 +114,33 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 				var priceWithBreakfast, priceWithoutBreakfast float64
 				var notes string
 
-				// Get agent's currency preference (default to IDR, currency utility will handle fallback)
-				// Note: The hotel repository already handles currency conversion for room prices
-				// For promos, we use IDR as default and let the currency utility handle fallback
-				agentCurrency := "IDR" // Default fallback
+				// Get agent's currency preference from user context
+				agentCurrency := userCtx.Currency
+				if agentCurrency == "" {
+					agentCurrency = "IDR" // Default fallback
+				}
+
+				// Get base room prices in agent's currency
+				basePriceWithBreakfast := roomType.WithBreakfast.Price
+				basePriceWithoutBreakfast := roomType.WithoutBreakfast.Price
+				if len(roomType.WithBreakfast.Prices) > 0 {
+					if price, _, err := currency.GetPriceForCurrency(roomType.WithBreakfast.Prices, agentCurrency); err == nil {
+						basePriceWithBreakfast = price
+					}
+				}
+				if len(roomType.WithoutBreakfast.Prices) > 0 {
+					if price, _, err := currency.GetPriceForCurrency(roomType.WithoutBreakfast.Prices, agentCurrency); err == nil {
+						basePriceWithoutBreakfast = price
+					}
+				}
 
 				if prt.Promo.Detail.DiscountPercentage > 0 {
-					priceWithBreakfast = (100 - prt.Promo.Detail.DiscountPercentage) / 100 * roomType.WithBreakfast.Price
-					priceWithoutBreakfast = (100 - prt.Promo.Detail.DiscountPercentage) / 100 * roomType.WithoutBreakfast.Price
+					priceWithBreakfast = (100 - prt.Promo.Detail.DiscountPercentage) / 100 * basePriceWithBreakfast
+					priceWithoutBreakfast = (100 - prt.Promo.Detail.DiscountPercentage) / 100 * basePriceWithoutBreakfast
 				} else if len(prt.Promo.Detail.Prices) > 0 {
 					// Use Prices map for multi-currency support
-					if price, _, err := currency.GetPriceForCurrency(prt.Promo.Detail.Prices, agentCurrency); err == nil {
+					// GetPriceForCurrency will fallback to IDR if agent's currency not found
+					if price, _, _ := currency.GetPriceForCurrency(prt.Promo.Detail.Prices, agentCurrency); price > 0 {
 						priceWithBreakfast = price
 						priceWithoutBreakfast = price
 					} else if prt.Promo.Detail.FixedPrice > 0 {
@@ -145,6 +163,9 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 					PriceWithBreakfast:    priceWithBreakfast,
 					PriceWithoutBreakfast: priceWithoutBreakfast,
 					OtherNotes:            notes,
+					PromoTypeID:           prt.Promo.PromoTypeID,
+					PromoTypeName:         prt.Promo.PromoTypeName,
+					Detail:                prt.Promo.Detail,
 				})
 			}
 		}
@@ -156,6 +177,7 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 				Name:       addition.Name,
 				Category:   addition.Category,
 				Price:      addition.Price,
+				Prices:     addition.Prices,
 				Pax:        addition.Pax,
 				IsRequired: addition.IsRequired,
 			})
