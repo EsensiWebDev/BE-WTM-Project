@@ -73,6 +73,18 @@ func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.Li
 
 	logger.Info(ctx, "Request ListHotelsForAgent", req)
 
+	// Get agent's currency preference from user context
+	// Note: Currency is not in JWT token, so we need to fetch from database
+	agentCurrency := "IDR" // Default fallback
+	userCtx, err := hu.middleware.GenerateUserFromContext(ctx)
+	if err == nil && userCtx != nil {
+		// Fetch user from database to get currency preference
+		user, err := hu.userRepo.GetUserByID(ctx, userCtx.ID)
+		if err == nil && user != nil && user.Currency != "" {
+			agentCurrency = user.Currency
+		}
+	}
+
 	filterHotel := filter.HotelFilterForAgent{
 		Ratings:           req.Rating,
 		BedTypeIDs:        req.BedTypeID,
@@ -85,6 +97,7 @@ func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.Li
 		DateFrom:          &rangeDateFrom,
 		DateTo:            &rangeDateTo,
 		PromoID:           uint(req.PromoID),
+		Currency:          agentCurrency,
 	}
 
 	if req.TotalGuests > 0 && req.TotalRooms > 0 {

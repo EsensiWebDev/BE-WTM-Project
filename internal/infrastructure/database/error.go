@@ -3,9 +3,10 @@ package database
 import (
 	"context"
 	"errors"
+	"wtm-backend/pkg/logger"
+
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
-	"wtm-backend/pkg/logger"
 )
 
 func (dbs *DBPostgre) ErrRecordNotFound(ctx context.Context, err error) bool {
@@ -14,6 +15,12 @@ func (dbs *DBPostgre) ErrRecordNotFound(ctx context.Context, err error) bool {
 		return true
 	}
 	return false
+}
+
+// IsRecordNotFound checks if error is ErrRecordNotFound without logging.
+// Use this when "not found" is expected behavior (e.g., checking if cart exists).
+func (dbs *DBPostgre) IsRecordNotFound(err error) bool {
+	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
 func (dbs *DBPostgre) ErrDuplicateKey(ctx context.Context, err error) bool {

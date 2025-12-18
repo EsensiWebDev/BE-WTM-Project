@@ -73,6 +73,13 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 		respHotel.CheckOutHour = hotel.CheckOutHour.In(constant.AsiaJakarta).Format("15:04-07:00")
 	}
 
+	// Get agent's currency preference from user context (once, outside loop)
+	agentCurrency := userCtx.Currency
+	if agentCurrency == "" {
+		agentCurrency = "IDR" // Default fallback
+	}
+	normalizedCurrency := currency.NormalizeCurrencyCode(agentCurrency)
+
 	var roomTypeList []hoteldto.DetailRoomTypeForAgent
 	for _, rt := range hotel.RoomTypes {
 		roomType := hoteldto.DetailRoomTypeForAgent{
@@ -114,12 +121,6 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 			if prt.Promo.IsActive {
 				var priceWithBreakfast, priceWithoutBreakfast float64
 				var notes string
-
-				// Get agent's currency preference from user context
-				agentCurrency := userCtx.Currency
-				if agentCurrency == "" {
-					agentCurrency = "IDR" // Default fallback
-				}
 
 				// Get base room prices in agent's currency
 				basePriceWithBreakfast := roomType.WithBreakfast.Price
@@ -173,6 +174,21 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 		roomType.Promos = promos
 
 		for _, addition := range rt.RoomAdditions {
+			// Filter additional services: only include if they have prices in agent's currency
+			// For price-based services, check if Prices map contains agent's currency
+			// For pax-based services, always include (no currency dependency)
+			if addition.Category == constant.AdditionalServiceCategoryPrice {
+				// Only include if Prices map exists and contains agent's currency
+				if len(addition.Prices) == 0 {
+					// Skip if no prices map (backward compatibility - old data without multi-currency)
+					continue
+				}
+				if _, exists := addition.Prices[normalizedCurrency]; !exists {
+					// Skip if agent's currency not found in prices
+					continue
+				}
+			}
+			// Include pax-based services and price-based services that have the currency
 			roomType.Additional = append(roomType.Additional, entity.CustomRoomAdditionalWithID{
 				ID:         addition.ID,
 				Name:       addition.Name,

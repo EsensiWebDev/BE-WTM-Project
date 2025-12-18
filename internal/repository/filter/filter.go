@@ -80,6 +80,7 @@ type HotelFilterForAgent struct {
 	DateFrom *time.Time
 	DateTo   *time.Time
 	MinGuest int
+	Currency string // Agent's currency preference - used to filter hotels that have prices in this currency
 	dto.PaginationRequest
 }
 

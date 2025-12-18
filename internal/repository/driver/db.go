@@ -3,6 +3,7 @@ package driver
 import (
 	"context"
 	"database/sql"
+
 	"gorm.io/gorm"
 )
 
@@ -16,6 +17,7 @@ type DBPostgre interface {
 
 	// Error Handlers
 	ErrRecordNotFound(ctx context.Context, err error) bool
+	IsRecordNotFound(err error) bool // Silent check for expected "not found" cases
 	ErrDuplicateKey(ctx context.Context, err error) bool
 	ErrForeignKeyViolation(ctx context.Context, err error) bool
 

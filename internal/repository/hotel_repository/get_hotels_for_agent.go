@@ -10,6 +10,8 @@ import (
 	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"github.com/lib/pq"
 )
 
 func (hr *HotelRepository) GetHotelsForAgent(ctx context.Context, filter filter.HotelFilterForAgent) ([]entity.CustomHotel, int64, error) {
@@ -137,10 +139,56 @@ func (hr *HotelRepository) GetHotelsForAgent(ctx context.Context, filter filter.
 	}
 
 	// 🔍 Execute main query
-	var hotels []entity.CustomHotel
-	if err := db.Raw(finalQuery, args...).Scan(&hotels).Error; err != nil {
+	// Use a scan struct without Prices field to avoid GORM scanning errors
+	// Photos is scanned as string (PostgreSQL array format) and parsed
+	type HotelScan struct {
+		ID              uint
+		Name            string
+		AddrSubDistrict string
+		AddrCity        string
+		AddrProvince    string
+		Photos          string // Scan as string, will parse PostgreSQL array format
+		Rating          int
+		MinPrice        float64
+	}
+	var hotelScans []HotelScan
+	if err := db.Raw(finalQuery, args...).Scan(&hotelScans).Error; err != nil {
 		logger.Error(ctx, "Error fetching hotels (raw)", err.Error())
 		return nil, 0, err
+	}
+
+	// Convert scan results to CustomHotel entities
+	hotels := make([]entity.CustomHotel, len(hotelScans))
+	for i, scan := range hotelScans {
+		// Parse PostgreSQL array format string to []string
+		// Format: {value1,value2,value3} or NULL
+		var photos pq.StringArray
+		if scan.Photos != "" {
+			// Remove curly braces and split by comma
+			photosStr := strings.Trim(scan.Photos, "{}")
+			if photosStr != "" {
+				photoList := strings.Split(photosStr, ",")
+				photos = make(pq.StringArray, len(photoList))
+				for j, photo := range photoList {
+					photos[j] = strings.TrimSpace(photo)
+				}
+			}
+		}
+		if photos == nil {
+			photos = pq.StringArray{} // Initialize empty array
+		}
+
+		hotels[i] = entity.CustomHotel{
+			ID:              scan.ID,
+			Name:            scan.Name,
+			AddrSubDistrict: scan.AddrSubDistrict,
+			AddrCity:        scan.AddrCity,
+			AddrProvince:    scan.AddrProvince,
+			Photos:          photos,
+			Rating:          scan.Rating,
+			MinPrice:        scan.MinPrice,
+			Prices:          make(map[string]float64), // Initialize empty, will be populated from room_prices
+		}
 	}
 
 	// Extract prices from room_prices for each hotel
@@ -161,7 +209,7 @@ func (hr *HotelRepository) GetHotelsForAgent(ctx context.Context, filter filter.
 			Joins("JOIN room_types rt ON rt.id = rp.room_type_id").
 			Where("rt.hotel_id IN ? AND rp.is_show = true AND rp.prices IS NOT NULL AND rp.prices != '{}'::jsonb", hotelIDs).
 			Scan(&roomPrices).Error
-		
+
 		if err == nil {
 			// Group prices by hotel_id and find minimum for each currency
 			hotelPricesMap := make(map[uint]map[string]float64)
@@ -171,11 +219,11 @@ func (hr *HotelRepository) GetHotelsForAgent(ctx context.Context, filter filter.
 					logger.Error(ctx, "Failed to parse prices JSONB", err.Error())
 					continue
 				}
-				
+
 				if hotelPricesMap[rp.HotelID] == nil {
 					hotelPricesMap[rp.HotelID] = make(map[string]float64)
 				}
-				
+
 				// Find minimum price for each currency
 				for curr, price := range prices {
 					if existingPrice, exists := hotelPricesMap[rp.HotelID][curr]; !exists || price < existingPrice {
@@ -183,7 +231,7 @@ func (hr *HotelRepository) GetHotelsForAgent(ctx context.Context, filter filter.
 					}
 				}
 			}
-			
+
 			// Assign prices to hotels
 			for i := range hotels {
 				if prices, exists := hotelPricesMap[hotels[i].ID]; exists && len(prices) > 0 {
@@ -193,6 +241,61 @@ func (hr *HotelRepository) GetHotelsForAgent(ctx context.Context, filter filter.
 		} else {
 			logger.Error(ctx, "Failed to fetch prices for hotels", err.Error())
 		}
+	}
+
+	// Filter hotels that have prices in the agent's currency
+	// Only filter if currency is specified and not empty
+	if filter.Currency != "" {
+		normalizedCurrency := currency.NormalizeCurrencyCode(filter.Currency)
+		originalCount := len(hotels)
+		filteredHotels := make([]entity.CustomHotel, 0, len(hotels))
+
+		for _, hotel := range hotels {
+			// Only include hotels that have a Prices map AND contain the agent's currency with valid price > 0
+			// Hotels without Prices map or without the agent's currency are excluded
+			hasValidPrice := false
+
+			if len(hotel.Prices) > 0 {
+				if price, exists := hotel.Prices[normalizedCurrency]; exists && price > 0 {
+					hasValidPrice = true
+				} else {
+					// Log why hotel is being excluded
+					availableCurrencies := make([]string, 0, len(hotel.Prices))
+					for curr := range hotel.Prices {
+						availableCurrencies = append(availableCurrencies, curr)
+					}
+					logger.Info(ctx, "Excluding hotel - missing currency in prices", map[string]interface{}{
+						"hotel_id":             hotel.ID,
+						"hotel_name":           hotel.Name,
+						"required_currency":    normalizedCurrency,
+						"available_currencies": availableCurrencies,
+						"has_currency":         exists,
+						"price_value":          price,
+					})
+				}
+			} else {
+				// Hotel has no Prices map
+				logger.Info(ctx, "Excluding hotel - no prices map", map[string]interface{}{
+					"hotel_id":          hotel.ID,
+					"hotel_name":        hotel.Name,
+					"required_currency": normalizedCurrency,
+				})
+			}
+
+			if hasValidPrice {
+				filteredHotels = append(filteredHotels, hotel)
+			}
+		}
+
+		hotels = filteredHotels
+		// Update total count to reflect filtered results
+		total = int64(len(hotels))
+		logger.Info(ctx, "Filtered hotels by currency", map[string]interface{}{
+			"currency":       normalizedCurrency,
+			"original_count": originalCount,
+			"filtered_count": len(hotels),
+			"excluded_count": originalCount - len(hotels),
+		})
 	}
 
 	return hotels, total, nil

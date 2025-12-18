@@ -61,8 +61,19 @@ func (br *BookingRepository) DeleteCartBooking(ctx context.Context, agentID uint
 		return err
 	}
 
-	// 🗑️ Step 5: Kalau kosong, hapus booking-nya juga
-	if remaining == 0 {
+	// 🔍 Step 5: Cek apakah masih ada guests di booking yang sama
+	var guestCount int64
+	if err := db.WithContext(ctx).
+		Model(&model.BookingGuest{}).
+		Where("booking_id = ?", booking.ID).
+		Count(&guestCount).Error; err != nil {
+		logger.Error(ctx, "failed to count booking guests", err.Error())
+		return err
+	}
+
+	// 🗑️ Step 6: Kalau kosong dan tidak ada guests, hapus booking-nya juga
+	// Jika masih ada guests, biarkan booking tetap ada untuk preserve contact details
+	if remaining == 0 && guestCount == 0 {
 		if err := db.WithContext(ctx).
 			Unscoped().
 			Where("id = ?", booking.ID).
