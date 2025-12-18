@@ -55,13 +55,14 @@ func (hu *HotelUsecase) DetailHotel(ctx context.Context, hotelID uint) (*hoteldt
 	var roomTypeList []hoteldto.DetailRoomType
 	for _, rt := range hotel.RoomTypes {
 		roomType := hoteldto.DetailRoomType{
-			ID:            rt.ID,
-			Name:          rt.Name,
-			RoomSize:      rt.RoomSize,
-			MaxOccupancy:  rt.MaxOccupancy,
-			BedTypes:      rt.BedTypeNames,
-			IsSmokingRoom: rt.IsSmokingAllowed != nil && *rt.IsSmokingAllowed,
-			Description:   rt.Description,
+			ID:                     rt.ID,
+			Name:                   rt.Name,
+			RoomSize:               rt.RoomSize,
+			MaxOccupancy:           rt.MaxOccupancy,
+			BedTypes:               rt.BedTypeNames,
+			IsSmokingRoom:          rt.IsSmokingAllowed != nil && *rt.IsSmokingAllowed,
+			Description:            rt.Description,
+			BookingLimitPerBooking: rt.BookingLimitPerBooking,
 		}
 
 		for i, photo := range rt.Photos {

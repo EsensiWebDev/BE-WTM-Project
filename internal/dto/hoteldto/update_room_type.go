@@ -15,6 +15,7 @@ type UpdateRoomTypeRequest struct {
 	Additional             string                  `json:"additional" form:"additional"`
 	OtherPreferences       string                  `json:"other_preferences" form:"other_preferences"`
 	Description            string                  `json:"description" form:"description"`
+	BookingLimitPerBooking *int                    `json:"booking_limit_per_booking,omitempty" form:"booking_limit_per_booking"` // Maximum number of rooms that can be booked per booking (nil = no limit)
 	UnchangedRoomPhotos    []string                `json:"unchanged_room_photos" form:"unchanged_room_photos"`
 	UnchangedAdditionsIDs  []uint                  `json:"unchanged_additions_ids" form:"unchanged_additions_ids"`
 	UnchangedPreferenceIDs []uint                  `json:"unchanged_preference_ids" form:"unchanged_preference_ids"`

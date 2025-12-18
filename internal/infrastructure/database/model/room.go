@@ -10,15 +10,16 @@ import (
 
 type RoomType struct {
 	gorm.Model
-	ExternalID       ExternalID     `gorm:"embedded"`
-	HotelID          uint           `json:"hotel_id" gorm:"index"`
-	Name             string         `json:"name"`
-	IsSmokingAllowed bool           `json:"is_smoking_allowed"`
-	MaxOccupancy     int            `json:"max_occupancy"`
-	RoomSize         float64        `json:"room_size"` // in square meters
-	Description      string         `json:"description"`
-	Photos           pq.StringArray `json:"photos" gorm:"type:text[]"`
-	TotalUnit        int            `json:"total_unit"`
+	ExternalID             ExternalID     `gorm:"embedded"`
+	HotelID                uint           `json:"hotel_id" gorm:"index"`
+	Name                   string         `json:"name"`
+	IsSmokingAllowed       bool           `json:"is_smoking_allowed"`
+	MaxOccupancy           int            `json:"max_occupancy"`
+	RoomSize               float64        `json:"room_size"` // in square meters
+	Description            string         `json:"description"`
+	Photos                 pq.StringArray `json:"photos" gorm:"type:text[]"`
+	TotalUnit              int            `json:"total_unit"`
+	BookingLimitPerBooking *int           `json:"booking_limit_per_booking" gorm:"default:null"` // Maximum number of rooms that can be booked per booking (null = no limit)
 
 	Hotel Hotel `gorm:"foreignKey:HotelID"`
 

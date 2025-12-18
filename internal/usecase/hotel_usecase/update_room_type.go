@@ -43,6 +43,7 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 		roomType.MaxOccupancy = req.MaxOccupancy
 		roomType.RoomSize = req.RoomSize
 		roomType.Description = req.Description
+		roomType.BookingLimitPerBooking = req.BookingLimitPerBooking
 
 		var unchangedAdditions []entity.CustomRoomAdditionalWithID
 		for _, id := range req.UnchangedAdditionsIDs {

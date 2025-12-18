@@ -26,17 +26,18 @@ type DetailHotelResponse struct {
 }
 
 type DetailRoomType struct {
-	ID               uint                                 `json:"id"`
-	Name             string                               `json:"name"`
-	WithoutBreakfast entity.CustomBreakfast               `json:"without_breakfast"`
-	WithBreakfast    entity.CustomBreakfast               `json:"with_breakfast"`
-	RoomSize         float64                              `json:"room_size"`
-	MaxOccupancy     int                                  `json:"max_occupancy"`
-	BedTypes         []string                             `json:"bed_types"`
-	IsSmokingRoom    bool                                 `json:"is_smoking_room"`
-	Additional       []entity.CustomRoomAdditionalWithID  `json:"additional"`
-	OtherPreferences []entity.CustomOtherPreferenceWithID `json:"other_preferences"`
-	Description      string                               `json:"description"`
-	Photos           []string                             `json:"photos"`
+	ID                     uint                                 `json:"id"`
+	Name                   string                               `json:"name"`
+	WithoutBreakfast       entity.CustomBreakfast               `json:"without_breakfast"`
+	WithBreakfast          entity.CustomBreakfast               `json:"with_breakfast"`
+	RoomSize               float64                              `json:"room_size"`
+	MaxOccupancy           int                                  `json:"max_occupancy"`
+	BedTypes               []string                             `json:"bed_types"`
+	IsSmokingRoom          bool                                 `json:"is_smoking_room"`
+	Additional             []entity.CustomRoomAdditionalWithID  `json:"additional"`
+	OtherPreferences       []entity.CustomOtherPreferenceWithID `json:"other_preferences"`
+	Description            string                               `json:"description"`
+	Photos                 []string                             `json:"photos"`
+	BookingLimitPerBooking *int                                 `json:"booking_limit_per_booking,omitempty"` // Maximum number of rooms that can be booked per booking (nil = no limit)
 	//TotalUnit        int                           `json:"total_unit"`
 }

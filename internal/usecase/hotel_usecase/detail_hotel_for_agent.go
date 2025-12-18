@@ -76,12 +76,13 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 	var roomTypeList []hoteldto.DetailRoomTypeForAgent
 	for _, rt := range hotel.RoomTypes {
 		roomType := hoteldto.DetailRoomTypeForAgent{
-			Name:          rt.Name,
-			RoomSize:      rt.RoomSize,
-			MaxOccupancy:  rt.MaxOccupancy,
-			BedTypes:      rt.BedTypeNames,
-			IsSmokingRoom: rt.IsSmokingAllowed != nil && *rt.IsSmokingAllowed,
-			Description:   rt.Description,
+			Name:                   rt.Name,
+			RoomSize:               rt.RoomSize,
+			MaxOccupancy:           rt.MaxOccupancy,
+			BedTypes:               rt.BedTypeNames,
+			IsSmokingRoom:          rt.IsSmokingAllowed != nil && *rt.IsSmokingAllowed,
+			Description:            rt.Description,
+			BookingLimitPerBooking: rt.BookingLimitPerBooking,
 		}
 		for _, photo := range rt.Photos {
 			photoUrl, err := hu.fileStorage.GetFile(ctx, bucketName, photo)

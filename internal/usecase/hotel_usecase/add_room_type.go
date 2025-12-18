@@ -32,13 +32,14 @@ func (hu *HotelUsecase) AddRoomType(ctx context.Context, hotelID uint, req *hote
 		}
 
 		rt := &entity.RoomType{
-			HotelID:          hotelID,
-			Name:             req.Name,
-			IsSmokingAllowed: &req.IsSmokingRoom,
-			MaxOccupancy:     req.MaxOccupancy,
-			RoomSize:         req.RoomSize,
-			Description:      req.Description,
-			TotalUnit:        1,
+			HotelID:                hotelID,
+			Name:                   req.Name,
+			IsSmokingAllowed:       &req.IsSmokingRoom,
+			MaxOccupancy:           req.MaxOccupancy,
+			RoomSize:               req.RoomSize,
+			Description:            req.Description,
+			TotalUnit:              1,
+			BookingLimitPerBooking: req.BookingLimitPerBooking,
 		}
 
 		rt, err := hu.hotelRepo.CreateRoomType(txCtx, rt)

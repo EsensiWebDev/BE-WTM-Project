@@ -34,16 +34,16 @@ type Hotel struct {
 }
 
 type CustomHotel struct {
-	ID              uint                `json:"id"`
-	Name            string              `json:"name"`
-	AddrSubDistrict string              `json:"addr_sub_district"`
-	AddrCity        string              `json:"addr_city"`
-	AddrProvince    string              `json:"addr_province"`
-	Photos          pq.StringArray      `gorm:"type:text[] "json:"photos"`
-	Rating          int                 `json:"rating"`
-	MinPrice        float64             `json:"min_price"` // DEPRECATED: Use Prices instead
-	Prices          map[string]float64  `json:"prices,omitempty"` // Multi-currency prices {"IDR": 500000, "USD": 200}
-	Currency        string              `json:"currency,omitempty"` // Currency code for min_price
+	ID              uint               `json:"id"`
+	Name            string             `json:"name"`
+	AddrSubDistrict string             `json:"addr_sub_district"`
+	AddrCity        string             `json:"addr_city"`
+	AddrProvince    string             `json:"addr_province"`
+	Photos          pq.StringArray     `gorm:"type:text[] "json:"photos"`
+	Rating          int                `json:"rating"`
+	MinPrice        float64            `json:"min_price"`          // DEPRECATED: Use Prices instead
+	Prices          map[string]float64 `json:"prices,omitempty"`   // Multi-currency prices {"IDR": 500000, "USD": 200}
+	Currency        string             `json:"currency,omitempty"` // Currency code for min_price
 }
 
 type BedType struct {
@@ -76,7 +76,8 @@ type RoomType struct {
 	Hotel            Hotel
 	PromoRoomTypes   []PromoRoomTypes
 
-	TotalUnit int
+	TotalUnit              int
+	BookingLimitPerBooking *int // Maximum number of rooms that can be booked per booking (nil = no limit)
 }
 
 type PromoRoomTypes struct {

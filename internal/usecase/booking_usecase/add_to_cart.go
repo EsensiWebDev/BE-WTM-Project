@@ -36,6 +36,51 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			return fmt.Errorf("room price not found: %s", err.Error())
 		}
 
+		checkInDate, err := time.Parse(time.DateOnly, req.CheckInDate)
+		if err != nil {
+			logger.Error(ctx, "failed to parse check-in date", err.Error())
+			return fmt.Errorf("invalid check-in date: %s", err.Error())
+		}
+
+		checkOutDate, err := time.Parse(time.DateOnly, req.CheckOutDate)
+		if err != nil {
+			logger.Error(ctx, "failed to parse check-out date", err.Error())
+			return fmt.Errorf("invalid check-out date: %s", err.Error())
+		}
+
+		// Validate booking limit per booking if set
+		if roomPrice.RoomType.BookingLimitPerBooking != nil {
+			bookingLimit := *roomPrice.RoomType.BookingLimitPerBooking
+			if bookingLimit > 0 {
+				// Get existing cart to check current quantities for this room type
+				existingCart, err := bu.bookingRepo.GetCartBooking(txCtx, agentID)
+				if err != nil {
+					logger.Error(ctx, "failed to get cart booking for limit validation", err.Error())
+					return fmt.Errorf("failed to validate booking limit: %s", err.Error())
+				}
+
+				// Sum up quantities for the same room type and overlapping date ranges
+				totalQuantity := req.Quantity
+				if existingCart != nil {
+					for _, detail := range existingCart.BookingDetails {
+						// Check if it's the same room type (using RoomType.ID since RoomType is preloaded)
+						if detail.RoomPrice.RoomType.ID == roomPrice.RoomType.ID {
+							// Check if date ranges overlap
+							// Two date ranges overlap if: checkInDate < detail.CheckOutDate && checkOutDate > detail.CheckInDate
+							if checkInDate.Before(detail.CheckOutDate) && checkOutDate.After(detail.CheckInDate) {
+								totalQuantity += detail.Quantity
+							}
+						}
+					}
+				}
+
+				if totalQuantity > bookingLimit {
+					logger.Error(ctx, fmt.Sprintf("Booking limit exceeded for room type %s. Limit: %d, Requested total: %d", roomPrice.RoomType.Name, bookingLimit, totalQuantity))
+					return fmt.Errorf("booking limit exceeded: maximum %d rooms allowed per booking for %s, but %d rooms requested", bookingLimit, roomPrice.RoomType.Name, totalQuantity)
+				}
+			}
+		}
+
 		// Validate bed type if provided
 		if req.BedType != "" {
 			bedTypeValid := false
@@ -89,18 +134,6 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 		if bookingID == 0 {
 			logger.Error(ctx, "booking Id is zero, cart creation failed")
 			return fmt.Errorf("failed to create booking cart")
-		}
-
-		checkInDate, err := time.Parse(time.DateOnly, req.CheckInDate)
-		if err != nil {
-			logger.Error(ctx, "failed to parse check-in date", err.Error())
-			return fmt.Errorf("invalid RFC3339 date: %s", err.Error())
-		}
-
-		checkOutDate, err := time.Parse(time.DateOnly, req.CheckOutDate)
-		if err != nil {
-			logger.Error(ctx, "failed to parse check-out date", err.Error())
-			return fmt.Errorf("invalid check-out date: %s", err.Error())
 		}
 
 		//var photoUrl string

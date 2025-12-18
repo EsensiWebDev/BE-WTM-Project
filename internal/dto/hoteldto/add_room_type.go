@@ -12,18 +12,19 @@ import (
 
 // AddRoomTypeRequest represents the request structure for adding a new room type to a hotel.
 type AddRoomTypeRequest struct {
-	HotelID          uint                    `json:"hotel_id" form:"hotel_id"`
-	Name             string                  `json:"name" form:"name"`
-	Photos           []*multipart.FileHeader `json:"photos" form:"photos"`
-	WithoutBreakfast string                  `json:"without_breakfast" form:"without_breakfast"`
-	WithBreakfast    string                  `json:"with_breakfast" form:"with_breakfast"`
-	RoomSize         float64                 `json:"room_size" form:"room_size"`
-	MaxOccupancy     int                     `json:"max_occupancy" form:"max_occupancy"`
-	BedTypes         []string                `json:"bed_types" form:"bed_types"`
-	IsSmokingRoom    bool                    `json:"is_smoking_room" form:"is_smoking_room"`
-	Additional       string                  `json:"additional" form:"additional"`
-	OtherPreferences string                  `json:"other_preferences" form:"other_preferences"`
-	Description      string                  `json:"description" form:"description"`
+	HotelID                uint                    `json:"hotel_id" form:"hotel_id"`
+	Name                   string                  `json:"name" form:"name"`
+	Photos                 []*multipart.FileHeader `json:"photos" form:"photos"`
+	WithoutBreakfast       string                  `json:"without_breakfast" form:"without_breakfast"`
+	WithBreakfast          string                  `json:"with_breakfast" form:"with_breakfast"`
+	RoomSize               float64                 `json:"room_size" form:"room_size"`
+	MaxOccupancy           int                     `json:"max_occupancy" form:"max_occupancy"`
+	BedTypes               []string                `json:"bed_types" form:"bed_types"`
+	IsSmokingRoom          bool                    `json:"is_smoking_room" form:"is_smoking_room"`
+	Additional             string                  `json:"additional" form:"additional"`
+	OtherPreferences       string                  `json:"other_preferences" form:"other_preferences"`
+	Description            string                  `json:"description" form:"description"`
+	BookingLimitPerBooking *int                    `json:"booking_limit_per_booking,omitempty" form:"booking_limit_per_booking"` // Maximum number of rooms that can be booked per booking (nil = no limit)
 	//TotalUnit        int                     `json:"total_unit" form:"total_unit"`
 }
 
@@ -106,10 +107,10 @@ type BreakfastWith struct {
 
 type RoomAdditional struct {
 	Name       string             `json:"name" form:"name"`
-	Category   string             `json:"category" form:"category"`     // "price" or "pax"
-	Price      *float64           `json:"price,omitempty" form:"price"` // DEPRECATED: Keep for backward compatibility
+	Category   string             `json:"category" form:"category"`       // "price" or "pax"
+	Price      *float64           `json:"price,omitempty" form:"price"`   // DEPRECATED: Keep for backward compatibility
 	Prices     map[string]float64 `json:"prices,omitempty" form:"prices"` // NEW: Multi-currency prices {"IDR": 50000, "USD": 3.50}
-	Pax        *int               `json:"pax,omitempty" form:"pax"`     // nullable, used when category="pax"
+	Pax        *int               `json:"pax,omitempty" form:"pax"`       // nullable, used when category="pax"
 	IsRequired bool               `json:"is_required" form:"is_required"`
 }
 

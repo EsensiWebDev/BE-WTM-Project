@@ -28,29 +28,30 @@ type NearbyPlaceForAgent struct {
 }
 
 type DetailRoomTypeForAgent struct {
-	Name             string                               `json:"name"`
-	WithoutBreakfast entity.CustomBreakfastWithID         `json:"without_breakfast"`
-	WithBreakfast    entity.CustomBreakfastWithID         `json:"with_breakfast"`
-	RoomSize         float64                              `json:"room_size"`
-	MaxOccupancy     int                                  `json:"max_occupancy"`
-	BedTypes         []string                             `json:"bed_types"`
-	IsSmokingRoom    bool                                 `json:"is_smoking_room"`
-	Additional       []entity.CustomRoomAdditionalWithID  `json:"additional"`
-	OtherPreferences []entity.CustomOtherPreferenceWithID `json:"other_preferences"`
-	Description      string                               `json:"description"`
-	Photos           []string                             `json:"photos"`
-	Promos           []PromoDetailRoom                    `json:"promos"`
+	Name                   string                               `json:"name"`
+	WithoutBreakfast       entity.CustomBreakfastWithID         `json:"without_breakfast"`
+	WithBreakfast          entity.CustomBreakfastWithID         `json:"with_breakfast"`
+	RoomSize               float64                              `json:"room_size"`
+	MaxOccupancy           int                                  `json:"max_occupancy"`
+	BedTypes               []string                             `json:"bed_types"`
+	IsSmokingRoom          bool                                 `json:"is_smoking_room"`
+	Additional             []entity.CustomRoomAdditionalWithID  `json:"additional"`
+	OtherPreferences       []entity.CustomOtherPreferenceWithID `json:"other_preferences"`
+	Description            string                               `json:"description"`
+	Photos                 []string                             `json:"photos"`
+	Promos                 []PromoDetailRoom                    `json:"promos"`
+	BookingLimitPerBooking *int                                 `json:"booking_limit_per_booking,omitempty"` // Maximum number of rooms that can be booked per booking (nil = no limit)
 }
 
 type PromoDetailRoom struct {
-	PromoID               uint                    `json:"promo_id"`
-	Description           string                  `json:"description"`
-	CodePromo             string                  `json:"code_promo"`
-	PriceWithBreakfast    float64                 `json:"price_with_breakfast"`
-	PriceWithoutBreakfast float64                 `json:"price_without_breakfast"`
-	TotalNights           int                     `json:"total_nights"`
-	OtherNotes            string                  `json:"other_notes,omitempty"`
-	PromoTypeID           uint                    `json:"promo_type_id,omitempty"`
-	PromoTypeName         string                  `json:"promo_type_name,omitempty"`
-	Detail                entity.PromoDetail      `json:"detail,omitempty"`
+	PromoID               uint               `json:"promo_id"`
+	Description           string             `json:"description"`
+	CodePromo             string             `json:"code_promo"`
+	PriceWithBreakfast    float64            `json:"price_with_breakfast"`
+	PriceWithoutBreakfast float64            `json:"price_without_breakfast"`
+	TotalNights           int                `json:"total_nights"`
+	OtherNotes            string             `json:"other_notes,omitempty"`
+	PromoTypeID           uint               `json:"promo_type_id,omitempty"`
+	PromoTypeName         string             `json:"promo_type_name,omitempty"`
+	Detail                entity.PromoDetail `json:"detail,omitempty"`
 }
