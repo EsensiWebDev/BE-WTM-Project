@@ -52,6 +52,7 @@ func (bu *BookingUsecase) ListBookings(ctx context.Context, req *bookingdto.List
 
 			// Map detailed additional services (with price, category, pax, etc.)
 			var additionalServices []bookingdto.BookingHistoryAdditional
+			var totalAdditionalPrice float64
 			if len(detail.BookingDetailsAdditional) > 0 {
 				additionalServices = make([]bookingdto.BookingHistoryAdditional, 0, len(detail.BookingDetailsAdditional))
 				for _, add := range detail.BookingDetailsAdditional {
@@ -63,11 +64,46 @@ func (bu *BookingUsecase) ListBookings(ctx context.Context, req *bookingdto.List
 						IsRequired: add.IsRequired,
 					}
 					additionalServices = append(additionalServices, additionalService)
+
+					// Calculate total additional price when category is price
+					if add.Category == constant.AdditionalServiceCategoryPrice && add.Price != nil {
+						totalAdditionalPrice += *add.Price
+					}
 				}
 			}
 
+			// Calculate nights (same logic as history)
+			nights := int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24)
+			if nights < 1 {
+				nights = 1
+			}
+
+			// Determine currency (fallback to IDR)
+			bookingCurrency := detail.Currency
+			if strings.TrimSpace(bookingCurrency) == "" {
+				bookingCurrency = "IDR"
+			}
+
+			// Room price per night (already includes promo if applied)
+			roomPricePerNight := detail.Price / float64(nights)
+			if nights == 0 {
+				roomPricePerNight = detail.Price
+			}
+
+			// Total price = room price + additional services
+			totalPrice := detail.Price + totalAdditionalPrice
+
 			resp.Data[i].Detail[j] = bookingdto.DetailBooking{
+				GuestName:          detail.Guest,
 				HotelName:          detail.DetailRooms.HotelName,
+				RoomTypeName:       detail.DetailRooms.RoomTypeName,
+				IsBreakfast:        detail.RoomPrice.IsBreakfast,
+				BedType:            detail.BedType,
+				RoomPrice:          roomPricePerNight,
+				TotalPrice:         totalPrice,
+				Currency:           bookingCurrency,
+				CheckInDate:        detail.CheckInDate.Format(time.DateOnly),
+				CheckOutDate:       detail.CheckOutDate.Format(time.DateOnly),
 				Additional:         detail.BookingDetailAdditionalName, // Keep for backward compatibility
 				OtherPreferences:   otherPrefs,
 				AdditionalServices: additionalServices, // Detailed additional services
