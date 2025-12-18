@@ -2,8 +2,9 @@ package seed
 
 import (
 	"context"
-	"gorm.io/gorm"
 	"wtm-backend/pkg/logger"
+
+	"gorm.io/gorm"
 )
 
 type Seed struct {
@@ -21,6 +22,7 @@ func Seeding(db *gorm.DB) error {
 	logger.Info(ctx, "Start Seeding database...")
 
 	seed := NewSeed(db)
+	seed.SeedCurrency()
 	seed.SeedUser()
 	seed.SeedHotel()
 	seed.SeedPromo()

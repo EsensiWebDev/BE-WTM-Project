@@ -1,12 +1,14 @@
 package hotel_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/config"
 	"wtm-backend/internal/domain"
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/internal/usecase/hotel_usecase"
+	"wtm-backend/pkg/constant"
+
+	"github.com/gin-gonic/gin"
 )
 
 type HotelHandler struct {
@@ -76,14 +78,28 @@ func (hh *HotelHandler) ExampleDataSocialMedias(c *gin.Context) {
 // @Success 200 {object} []hoteldto.RoomAdditional "Payload additional room features in JSON format"
 // @Router /example_additional_features [get]
 func (hh *HotelHandler) ExampleDataAdditionalFeatures(c *gin.Context) {
+	priceValue1 := 50000.0
+	priceValue2 := 75000.0
+	paxValue := 2
+
 	additionalFeatures := []hoteldto.RoomAdditional{
 		{
-			Price: 50000,
-			Name:  "Extra Bed",
+			Name:       "Extra Bed",
+			Category:   constant.AdditionalServiceCategoryPrice,
+			Price:      &priceValue1,
+			IsRequired: false,
 		},
 		{
-			Price: 75000,
-			Name:  "Extra Sofa",
+			Name:       "Extra Sofa",
+			Category:   constant.AdditionalServiceCategoryPrice,
+			Price:      &priceValue2,
+			IsRequired: false,
+		},
+		{
+			Name:       "Extra Guest",
+			Category:   constant.AdditionalServiceCategoryPax,
+			Pax:        &paxValue,
+			IsRequired: true,
 		},
 	}
 

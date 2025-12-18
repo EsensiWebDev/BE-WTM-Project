@@ -51,6 +51,7 @@ func SetupRouter(app *bootstrap.Application) *gin.Engine {
 		ReportRouter(app, middlewareMap, api)
 		EmailRoute(app, middlewareMap, api)
 		NotificationRouter(app, middlewareMap, api)
+		CurrencyRoutes(app, middlewareMap, api)
 		FileRouter(app, api)
 	}
 	return route

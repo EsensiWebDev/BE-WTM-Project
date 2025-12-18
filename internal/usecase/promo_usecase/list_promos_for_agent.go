@@ -40,12 +40,20 @@ func (pu *PromoUsecase) ListPromosForAgent(ctx context.Context, req *promodto.Li
 		for _, roomType := range promo.PromoRoomTypes {
 			dataHotels = append(dataHotels, fmt.Sprintf("%s %s", roomType.HotelName, roomType.Province))
 		}
+
+		// Map Duration to TotalNights (only include if Duration > 0)
+		var totalNights *int
+		if promo.Duration > 0 {
+			totalNights = &promo.Duration
+		}
+
 		dataPromos = append(dataPromos, promodto.PromosForAgent{
 			ID:          promo.ID,
 			Name:        promo.Name,
 			Code:        promo.Code,
 			Description: promo.Description,
 			Hotel:       dataHotels,
+			TotalNights: totalNights,
 		})
 	}
 

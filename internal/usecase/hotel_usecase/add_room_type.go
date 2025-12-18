@@ -22,14 +22,24 @@ func (hu *HotelUsecase) AddRoomType(ctx context.Context, hotelID uint, req *hote
 			}
 		}
 
+		// Parse OtherPreferences (simple list of names)
+		var otherPreferences []string
+		if strings.TrimSpace(req.OtherPreferences) != "" {
+			if err := json.Unmarshal([]byte(req.OtherPreferences), &otherPreferences); err != nil {
+				logger.Error(txCtx, "Failed to unmarshal AddRoomTypeRequest-other_preferences", err.Error())
+				return err
+			}
+		}
+
 		rt := &entity.RoomType{
-			HotelID:          hotelID,
-			Name:             req.Name,
-			IsSmokingAllowed: &req.IsSmokingRoom,
-			MaxOccupancy:     req.MaxOccupancy,
-			RoomSize:         req.RoomSize,
-			Description:      req.Description,
-			TotalUnit:        1,
+			HotelID:                hotelID,
+			Name:                   req.Name,
+			IsSmokingAllowed:       &req.IsSmokingRoom,
+			MaxOccupancy:           req.MaxOccupancy,
+			RoomSize:               req.RoomSize,
+			Description:            req.Description,
+			TotalUnit:              1,
+			BookingLimitPerBooking: req.BookingLimitPerBooking,
 		}
 
 		rt, err := hu.hotelRepo.CreateRoomType(txCtx, rt)
@@ -57,14 +67,26 @@ func (hu *HotelUsecase) AddRoomType(ctx context.Context, hotelID uint, req *hote
 		var additionalFeaturesEntity []entity.CustomRoomAdditional
 		for _, additional := range additionalFeatures {
 			additionalFeaturesEntity = append(additionalFeaturesEntity, entity.CustomRoomAdditional{
-				Name:  additional.Name,
-				Price: additional.Price,
+				Name:       additional.Name,
+				Category:   additional.Category,
+				Price:      additional.Price, // DEPRECATED: Keep for backward compatibility
+				Prices:     additional.Prices,
+				Pax:        additional.Pax,
+				IsRequired: additional.IsRequired,
 			})
 		}
 
 		if len(additionalFeaturesEntity) > 0 {
 			if err := hu.hotelRepo.AttachRoomAdditions(txCtx, rt.ID, additionalFeaturesEntity); err != nil {
 				logger.Error(ctx, "Failed to attach facilities", err.Error())
+				return err
+			}
+		}
+
+		// Attach "Other Preferences" if provided
+		if len(otherPreferences) > 0 {
+			if err := hu.hotelRepo.AttachRoomPreferences(txCtx, rt.ID, otherPreferences); err != nil {
+				logger.Error(ctx, "Failed to attach other preferences", err.Error())
 				return err
 			}
 		}
@@ -84,8 +106,13 @@ func (hu *HotelUsecase) AddRoomType(ctx context.Context, hotelID uint, req *hote
 			}
 
 			withoutBreakfastEntity := &entity.CustomBreakfast{
-				Price:  withoutBreakfast.Price,
+				Price:  withoutBreakfast.Price, // DEPRECATED: Keep for backward compatibility
+				Prices: withoutBreakfast.Prices,
 				IsShow: withoutBreakfast.IsShow,
+			}
+			// Fallback: if Prices is empty but Price is set, convert Price to Prices
+			if len(withoutBreakfastEntity.Prices) == 0 && withoutBreakfastEntity.Price > 0 {
+				withoutBreakfastEntity.Prices = map[string]float64{"IDR": withoutBreakfastEntity.Price}
 			}
 
 			if err := hu.hotelRepo.CreateRoomPrice(txCtx, rt.ID, withoutBreakfastEntity, false); err != nil {
@@ -102,9 +129,14 @@ func (hu *HotelUsecase) AddRoomType(ctx context.Context, hotelID uint, req *hote
 			}
 
 			withBreakfastEntity := &entity.CustomBreakfast{
-				Price:  withBreakfast.Price,
+				Price:  withBreakfast.Price, // DEPRECATED: Keep for backward compatibility
+				Prices: withBreakfast.Prices,
 				Pax:    withBreakfast.Pax,
 				IsShow: withBreakfast.IsShow,
+			}
+			// Fallback: if Prices is empty but Price is set, convert Price to Prices
+			if len(withBreakfastEntity.Prices) == 0 && withBreakfastEntity.Price > 0 {
+				withBreakfastEntity.Prices = map[string]float64{"IDR": withBreakfastEntity.Price}
 			}
 
 			if err := hu.hotelRepo.CreateRoomPrice(txCtx, rt.ID, withBreakfastEntity, true); err != nil {

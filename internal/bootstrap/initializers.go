@@ -12,6 +12,7 @@ import (
 	"wtm-backend/internal/repository/auth_repository"
 	"wtm-backend/internal/repository/banner_repository"
 	"wtm-backend/internal/repository/booking_repository"
+	"wtm-backend/internal/repository/currency_repository"
 	"wtm-backend/internal/repository/driver"
 	"wtm-backend/internal/repository/email_repository"
 	"wtm-backend/internal/repository/hotel_repository"
@@ -23,6 +24,7 @@ import (
 	"wtm-backend/internal/usecase/auth_usecase"
 	"wtm-backend/internal/usecase/banner_usecase"
 	"wtm-backend/internal/usecase/booking_usecase"
+	"wtm-backend/internal/usecase/currency_usecase"
 	"wtm-backend/internal/usecase/email_usecase"
 	"wtm-backend/internal/usecase/file_usecase"
 	"wtm-backend/internal/usecase/hotel_usecase"
@@ -88,6 +90,7 @@ func initializeRepositories(deps *Dependencies) *Repositories {
 		EmailRepo:        email_repository.NewEmailRepository(deps.DB),
 		ReportRepo:       report_repository.NewReportRepository(deps.DB),
 		NotificationRepo: notification_repository.NewNotificationRepository(deps.DB),
+		CurrencyRepo:     currency_repository.NewCurrencyRepository(deps.DB),
 	}
 }
 
@@ -106,5 +109,6 @@ func initializeUsecases(deps *Dependencies, repos *Repositories) AppUsecases {
 		NotificationUsecase: notification_usecase.NewNotificationUsecase(repos.NotificationRepo, deps.Middleware, deps.DBTransaction),
 		EmailUsecase:        email_usecase.NewEmailUsecase(repos.EmailRepo, deps.EmailSender, repos.BookingRepo, storageActive),
 		FileUsecase:         file_usecase.NewFileUsecase(storageActive),
+		CurrencyUsecase:     currency_usecase.NewCurrencyUsecase(repos.CurrencyRepo),
 	}
 }

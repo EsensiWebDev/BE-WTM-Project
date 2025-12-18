@@ -53,10 +53,11 @@ type PromoWithExternalID struct {
 }
 
 type PromoDetail struct {
-	DiscountPercentage float64 `json:"discount_percentage,omitempty"`
-	FixedPrice         float64 `json:"fixed_price,omitempty"`
-	UpgradedToID       uint    `json:"upgraded_to_id,omitempty"`
-	BenefitNote        string  `json:"benefit_note,omitempty"`
+	DiscountPercentage float64            `json:"discount_percentage,omitempty"`
+	FixedPrice         float64            `json:"fixed_price,omitempty"` // DEPRECATED: Use Prices instead
+	Prices             map[string]float64 `json:"prices,omitempty"`      // NEW: Per-currency prices {"IDR": 1200000, "USD": 75}
+	UpgradedToID       uint               `json:"upgraded_to_id,omitempty"`
+	BenefitNote        string             `json:"benefit_note,omitempty"`
 }
 
 type PromoRoomType struct {

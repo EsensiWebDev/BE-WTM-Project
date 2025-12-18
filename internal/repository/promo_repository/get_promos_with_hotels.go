@@ -72,6 +72,14 @@ func (pr *PromoRepository) GetPromosWithHotels(ctx context.Context, filterReq *f
 			promoEntities[i].PromoRoomTypes[i2].RoomTypeName = roomType.RoomType.Name
 			promoEntities[i].PromoRoomTypes[i2].HotelName = roomType.RoomType.Hotel.Name
 			promoEntities[i].PromoRoomTypes[i2].Province = roomType.RoomType.Hotel.AddrProvince
+			promoEntities[i].PromoRoomTypes[i2].TotalNights = roomType.TotalNights
+		}
+
+		// Set Duration from PromoRoomType.TotalNights if available
+		// Use the first PromoRoomType's TotalNights as the promo's Duration
+		// (assuming all room types for a promo have the same TotalNights requirement)
+		if len(promo.PromoRoomTypes) > 0 && promo.PromoRoomTypes[0].TotalNights > 0 {
+			promoEntities[i].Duration = promo.PromoRoomTypes[0].TotalNights
 		}
 	}
 

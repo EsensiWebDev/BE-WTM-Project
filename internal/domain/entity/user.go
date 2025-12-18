@@ -15,6 +15,7 @@ type User struct {
 	NameCard       string
 	PhotoSelfie    string
 	PhotoIDCard    string
+	Currency       string // Agent currency preference (set by admin)
 
 	//additional fields
 	ID                       uint

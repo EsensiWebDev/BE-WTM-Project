@@ -3,10 +3,12 @@ package booking_usecase
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/pkg/constant"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 )
 
@@ -34,6 +36,66 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			return fmt.Errorf("room price not found: %s", err.Error())
 		}
 
+		checkInDate, err := time.Parse(time.DateOnly, req.CheckInDate)
+		if err != nil {
+			logger.Error(ctx, "failed to parse check-in date", err.Error())
+			return fmt.Errorf("invalid check-in date: %s", err.Error())
+		}
+
+		checkOutDate, err := time.Parse(time.DateOnly, req.CheckOutDate)
+		if err != nil {
+			logger.Error(ctx, "failed to parse check-out date", err.Error())
+			return fmt.Errorf("invalid check-out date: %s", err.Error())
+		}
+
+		// Validate booking limit per booking if set
+		if roomPrice.RoomType.BookingLimitPerBooking != nil {
+			bookingLimit := *roomPrice.RoomType.BookingLimitPerBooking
+			if bookingLimit > 0 {
+				// Get existing cart to check current quantities for this room type
+				existingCart, err := bu.bookingRepo.GetCartBooking(txCtx, agentID)
+				if err != nil {
+					logger.Error(ctx, "failed to get cart booking for limit validation", err.Error())
+					return fmt.Errorf("failed to validate booking limit: %s", err.Error())
+				}
+
+				// Sum up quantities for the same room type and overlapping date ranges
+				totalQuantity := req.Quantity
+				if existingCart != nil {
+					for _, detail := range existingCart.BookingDetails {
+						// Check if it's the same room type (using RoomType.ID since RoomType is preloaded)
+						if detail.RoomPrice.RoomType.ID == roomPrice.RoomType.ID {
+							// Check if date ranges overlap
+							// Two date ranges overlap if: checkInDate < detail.CheckOutDate && checkOutDate > detail.CheckInDate
+							if checkInDate.Before(detail.CheckOutDate) && checkOutDate.After(detail.CheckInDate) {
+								totalQuantity += detail.Quantity
+							}
+						}
+					}
+				}
+
+				if totalQuantity > bookingLimit {
+					logger.Error(ctx, fmt.Sprintf("Booking limit exceeded for room type %s. Limit: %d, Requested total: %d", roomPrice.RoomType.Name, bookingLimit, totalQuantity))
+					return fmt.Errorf("booking limit exceeded: maximum %d rooms allowed per booking for %s, but %d rooms requested", bookingLimit, roomPrice.RoomType.Name, totalQuantity)
+				}
+			}
+		}
+
+		// Validate bed type if provided
+		if req.BedType != "" {
+			bedTypeValid := false
+			for _, bedTypeName := range roomPrice.RoomType.BedTypeNames {
+				if bedTypeName == req.BedType {
+					bedTypeValid = true
+					break
+				}
+			}
+			if !bedTypeValid {
+				logger.Error(ctx, "Invalid bed type selected", req.BedType)
+				return fmt.Errorf("invalid bed type selected: %s", req.BedType)
+			}
+		}
+
 		//Get Promo (optional)
 		var promo *entity.Promo
 		if req.PromoID > 0 {
@@ -51,6 +113,16 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			return fmt.Errorf("additionals not found: %s", err.Error())
 		}
 
+		//Get Other Preferences
+		var preferences []entity.RoomTypePreference
+		if len(req.OtherPreferenceIDs) > 0 {
+			preferences, err = bu.hotelRepo.GetRoomTypePreferencesByIDs(txCtx, req.OtherPreferenceIDs)
+			if err != nil {
+				logger.Error(ctx, "failed to get room type preferences", err.Error())
+				return fmt.Errorf("preferences not found: %s", err.Error())
+			}
+		}
+
 		// Create BookingDetail
 
 		bookingID, err := bu.bookingRepo.GetOrCreateCartID(txCtx, agentID)
@@ -62,18 +134,6 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 		if bookingID == 0 {
 			logger.Error(ctx, "booking Id is zero, cart creation failed")
 			return fmt.Errorf("failed to create booking cart")
-		}
-
-		checkInDate, err := time.Parse(time.DateOnly, req.CheckInDate)
-		if err != nil {
-			logger.Error(ctx, "failed to parse check-in date", err.Error())
-			return fmt.Errorf("invalid RFC3339 date: %s", err.Error())
-		}
-
-		checkOutDate, err := time.Parse(time.DateOnly, req.CheckOutDate)
-		if err != nil {
-			logger.Error(ctx, "failed to parse check-out date", err.Error())
-			return fmt.Errorf("invalid check-out date: %s", err.Error())
 		}
 
 		//var photoUrl string
@@ -120,16 +180,42 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 			}
 		}
 
+		// Join selected "Other Preferences" into a comma-separated string snapshot
+		var otherPrefsJoined string
+		if len(preferences) > 0 {
+			var preferenceNames []string
+			for _, pref := range preferences {
+				preferenceNames = append(preferenceNames, pref.OtherPreference.Name)
+			}
+			otherPrefsJoined = strings.Join(preferenceNames, ", ")
+		}
+
+		// Trim additional notes (admin-only field)
+		additionalNotes := strings.TrimSpace(req.AdditionalNotes)
+
+		// Get agent's currency preference
+		user, err := bu.userRepo.GetUserByID(txCtx, agentID)
+		if err != nil {
+			logger.Error(ctx, "failed to get user for currency", err.Error())
+			return fmt.Errorf("failed to get user: %s", err.Error())
+		}
+		agentCurrency := "IDR" // Default fallback
+		if user != nil && user.Currency != "" {
+			agentCurrency = user.Currency
+		}
+
 		detailBooking := &entity.BookingDetail{
-			BookingID:   bookingID,
-			RoomPriceID: roomPrice.ID,
-			//RoomTypeID:      roomPrice.RoomType.ID,
-			CheckInDate:  checkInDate,
-			CheckOutDate: checkOutDate,
-			Quantity:     req.Quantity,
-			//DetailRooms:     detailRoom,
-			StatusBookingID: constant.StatusBookingWaitingApprovalID,
-			StatusPaymentID: constant.StatusPaymentUnpaidID,
+			BookingID:        bookingID,
+			RoomPriceID:      roomPrice.ID,
+			CheckInDate:      checkInDate,
+			CheckOutDate:     checkOutDate,
+			Quantity:         req.Quantity,
+			StatusBookingID:  constant.StatusBookingWaitingApprovalID,
+			StatusPaymentID:  constant.StatusPaymentUnpaidID,
+			BedType:          req.BedType,
+			OtherPreferences: otherPrefsJoined,
+			AdditionalNotes:  additionalNotes,
+			Currency:         agentCurrency, // Store agent's currency at booking time
 		}
 
 		if promo != nil {
@@ -173,11 +259,32 @@ func (bu *BookingUsecase) AddToCart(ctx context.Context, req *bookingdto.AddToCa
 
 		// 6. Create BookingDetailAdditionals
 		for _, add := range additionals {
+			var price *float64
+
+			// Convert price to agent's currency if it's a price-based additional
+			if add.Category == constant.AdditionalServiceCategoryPrice {
+				if len(add.Prices) > 0 {
+					// Use Prices map for multi-currency support
+					if convertedPrice, _, _ := currency.GetPriceForCurrency(add.Prices, agentCurrency); convertedPrice > 0 {
+						price = &convertedPrice
+					} else if add.Price != nil && *add.Price > 0 {
+						// Fallback to Price field if Prices not available (backward compatibility)
+						price = add.Price
+					}
+				} else if add.Price != nil && *add.Price > 0 {
+					// Backward compatibility: use Price field if Prices not set
+					price = add.Price
+				}
+			}
+
 			additional := &entity.BookingDetailAdditional{
 				BookingDetailIDs:     bookingDetailIds,
 				RoomTypeAdditionalID: add.ID,
-				//Price:                add.Price,
-				//NameAdditional:       add.RoomAdditional.Name,
+				Category:             add.Category,
+				Price:                price,
+				Pax:                  add.Pax,
+				IsRequired:           add.IsRequired,
+				NameAdditional:       add.RoomAdditional.Name,
 			}
 			if err := bu.bookingRepo.CreateBookingDetailAdditional(txCtx, additional); err != nil {
 				return fmt.Errorf("failed to create additional: %s", err.Error())
@@ -194,8 +301,11 @@ func (bu *BookingUsecase) generateDetailPromo(promo *entity.Promo) (entity.Detai
 		Name:            promo.Name,
 		PromoCode:       promo.Code,
 		Type:            promo.PromoTypeName,
+		Description:     promo.Description,
+		PromoTypeID:     promo.PromoTypeID,
 		DiscountPercent: promo.Detail.DiscountPercentage,
 		FixedPrice:      promo.Detail.FixedPrice,
+		Prices:          promo.Detail.Prices,
 		UpgradedToID:    promo.Detail.UpgradedToID,
 		BenefitNote:     promo.Detail.BenefitNote,
 	}

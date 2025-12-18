@@ -3,23 +3,28 @@ package hoteldto
 import (
 	"encoding/json"
 	"fmt"
-	validation "github.com/go-ozzo/ozzo-validation"
 	"mime/multipart"
+	"strings"
+	"wtm-backend/pkg/constant"
+
+	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 // AddRoomTypeRequest represents the request structure for adding a new room type to a hotel.
 type AddRoomTypeRequest struct {
-	HotelID          uint                    `json:"hotel_id" form:"hotel_id"`
-	Name             string                  `json:"name" form:"name"`
-	Photos           []*multipart.FileHeader `json:"photos" form:"photos"`
-	WithoutBreakfast string                  `json:"without_breakfast" form:"without_breakfast"`
-	WithBreakfast    string                  `json:"with_breakfast" form:"with_breakfast"`
-	RoomSize         float64                 `json:"room_size" form:"room_size"`
-	MaxOccupancy     int                     `json:"max_occupancy" form:"max_occupancy"`
-	BedTypes         []string                `json:"bed_types" form:"bed_types"`
-	IsSmokingRoom    bool                    `json:"is_smoking_room" form:"is_smoking_room"`
-	Additional       string                  `json:"additional" form:"additional"`
-	Description      string                  `json:"description" form:"description"`
+	HotelID                uint                    `json:"hotel_id" form:"hotel_id"`
+	Name                   string                  `json:"name" form:"name"`
+	Photos                 []*multipart.FileHeader `json:"photos" form:"photos"`
+	WithoutBreakfast       string                  `json:"without_breakfast" form:"without_breakfast"`
+	WithBreakfast          string                  `json:"with_breakfast" form:"with_breakfast"`
+	RoomSize               float64                 `json:"room_size" form:"room_size"`
+	MaxOccupancy           int                     `json:"max_occupancy" form:"max_occupancy"`
+	BedTypes               []string                `json:"bed_types" form:"bed_types"`
+	IsSmokingRoom          bool                    `json:"is_smoking_room" form:"is_smoking_room"`
+	Additional             string                  `json:"additional" form:"additional"`
+	OtherPreferences       string                  `json:"other_preferences" form:"other_preferences"`
+	Description            string                  `json:"description" form:"description"`
+	BookingLimitPerBooking *int                    `json:"booking_limit_per_booking,omitempty" form:"booking_limit_per_booking"` // Maximum number of rooms that can be booked per booking (nil = no limit)
 	//TotalUnit        int                     `json:"total_unit" form:"total_unit"`
 }
 
@@ -49,6 +54,34 @@ func (r *AddRoomTypeRequest) Validate() error {
 		errs["with_breakfast"] = validation.NewInternalError(fmt.Errorf("without_breakfast and with_breakfast must be filled"))
 	}
 
+	// Validate Additional field if provided
+	if len(r.Additional) > 0 {
+		var additionalFeatures []RoomAdditional
+		if err := json.Unmarshal([]byte(r.Additional), &additionalFeatures); err != nil {
+			errs["additional"] = validation.NewInternalError(fmt.Errorf("additional must be a valid JSON array"))
+		} else {
+			for i, additional := range additionalFeatures {
+				if err := additional.Validate(); err != nil {
+					errs[fmt.Sprintf("additional[%d]", i)] = err
+				}
+			}
+		}
+	}
+
+	// Validate OtherPreferences field if provided (expects JSON array of strings)
+	if len(r.OtherPreferences) > 0 {
+		var prefs []string
+		if err := json.Unmarshal([]byte(r.OtherPreferences), &prefs); err != nil {
+			errs["other_preferences"] = validation.NewInternalError(fmt.Errorf("other_preferences must be a valid JSON array of strings"))
+		} else {
+			for i, name := range prefs {
+				if strings.TrimSpace(name) == "" {
+					errs[fmt.Sprintf("other_preferences[%d]", i)] = validation.NewInternalError(fmt.Errorf("preference name is required"))
+				}
+			}
+		}
+	}
+
 	if errs != nil && len(errs) > 0 {
 		return errs
 	}
@@ -62,8 +95,9 @@ func isJSON(s string) bool {
 }
 
 type BreakfastBase struct {
-	Price  float64 `json:"price" form:"price"`
-	IsShow bool    `json:"is_show" form:"is_show"`
+	Price  float64            `json:"price,omitempty" form:"price"`   // DEPRECATED: Use Prices instead
+	Prices map[string]float64 `json:"prices,omitempty" form:"prices"` // NEW: Multi-currency prices {"IDR": 1600000, "USD": 100}
+	IsShow bool               `json:"is_show" form:"is_show"`
 }
 
 type BreakfastWith struct {
@@ -72,6 +106,45 @@ type BreakfastWith struct {
 }
 
 type RoomAdditional struct {
-	Name  string  `json:"name" form:"name"`
-	Price float64 `json:"price" form:"price"`
+	Name       string             `json:"name" form:"name"`
+	Category   string             `json:"category" form:"category"`       // "price" or "pax"
+	Price      *float64           `json:"price,omitempty" form:"price"`   // DEPRECATED: Keep for backward compatibility
+	Prices     map[string]float64 `json:"prices,omitempty" form:"prices"` // NEW: Multi-currency prices {"IDR": 50000, "USD": 3.50}
+	Pax        *int               `json:"pax,omitempty" form:"pax"`       // nullable, used when category="pax"
+	IsRequired bool               `json:"is_required" form:"is_required"`
+}
+
+func (r *RoomAdditional) Validate() error {
+	var errs validation.Errors = make(map[string]error)
+
+	// Validate Name
+	if err := validation.ValidateStruct(r,
+		validation.Field(&r.Name, validation.Required.Error("Name is required")),
+		validation.Field(&r.Category, validation.Required.Error("Category is required"), validation.In(constant.AdditionalServiceCategoryPrice, constant.AdditionalServiceCategoryPax).Error("Category must be either 'price' or 'pax'")),
+	); err != nil {
+		return err
+	}
+
+	// Validate based on category
+	if r.Category == constant.AdditionalServiceCategoryPrice {
+		if r.Price == nil {
+			errs["price"] = validation.NewInternalError(fmt.Errorf("price is required when category is 'price'"))
+		}
+		if r.Pax != nil {
+			errs["pax"] = validation.NewInternalError(fmt.Errorf("pax must not be set when category is 'price'"))
+		}
+	} else if r.Category == constant.AdditionalServiceCategoryPax {
+		if r.Pax == nil {
+			errs["pax"] = validation.NewInternalError(fmt.Errorf("pax is required when category is 'pax'"))
+		}
+		if r.Price != nil {
+			errs["price"] = validation.NewInternalError(fmt.Errorf("price must not be set when category is 'pax'"))
+		}
+	}
+
+	if errs != nil && len(errs) > 0 {
+		return errs
+	}
+
+	return nil
 }

@@ -32,10 +32,12 @@ type ListHotelForAgentResponse struct {
 }
 
 type ListHotelForAgent struct {
-	ID       uint    `json:"id"`
-	Name     string  `json:"name"`
-	Address  string  `json:"address"`
-	MinPrice float64 `json:"min_price"`
-	Photo    string  `json:"photo"`
-	Rating   int     `json:"rating"`
+	ID       uint                `json:"id"`
+	Name     string              `json:"name"`
+	Address  string              `json:"address"`
+	MinPrice float64             `json:"min_price"` // DEPRECATED: Use prices instead
+	Prices   map[string]float64  `json:"prices,omitempty"` // Multi-currency prices {"IDR": 500000, "USD": 200}
+	Photo    string              `json:"photo"`
+	Rating   int                 `json:"rating"`
+	Currency string              `json:"currency,omitempty"` // Currency code for min_price
 }

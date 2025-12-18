@@ -36,7 +36,6 @@ func (uu *UserUsecase) ListUsers(ctx context.Context, req *userdto.ListUsersRequ
 	}
 	resp.Users = make([]userdto.ListUserData, 0, len(users))
 	for _, u := range users {
-
 		var photoProfile string
 		if strings.TrimSpace(u.PhotoSelfie) != "" {
 			bucketName := fmt.Sprintf("%s-%s", constant.ConstUser, constant.ConstPublic)
@@ -77,6 +76,12 @@ func (uu *UserUsecase) ListUsers(ctx context.Context, req *userdto.ListUsersRequ
 			}
 		}
 
+		// Ensure currency has a default value if empty
+		currencyValue := u.Currency
+		if strings.TrimSpace(currencyValue) == "" {
+			currencyValue = "IDR" // Default currency
+		}
+
 		data := userdto.ListUserData{
 			ID:               u.ID,
 			ExternalID:       u.ExternalID,
@@ -93,6 +98,7 @@ func (uu *UserUsecase) ListUsers(ctx context.Context, req *userdto.ListUsersRequ
 			Certificate:      certificateURL,
 			NameCard:         nameCardURL,
 			IdCard:           idCardURL,
+			Currency:         currencyValue,
 		}
 		if u.PromoGroupID != nil {
 			data.PromoGroupID = u.PromoGroupID

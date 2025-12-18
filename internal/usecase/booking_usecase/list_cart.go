@@ -3,9 +3,11 @@ package booking_usecase
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/pkg/constant"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 )
 
@@ -40,16 +42,26 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 			var additionals []bookingdto.CartDetailAdditional
 			var totalAdditional float64
 
-			for _, additional := range detail.BookingDetailsAdditional {
-				additionals = append(additionals, bookingdto.CartDetailAdditional{
-					Name:  additional.NameAdditional,
-					Price: additional.Price,
-				})
-				totalAdditional += additional.Price
+			// Map additional services with new structure (Category, Price/Pax, IsRequired)
+			// These fields are now stored directly in BookingDetailAdditional
+			for _, detailAdditional := range detail.BookingDetailsAdditional {
+				cartAdditional := bookingdto.CartDetailAdditional{
+					Name:       detailAdditional.NameAdditional,
+					Category:   detailAdditional.Category,
+					Price:      detailAdditional.Price,
+					Pax:        detailAdditional.Pax,
+					IsRequired: detailAdditional.IsRequired,
+				}
+
+				additionals = append(additionals, cartAdditional)
+
+				// Calculate total - only count price-based additionals
+				if cartAdditional.Category == constant.AdditionalServiceCategoryPrice && cartAdditional.Price != nil {
+					totalAdditional += *cartAdditional.Price
+				}
 			}
 
-			var cancellationDate string
-			cancellationDate = detail.CheckInDate.AddDate(0, 0, detail.RoomPrice.RoomType.Hotel.CancellationPeriod).Format("2006-01-02")
+			cancellationDate := detail.CheckInDate.AddDate(0, 0, detail.RoomPrice.RoomType.Hotel.CancellationPeriod).Format("2006-01-02")
 
 			nights := int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24)
 			var checkInHourDur, checkOutHourDur time.Duration
@@ -69,6 +81,16 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 					time.Duration(sec)*time.Second
 			}
 
+			// Parse other preferences from comma-separated snapshot
+			var otherPrefs []string
+			if strings.TrimSpace(detail.OtherPreferences) != "" {
+				for _, p := range strings.Split(detail.OtherPreferences, ",") {
+					if name := strings.TrimSpace(p); name != "" {
+						otherPrefs = append(otherPrefs, name)
+					}
+				}
+			}
+
 			cartDetail := bookingdto.CartDetail{
 				ID:                   detail.ID,
 				HotelName:            detail.RoomPrice.RoomType.Hotel.Name,
@@ -78,13 +100,25 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 				RoomTypeName:         detail.RoomPrice.RoomType.Name,
 				IsBreakfast:          detail.RoomPrice.IsBreakfast,
 				Guest:                detail.Guest,
+				BedType:              detail.BedType,      // Selected bed type (singular)
+				BedTypes:             detail.BedTypeNames, // Available bed types for reference (plural)
+				OtherPreferences:     otherPrefs,
 				Additional:           additionals,
+				AdditionalNotes:      detail.AdditionalNotes, // Notes from agent to admin
+				AdminNotes:           detail.AdminNotes,      // Notes from admin to agent
 				CancellationDate:     cancellationDate,
 				PriceBeforePromo:     detail.RoomPrice.Price * float64(nights),
 				TotalAdditionalPrice: totalAdditional,
 			}
 			basePrice := detail.RoomPrice.Price
 			roomPrice := basePrice
+
+			// Get currency from booking detail (snapshot at booking time)
+			bookingCurrency := detail.Currency
+			if bookingCurrency == "" {
+				bookingCurrency = "IDR" // Default fallback
+			}
+
 			if detail.Promo != nil {
 				promo := detail.Promo
 				detailPromo, err := bu.generateDetailPromo(promo)
@@ -94,7 +128,21 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 				cartDetail.Promo = detailPromo
 				switch detail.Promo.PromoTypeID {
 				case constant.PromoTypeFixedPriceID:
-					roomPrice = promo.Detail.FixedPrice
+					// Use Prices map for multi-currency support
+					if len(promo.Detail.Prices) > 0 {
+						// Get price for the booking currency
+						if price, _, err := currency.GetPriceForCurrency(promo.Detail.Prices, bookingCurrency); err == nil {
+							roomPrice = price
+						} else {
+							// Fallback to FixedPrice if Prices not available (backward compatibility)
+							if promo.Detail.FixedPrice > 0 {
+								roomPrice = promo.Detail.FixedPrice
+							}
+						}
+					} else if promo.Detail.FixedPrice > 0 {
+						// Backward compatibility: use FixedPrice if Prices not set
+						roomPrice = promo.Detail.FixedPrice
+					}
 					if promo.Duration > nights {
 						roomPrice += float64(nights-promo.Duration) * basePrice
 					}
@@ -109,6 +157,7 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 			}
 			cartDetail.Price = roomPrice
 			cartDetail.TotalPrice = cartDetail.Price + cartDetail.TotalAdditionalPrice
+			cartDetail.Currency = bookingCurrency
 			for _, photo := range detail.RoomPrice.RoomType.Photos {
 				if photo != "" {
 					bucketName := fmt.Sprintf("%s-%s", constant.ConstHotel, constant.ConstPublic)
@@ -128,8 +177,35 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 
 		result.Detail = details
 
-		result.Guest = cart.Guests
+		// Map BookingGuests to CartGuest DTOs
+		var cartGuests []bookingdto.CartGuest
+		for _, guest := range cart.BookingGuests {
+			cartGuest := bookingdto.CartGuest{
+				Name:      guest.Name,
+				Honorific: guest.Honorific,
+				Category:  guest.Category,
+			}
+			// Only include age if category is "Child"
+			if guest.Category == constant.GuestCategoryChild && guest.Age != nil {
+				cartGuest.Age = guest.Age
+			}
+			cartGuests = append(cartGuests, cartGuest)
+		}
+		result.Guest = cartGuests
 		result.GrandTotal = grandTotal
+
+		// Set currency from first detail or agent's currency
+		if len(details) > 0 && details[0].Currency != "" {
+			result.Currency = details[0].Currency
+		} else {
+			// Get agent's currency from context
+			userCtx, err := bu.middleware.GenerateUserFromContext(ctx)
+			if err == nil && userCtx != nil && userCtx.Currency != "" {
+				result.Currency = userCtx.Currency
+			} else {
+				result.Currency = "IDR" // Default fallback
+			}
+		}
 	}
 
 	return result, nil

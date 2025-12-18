@@ -22,6 +22,15 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 			}
 		}
 
+		// Parse OtherPreferences (simple list of names)
+		var otherPreferences []string
+		if strings.TrimSpace(req.OtherPreferences) != "" {
+			if err := json.Unmarshal([]byte(req.OtherPreferences), &otherPreferences); err != nil {
+				logger.Error(txCtx, "Failed to unmarshal UpdateRoomTypeRequest-other_preferences", err.Error())
+				return err
+			}
+		}
+
 		// Get existing room type
 		roomType, err := hu.hotelRepo.GetRoomTypeByID(txCtx, req.RoomTypeID)
 		if err != nil {
@@ -34,15 +43,20 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 		roomType.MaxOccupancy = req.MaxOccupancy
 		roomType.RoomSize = req.RoomSize
 		roomType.Description = req.Description
+		roomType.BookingLimitPerBooking = req.BookingLimitPerBooking
 
 		var unchangedAdditions []entity.CustomRoomAdditionalWithID
 		for _, id := range req.UnchangedAdditionsIDs {
 			for _, addition := range roomType.RoomAdditions {
 				if addition.ID == id {
 					unchangedAdditions = append(unchangedAdditions, entity.CustomRoomAdditionalWithID{
-						ID:    addition.ID,
-						Name:  addition.Name,
-						Price: addition.Price,
+						ID:         addition.ID,
+						Name:       addition.Name,
+						Category:   addition.Category,
+						Price:      addition.Price, // DEPRECATED: Keep for backward compatibility
+						Prices:     addition.Prices,
+						Pax:        addition.Pax,
+						IsRequired: addition.IsRequired,
 					})
 					break
 				}
@@ -86,10 +100,37 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 				return err
 			}
 
+			// Merge new prices with existing prices (new currencies added, existing currencies updated)
+			mergedPrices := make(map[string]float64)
+			if len(roomType.WithoutBreakfast.Prices) > 0 {
+				// Start with existing prices
+				for currency, price := range roomType.WithoutBreakfast.Prices {
+					mergedPrices[currency] = price
+				}
+			} else if roomType.WithoutBreakfast.Price > 0 {
+				// Fallback: use existing Price field if Prices is empty
+				mergedPrices["IDR"] = roomType.WithoutBreakfast.Price
+			}
+
+			// Merge new prices from request
+			if len(withoutBreakfast.Prices) > 0 {
+				for currency, price := range withoutBreakfast.Prices {
+					mergedPrices[currency] = price
+				}
+			} else if withoutBreakfast.Price > 0 {
+				// Fallback: if only Price is provided, update/add IDR
+				mergedPrices["IDR"] = withoutBreakfast.Price
+			}
+
 			withoutBreakfastEntity := entity.CustomBreakfastWithID{
 				ID:     roomType.WithoutBreakfast.ID,
-				Price:  withoutBreakfast.Price,
+				Price:  withoutBreakfast.Price, // DEPRECATED: Keep for backward compatibility
+				Prices: mergedPrices,
 				IsShow: withoutBreakfast.IsShow,
+			}
+			// Update Price field with IDR price from merged prices for backward compatibility
+			if idrPrice, exists := mergedPrices["IDR"]; exists {
+				withoutBreakfastEntity.Price = idrPrice
 			}
 			roomType.WithoutBreakfast = withoutBreakfastEntity
 		}
@@ -101,11 +142,38 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 				return err
 			}
 
+			// Merge new prices with existing prices (new currencies added, existing currencies updated)
+			mergedPrices := make(map[string]float64)
+			if len(roomType.WithBreakfast.Prices) > 0 {
+				// Start with existing prices
+				for currency, price := range roomType.WithBreakfast.Prices {
+					mergedPrices[currency] = price
+				}
+			} else if roomType.WithBreakfast.Price > 0 {
+				// Fallback: use existing Price field if Prices is empty
+				mergedPrices["IDR"] = roomType.WithBreakfast.Price
+			}
+
+			// Merge new prices from request
+			if len(withBreakfast.Prices) > 0 {
+				for currency, price := range withBreakfast.Prices {
+					mergedPrices[currency] = price
+				}
+			} else if withBreakfast.Price > 0 {
+				// Fallback: if only Price is provided, update/add IDR
+				mergedPrices["IDR"] = withBreakfast.Price
+			}
+
 			withBreakfastEntity := entity.CustomBreakfastWithID{
 				ID:     roomType.WithBreakfast.ID,
-				Price:  withBreakfast.Price,
+				Price:  withBreakfast.Price, // DEPRECATED: Keep for backward compatibility
+				Prices: mergedPrices,
 				Pax:    withBreakfast.Pax,
 				IsShow: withBreakfast.IsShow,
+			}
+			// Update Price field with IDR price from merged prices for backward compatibility
+			if idrPrice, exists := mergedPrices["IDR"]; exists {
+				withBreakfastEntity.Price = idrPrice
 			}
 			roomType.WithBreakfast = withBreakfastEntity
 		}
@@ -123,13 +191,23 @@ func (hu *HotelUsecase) UpdateRoomType(ctx context.Context, req *hoteldto.Update
 		var additionalFeaturesEntity []entity.CustomRoomAdditional
 		for _, additional := range additionalFeatures {
 			additionalFeaturesEntity = append(additionalFeaturesEntity, entity.CustomRoomAdditional{
-				Name:  additional.Name,
-				Price: additional.Price,
+				Name:       additional.Name,
+				Category:   additional.Category,
+				Price:      additional.Price, // DEPRECATED: Keep for backward compatibility
+				Prices:     additional.Prices,
+				Pax:        additional.Pax,
+				IsRequired: additional.IsRequired,
 			})
 		}
 
 		if err := hu.hotelRepo.AttachRoomAdditions(txCtx, roomType.ID, additionalFeaturesEntity); err != nil {
 			logger.Error(txCtx, "Failed to attach facilities", err.Error())
+			return err
+		}
+
+		// Update "Other Preferences" links for this room type
+		if err := hu.hotelRepo.UpdateRoomPreferences(txCtx, roomType.ID, req.UnchangedPreferenceIDs, otherPreferences); err != nil {
+			logger.Error(txCtx, "Failed to update other preferences", err.Error())
 			return err
 		}
 

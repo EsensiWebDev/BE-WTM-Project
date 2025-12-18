@@ -10,6 +10,7 @@ import (
 	"wtm-backend/internal/repository/auth_repository"
 	"wtm-backend/internal/repository/banner_repository"
 	"wtm-backend/internal/repository/booking_repository"
+	"wtm-backend/internal/repository/currency_repository"
 	"wtm-backend/internal/repository/driver"
 	"wtm-backend/internal/repository/email_repository"
 	"wtm-backend/internal/repository/hotel_repository"
@@ -41,4 +42,5 @@ type Repositories struct {
 	EmailRepo        *email_repository.EmailRepository
 	ReportRepo       *report_repository.ReportRepository
 	NotificationRepo *notification_repository.NotificationRepository
+	CurrencyRepo     *currency_repository.CurrencyRepository
 }

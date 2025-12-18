@@ -125,6 +125,7 @@ func (uu *UserUsecase) UpdateUserByAdmin(ctx context.Context, req *userdto.Updat
 		userDB.Phone = req.Phone
 		userDB.Username = req.Username
 		userDB.KakaoTalkID = req.KakaoTalkID
+		userDB.Currency = req.Currency
 		userDB.StatusID = getStatusID(req.IsActive)
 		if userDB.StatusID == constant.StatusUserInactiveID {
 			isNeedLogout = true

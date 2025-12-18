@@ -7,6 +7,7 @@ import (
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/repository/filter"
 	"wtm-backend/pkg/constant"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
 )
@@ -140,6 +141,58 @@ func (hr *HotelRepository) GetHotelsForAgent(ctx context.Context, filter filter.
 	if err := db.Raw(finalQuery, args...).Scan(&hotels).Error; err != nil {
 		logger.Error(ctx, "Error fetching hotels (raw)", err.Error())
 		return nil, 0, err
+	}
+
+	// Extract prices from room_prices for each hotel
+	if len(hotels) > 0 {
+		hotelIDs := make([]uint, len(hotels))
+		for i, hotel := range hotels {
+			hotelIDs[i] = hotel.ID
+		}
+
+		// Query all room_prices for these hotels
+		type RoomPriceRow struct {
+			HotelID uint
+			Prices  []byte
+		}
+		var roomPrices []RoomPriceRow
+		err := db.Table("room_prices rp").
+			Select("rt.hotel_id, rp.prices").
+			Joins("JOIN room_types rt ON rt.id = rp.room_type_id").
+			Where("rt.hotel_id IN ? AND rp.is_show = true AND rp.prices IS NOT NULL AND rp.prices != '{}'::jsonb", hotelIDs).
+			Scan(&roomPrices).Error
+		
+		if err == nil {
+			// Group prices by hotel_id and find minimum for each currency
+			hotelPricesMap := make(map[uint]map[string]float64)
+			for _, rp := range roomPrices {
+				prices, err := currency.JSONToPrices(rp.Prices)
+				if err != nil {
+					logger.Error(ctx, "Failed to parse prices JSONB", err.Error())
+					continue
+				}
+				
+				if hotelPricesMap[rp.HotelID] == nil {
+					hotelPricesMap[rp.HotelID] = make(map[string]float64)
+				}
+				
+				// Find minimum price for each currency
+				for curr, price := range prices {
+					if existingPrice, exists := hotelPricesMap[rp.HotelID][curr]; !exists || price < existingPrice {
+						hotelPricesMap[rp.HotelID][curr] = price
+					}
+				}
+			}
+			
+			// Assign prices to hotels
+			for i := range hotels {
+				if prices, exists := hotelPricesMap[hotels[i].ID]; exists && len(prices) > 0 {
+					hotels[i].Prices = prices
+				}
+			}
+		} else {
+			logger.Error(ctx, "Failed to fetch prices for hotels", err.Error())
+		}
 	}
 
 	return hotels, total, nil

@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gorm.io/gorm"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/logger"
+
+	"gorm.io/gorm"
 )
 
 func (br *BookingRepository) UpdateDetailBookingDetail(ctx context.Context, bookingDetailID uint, room *entity.DetailRoom, promo *entity.DetailPromo, price float64, additionals []entity.BookingDetailAdditional) error {
@@ -57,14 +58,18 @@ func (br *BookingRepository) UpdateDetailBookingDetail(ctx context.Context, book
 	// Jika ada yang diupdate, update detail_additional
 	if len(additionals) > 0 {
 		for _, additional := range additionals {
+			updateFields := map[string]interface{}{
+				"category":        additional.Category,
+				"price":           additional.Price,
+				"pax":             additional.Pax,
+				"is_required":     additional.IsRequired,
+				"name_additional": additional.NameAdditional,
+			}
 			if err := db.WithContext(ctx).
 				Model(&model.BookingDetailAdditional{}).
 				Where("booking_detail_id = ?", bookingDetailID).
 				Where("id = ?", additional.ID).
-				Updates(map[string]interface{}{
-					"price":           additional.Price,
-					"name_additional": additional.NameAdditional,
-				}).Error; err != nil {
+				Updates(updateFields).Error; err != nil {
 				logger.Error(ctx, "failed to update booking detail additional: ", err.Error())
 				return fmt.Errorf("failed to update booking detail additional: %w", err)
 			}

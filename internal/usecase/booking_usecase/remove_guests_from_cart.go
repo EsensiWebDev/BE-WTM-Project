@@ -21,8 +21,8 @@ func (bu *BookingUsecase) RemoveGuestsFromCart(ctx context.Context, req *booking
 	}
 
 	agentID := userCtx.ID
-	if err := bu.bookingRepo.RemoveGuestsFromCart(ctx, agentID, req.CartID, req.Guest); err != nil {
-		logger.Error(ctx, "failed to remove guests from sub cart", err.Error())
+	if err := bu.bookingRepo.RemoveGuestsFromCart(ctx, agentID, req.CartID, req.Guests); err != nil {
+		logger.Error(ctx, "failed to remove guests from cart", err.Error())
 		return err
 	}
 

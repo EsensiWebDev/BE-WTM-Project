@@ -12,7 +12,8 @@ type Booking struct {
 	StatusPaymentID uint
 	BookingDetails  []BookingDetail
 
-	Guests           []string
+	Guests           []string       // Keep for backward compatibility
+	BookingGuests    []BookingGuest // Full guest details
 	BookingStatus    string
 	PaymentStatus    string
 	AgentName        string
@@ -20,6 +21,15 @@ type Booking struct {
 	AgentEmail       string
 	AgentPhoneNumber string
 	PromoGroupAgent  string
+}
+
+type BookingGuest struct {
+	ID        uint
+	BookingID uint
+	Name      string
+	Honorific string // e.g., "Mr", "Mrs", "Miss", "Ms"
+	Category  string // "Adult" or "Child"
+	Age       *int   // nullable, required when category="Child"
 }
 
 type BookingDetail struct {
@@ -34,7 +44,13 @@ type BookingDetail struct {
 	DetailPromos                DetailPromo
 	DetailRooms                 DetailRoom
 	Price                       float64
+	Currency                    string // Snapshot of currency at booking time
 	Guest                       string
+	OtherPreferences            string
+	BedType                     string   // Selected bed type (singular)
+	BedTypeNames                []string // Available bed types for selection
+	AdditionalNotes             string   // Optional notes from agent to admin (max 500 characters)
+	AdminNotes                  string   // Optional notes from admin to agent (max 500 characters)
 	BookingDetailsAdditional    []BookingDetailAdditional
 	RoomPrice                   RoomPrice
 	StatusBookingID             uint
@@ -50,13 +66,16 @@ type BookingDetail struct {
 }
 
 type DetailPromo struct {
-	Name            string  `json:"name,omitempty"`
-	PromoCode       string  `json:"promo_code,omitempty"`
-	Type            string  `json:"type,omitempty"`
-	DiscountPercent float64 `json:"discount_percent,omitempty"`
-	FixedPrice      float64 `json:"fixed_price,omitempty"`
-	UpgradedToID    uint    `json:"upgraded_to_id,omitempty"`
-	BenefitNote     string  `json:"benefit_note,omitempty"`
+	Name            string             `json:"name,omitempty"`
+	PromoCode       string             `json:"promo_code,omitempty"`
+	Type            string             `json:"type,omitempty"`
+	Description     string             `json:"description,omitempty"`
+	PromoTypeID     uint               `json:"promo_type_id,omitempty"`
+	DiscountPercent float64            `json:"discount_percent,omitempty"`
+	FixedPrice      float64            `json:"fixed_price,omitempty"`
+	Prices          map[string]float64 `json:"prices,omitempty"` // Multi-currency prices
+	UpgradedToID    uint               `json:"upgraded_to_id,omitempty"`
+	BenefitNote     string             `json:"benefit_note,omitempty"`
 }
 
 type DetailRoom struct {
@@ -71,7 +90,10 @@ type BookingDetailAdditional struct {
 	ID                   uint
 	BookingDetailIDs     []uint
 	RoomTypeAdditionalID uint
-	Price                float64
+	Category             string   // "price" or "pax"
+	Price                *float64 // nullable, used when category="price"
+	Pax                  *int     // nullable, used when category="pax"
+	IsRequired           bool
 	NameAdditional       string
 }
 
@@ -143,10 +165,13 @@ type DetailInvoice struct {
 	CheckIn            string               `json:"check_in"`
 	CheckOut           string               `json:"check_out"`
 	SubBookingID       string               `json:"sub_booking_id"`
+	BedType            string               `json:"bed_type,omitempty"`         // Selected bed type (e.g., "Kid Ogre Size")
+	AdditionalNotes    string               `json:"additional_notes,omitempty"` // Optional notes for admin/agent only
 	DescriptionInvoice []DescriptionInvoice `json:"description_invoice"`
 	Promo              DetailPromo          `json:"promo"`
 	Description        string               `json:"description"`
 	TotalPrice         float64              `json:"total_price"`
+	Currency           string               `json:"currency,omitempty"` // Currency code for the invoice (e.g. "IDR", "USD")
 }
 
 type DescriptionInvoice struct {
@@ -156,4 +181,7 @@ type DescriptionInvoice struct {
 	Price            float64 `json:"price"`
 	Total            float64 `json:"total"`
 	TotalBeforePromo float64 `json:"total_before_promo,omitempty"`
+	Category         string  `json:"category,omitempty"`    // "price" or "pax" - only for additional services
+	Pax              *int    `json:"pax,omitempty"`         // nullable, used when category="pax"
+	IsRequired       bool    `json:"is_required,omitempty"` // only for additional services
 }

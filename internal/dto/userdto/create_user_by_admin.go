@@ -17,6 +17,7 @@ type CreateUserByAdminRequest struct {
 	PromoGroupID uint                  `json:"promo_group_id" form:"promo_group_id"`
 	Role         string                `json:"role" form:"role"` // e.g., "admin", "suppor", "agent", "super_admin"
 	KakaoTalkID  string                `form:"kakao_talk_id" json:"kakao_talk_id"`
+	Currency     string                `json:"currency" form:"currency"`
 	PhotoSelfie  *multipart.FileHeader `form:"photo_selfie" json:"photo_selfie"`
 	PhotoIDCard  *multipart.FileHeader `form:"photo_id_card" json:"photo_id_card"`
 	Certificate  *multipart.FileHeader `form:"certificate" json:"certificate"`

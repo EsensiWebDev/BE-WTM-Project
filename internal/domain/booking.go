@@ -4,6 +4,7 @@ import (
 	"context"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/bookingdto"
+	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/internal/repository/filter"
 )
 
@@ -11,6 +12,9 @@ type BookingUsecase interface {
 	AddToCart(ctx context.Context, req *bookingdto.AddToCartRequest) error
 	ListCart(ctx context.Context) (*bookingdto.ListCartResponse, error)
 	RemoveFromCart(ctx context.Context, bookingDetailID uint) error
+	// UpdateCartAdditionalNotes updates the admin/agent-only additional_notes field
+	// for a specific cart detail (sub-cart) item owned by the authenticated agent.
+	UpdateCartAdditionalNotes(ctx context.Context, req *bookingdto.UpdateCartAdditionalNotesRequest) error
 	CheckOutCart(ctx context.Context) (*bookingdto.CheckOutCartResponse, error)
 	ListBookingHistory(ctx context.Context, req *bookingdto.ListBookingHistoryRequest) (*bookingdto.ListBookingHistoryResponse, error)
 	ListBookings(ctx context.Context, req *bookingdto.ListBookingsRequest) (*bookingdto.ListBookingsResponse, error)
@@ -25,6 +29,8 @@ type BookingUsecase interface {
 	RemoveGuestsFromCart(ctx context.Context, req *bookingdto.RemoveGuestsFromCartRequest) error
 	AddGuestToSubCart(ctx context.Context, req *bookingdto.AddGuestToSubCartRequest) error
 	CancelBooking(ctx context.Context, req *bookingdto.CancelBookingRequest) error
+	// UpdateAdminNotes updates admin_notes for a booking detail identified by sub_booking_id.
+	UpdateAdminNotes(ctx context.Context, req *bookingdto.UpdateAdminNotesRequest) error
 }
 
 type BookingRepository interface {
@@ -45,8 +51,8 @@ type BookingRepository interface {
 	GetSubBookingByCode(ctx context.Context, code string) (*entity.BookingDetail, error)
 	GetBookingIDs(ctx context.Context, agentID uint, filter *filter.DefaultFilter) ([]string, int64, error)
 	GetSubBookingIDs(ctx context.Context, agentID uint, bookingCode string) ([]string, error)
-	AddGuestsToCart(ctx context.Context, agentID uint, bookingID uint, guests []string) error
-	RemoveGuestsFromCart(ctx context.Context, agentID uint, bookingID uint, guest []string) error
+	AddGuestsToCart(ctx context.Context, agentID uint, bookingID uint, guests []bookingdto.GuestInfo) error
+	RemoveGuestsFromCart(ctx context.Context, agentID uint, bookingID uint, guests []bookingdto.GuestInfo) error
 	AddGuestToSubCart(ctx context.Context, agentID uint, bookingDetailID uint, guest string) error
 	CancelBooking(ctx context.Context, agentID uint, subBookingID string) (*entity.BookingDetail, error)
 	CreateInvoice(ctx context.Context, invoices []entity.Invoice) error
@@ -55,4 +61,10 @@ type BookingRepository interface {
 	GetIDBySubBookingID(ctx context.Context, subBookingID string) (uint, error)
 	GetListBookingLog(ctx context.Context, filter *filter.BookingFilter) ([]entity.BookingDetail, int64, error)
 	UpdateDetailBookingDetail(ctx context.Context, bookingDetailID uint, room *entity.DetailRoom, promo *entity.DetailPromo, price float64, additionals []entity.BookingDetailAdditional) error
+	GetBookingGuests(ctx context.Context, bookingID uint) ([]model.BookingGuest, error)
+	// UpdateCartAdditionalNotes updates additional_notes on a booking_detail row
+	// only if it belongs to the given agent's cart.
+	UpdateCartAdditionalNotes(ctx context.Context, agentID uint, bookingDetailID uint, additionalNotes string) error
+	// UpdateAdminNotes updates admin_notes on a booking_detail row identified by sub_booking_id.
+	UpdateAdminNotes(ctx context.Context, subBookingID string, adminNotes string) error
 }

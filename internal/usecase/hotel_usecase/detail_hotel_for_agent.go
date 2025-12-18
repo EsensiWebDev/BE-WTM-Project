@@ -6,6 +6,7 @@ import (
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/pkg/constant"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 )
 
@@ -75,12 +76,13 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 	var roomTypeList []hoteldto.DetailRoomTypeForAgent
 	for _, rt := range hotel.RoomTypes {
 		roomType := hoteldto.DetailRoomTypeForAgent{
-			Name:          rt.Name,
-			RoomSize:      rt.RoomSize,
-			MaxOccupancy:  rt.MaxOccupancy,
-			BedTypes:      rt.BedTypeNames,
-			IsSmokingRoom: rt.IsSmokingAllowed != nil && *rt.IsSmokingAllowed,
-			Description:   rt.Description,
+			Name:                   rt.Name,
+			RoomSize:               rt.RoomSize,
+			MaxOccupancy:           rt.MaxOccupancy,
+			BedTypes:               rt.BedTypeNames,
+			IsSmokingRoom:          rt.IsSmokingAllowed != nil && *rt.IsSmokingAllowed,
+			Description:            rt.Description,
+			BookingLimitPerBooking: rt.BookingLimitPerBooking,
 		}
 		for _, photo := range rt.Photos {
 			photoUrl, err := hu.fileStorage.GetFile(ctx, bucketName, photo)
@@ -95,6 +97,7 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 			ID:     rt.WithoutBreakfast.ID,
 			Pax:    rt.WithoutBreakfast.Pax,
 			Price:  rt.WithoutBreakfast.Price,
+			Prices: rt.WithoutBreakfast.Prices,
 			IsShow: rt.WithoutBreakfast.IsShow,
 		}
 
@@ -102,6 +105,7 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 			ID:     rt.WithBreakfast.ID,
 			Pax:    rt.WithBreakfast.Pax,
 			Price:  rt.WithBreakfast.Price,
+			Prices: rt.WithBreakfast.Prices,
 			IsShow: rt.WithBreakfast.IsShow,
 		}
 
@@ -110,10 +114,43 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 			if prt.Promo.IsActive {
 				var priceWithBreakfast, priceWithoutBreakfast float64
 				var notes string
+
+				// Get agent's currency preference from user context
+				agentCurrency := userCtx.Currency
+				if agentCurrency == "" {
+					agentCurrency = "IDR" // Default fallback
+				}
+
+				// Get base room prices in agent's currency
+				basePriceWithBreakfast := roomType.WithBreakfast.Price
+				basePriceWithoutBreakfast := roomType.WithoutBreakfast.Price
+				if len(roomType.WithBreakfast.Prices) > 0 {
+					if price, _, err := currency.GetPriceForCurrency(roomType.WithBreakfast.Prices, agentCurrency); err == nil {
+						basePriceWithBreakfast = price
+					}
+				}
+				if len(roomType.WithoutBreakfast.Prices) > 0 {
+					if price, _, err := currency.GetPriceForCurrency(roomType.WithoutBreakfast.Prices, agentCurrency); err == nil {
+						basePriceWithoutBreakfast = price
+					}
+				}
+
 				if prt.Promo.Detail.DiscountPercentage > 0 {
-					priceWithBreakfast = (100 - prt.Promo.Detail.DiscountPercentage) / 100 * roomType.WithBreakfast.Price
-					priceWithoutBreakfast = (100 - prt.Promo.Detail.DiscountPercentage) / 100 * roomType.WithoutBreakfast.Price
+					priceWithBreakfast = (100 - prt.Promo.Detail.DiscountPercentage) / 100 * basePriceWithBreakfast
+					priceWithoutBreakfast = (100 - prt.Promo.Detail.DiscountPercentage) / 100 * basePriceWithoutBreakfast
+				} else if len(prt.Promo.Detail.Prices) > 0 {
+					// Use Prices map for multi-currency support
+					// GetPriceForCurrency will fallback to IDR if agent's currency not found
+					if price, _, _ := currency.GetPriceForCurrency(prt.Promo.Detail.Prices, agentCurrency); price > 0 {
+						priceWithBreakfast = price
+						priceWithoutBreakfast = price
+					} else if prt.Promo.Detail.FixedPrice > 0 {
+						// Fallback to FixedPrice if Prices not available (backward compatibility)
+						priceWithBreakfast = prt.Promo.Detail.FixedPrice
+						priceWithoutBreakfast = prt.Promo.Detail.FixedPrice
+					}
 				} else if prt.Promo.Detail.FixedPrice > 0 {
+					// Backward compatibility: use FixedPrice if Prices not set
 					priceWithBreakfast = prt.Promo.Detail.FixedPrice
 					priceWithoutBreakfast = prt.Promo.Detail.FixedPrice
 				} else if prt.Promo.Detail.BenefitNote != "" {
@@ -127,6 +164,9 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 					PriceWithBreakfast:    priceWithBreakfast,
 					PriceWithoutBreakfast: priceWithoutBreakfast,
 					OtherNotes:            notes,
+					PromoTypeID:           prt.Promo.PromoTypeID,
+					PromoTypeName:         prt.Promo.PromoTypeName,
+					Detail:                prt.Promo.Detail,
 				})
 			}
 		}
@@ -134,9 +174,20 @@ func (hu *HotelUsecase) DetailHotelForAgent(ctx context.Context, hotelID uint) (
 
 		for _, addition := range rt.RoomAdditions {
 			roomType.Additional = append(roomType.Additional, entity.CustomRoomAdditionalWithID{
-				ID:    addition.ID,
-				Name:  addition.Name,
-				Price: addition.Price,
+				ID:         addition.ID,
+				Name:       addition.Name,
+				Category:   addition.Category,
+				Price:      addition.Price,
+				Prices:     addition.Prices,
+				Pax:        addition.Pax,
+				IsRequired: addition.IsRequired,
+			})
+		}
+
+		for _, pref := range rt.OtherPreferences {
+			roomType.OtherPreferences = append(roomType.OtherPreferences, entity.CustomOtherPreferenceWithID{
+				ID:   pref.ID,
+				Name: pref.Name,
 			})
 		}
 

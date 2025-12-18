@@ -67,10 +67,15 @@ type BookingDetail struct {
 	DetailRoom  datatypes.JSON `gorm:"type:jsonb"` // snapshot of room details
 
 	// Pricing
-	Price float64 `gorm:"type:float"`
+	Price    float64 `gorm:"type:float"`
+	Currency string  `json:"currency" gorm:"type:varchar(3);default:'IDR'"` // Snapshot of currency at booking time
 
 	// Guest per kamar
-	Guest string `gorm:"type:text"`
+	Guest            string `gorm:"type:text"`
+	BedType          string `gorm:"type:text"` // Selected bed type (e.g., "Kid Ogre Size")
+	OtherPreferences string `gorm:"type:text"` // comma-separated list of selected other preferences
+	AdditionalNotes  string `gorm:"type:text"` // Optional notes from agent to admin (max 500 characters)
+	AdminNotes       string `gorm:"type:text"` // Optional notes from admin to agent (max 500 characters)
 
 	// Status
 	StatusBookingID uint `gorm:"index"`
@@ -95,6 +100,9 @@ type BookingGuest struct {
 	ExternalID ExternalID `gorm:"embedded"`
 	BookingID  uint       `gorm:"index"`
 	Name       string     `gorm:"type:text"`
+	Honorific  string     `gorm:"type:varchar(10)"`                 // e.g., "Mr", "Mrs", "Miss", "Ms"
+	Category   string     `gorm:"type:varchar(20);default:'Adult'"` // "Adult" or "Child"
+	Age        *int       `gorm:"type:integer"`                     // nullable, required when category="Child"
 
 	Booking Booking `gorm:"foreignkey:BookingID"`
 }
@@ -108,12 +116,14 @@ type BookingDetailAdditional struct {
 	ExternalID           ExternalID `gorm:"embedded"`
 	BookingDetailID      uint       `gorm:"index"`
 	RoomTypeAdditionalID uint       `gorm:"index"`
-	Price                float64
-	NameAdditional       string `gorm:"type:text"`
+	Category             string     `gorm:"type:varchar(10);default:'price'"` // "price" or "pax"
+	Price                *float64   `gorm:"type:decimal(10,2)"`               // nullable, used when category="price"
+	Pax                  *int       `gorm:"type:integer"`                     // nullable, used when category="pax"
+	IsRequired           bool       `gorm:"default:false"`
+	NameAdditional       string     `gorm:"type:text"`
 	Quantity             int
 
-	BookingDetail      BookingDetail      `gorm:"foreignkey:BookingDetailID"`
-	RoomTypeAdditional RoomTypeAdditional `gorm:"foreignkey:RoomTypeAdditionalID"`
+	BookingDetail BookingDetail `gorm:"foreignkey:BookingDetailID"`
 }
 
 func (b *BookingDetailAdditional) BeforeCreate(tx *gorm.DB) error {

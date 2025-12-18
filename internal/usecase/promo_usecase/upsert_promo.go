@@ -2,10 +2,12 @@ package promo_usecase
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/promodto"
 	"wtm-backend/pkg/constant"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
 )
@@ -48,13 +50,31 @@ func (pu *PromoUsecase) UpsertPromo(ctx context.Context, req *promodto.UpsertPro
 				}
 			}
 		case constant.PromoTypeFixedPriceID:
-			fixedPrice, err := strconv.ParseFloat(req.Detail, 64)
-			if err != nil {
-				logger.Error(ctx, "Error parsing fixed price", err.Error())
-			}
-			if fixedPrice > 0 {
+			// NEW: Support multi-currency prices
+			if len(req.Prices) > 0 {
+				// Validate Prices map
+				if err := currency.ValidatePrices(req.Prices); err != nil {
+					logger.Error(ctx, "Error validating prices", err.Error())
+					return fmt.Errorf("invalid prices: %w", err)
+				}
+				// Only save Prices, do not set FixedPrice
+				// Agents will use the currency-specific price from Prices map
 				detail = entity.PromoDetail{
-					FixedPrice: fixedPrice,
+					Prices: req.Prices,
+				}
+			} else if req.Detail != "" {
+				// Backward compatibility: parse from Detail string
+				fixedPrice, err := strconv.ParseFloat(req.Detail, 64)
+				if err != nil {
+					logger.Error(ctx, "Error parsing fixed price", err.Error())
+					return fmt.Errorf("invalid fixed price: %w", err)
+				}
+				if fixedPrice > 0 {
+					// Convert single price to Prices map with IDR
+					detail = entity.PromoDetail{
+						FixedPrice: fixedPrice,
+						Prices:     map[string]float64{"IDR": fixedPrice},
+					}
 				}
 			}
 		case constant.PromoTypeRoomUpgradeID:

@@ -2,18 +2,20 @@ package promodto
 
 import (
 	"fmt"
+
 	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 type UpsertPromoRequest struct {
-	StartDate   string     `json:"start_date" form:"start_date"`
-	EndDate     string     `json:"end_date" form:"end_date"`
-	RoomTypes   []RoomType `json:"room_types" form:"room_types"`
-	PromoName   string     `json:"promo_name" form:"promo_name"`
-	PromoTypeID uint       `json:"promo_type" form:"promo_type"`
-	Detail      string     `json:"detail" form:"detail"`
-	PromoCode   string     `json:"promo_code" form:"promo_code"`
-	Description string     `json:"description" form:"description"`
+	StartDate   string             `json:"start_date" form:"start_date"`
+	EndDate     string             `json:"end_date" form:"end_date"`
+	RoomTypes   []RoomType         `json:"room_types" form:"room_types"`
+	PromoName   string             `json:"promo_name" form:"promo_name"`
+	PromoTypeID uint               `json:"promo_type" form:"promo_type"`
+	Detail      string             `json:"detail,omitempty" form:"detail"` // DEPRECATED: For backward compatibility
+	Prices      map[string]float64 `json:"prices,omitempty" form:"prices"` // NEW: Multi-currency prices for FixedPrice promo type
+	PromoCode   string             `json:"promo_code" form:"promo_code"`
+	Description string             `json:"description" form:"description"`
 }
 
 type RoomType struct {
@@ -37,10 +39,35 @@ func (r *UpsertPromoRequest) Validate() error {
 		),
 		validation.Field(&r.PromoName, validation.Required.Error("Promo name is required")),
 		validation.Field(&r.PromoTypeID, validation.Required.Error("Promo type Id is required")),
-		validation.Field(&r.Detail, validation.Required.Error("Detail is required")),
 		validation.Field(&r.PromoCode, validation.Required.Error("Promo code is required")),
 	); err != nil {
 		return err
+	}
+
+	// Validate detail/prices based on promo type
+	// For FixedPrice: require either Prices (new) or Detail (backward compatibility)
+	// For other types: require Detail
+	if r.PromoTypeID == 2 { // PromoTypeFixedPriceID
+		if len(r.Prices) == 0 && r.Detail == "" {
+			return validation.Errors{
+				"prices": validation.NewInternalError(fmt.Errorf("prices or detail is required for fixed price promo")),
+			}
+		}
+		if len(r.Prices) > 0 {
+			// Validate Prices map has IDR
+			if _, hasIDR := r.Prices["IDR"]; !hasIDR {
+				return validation.Errors{
+					"prices": validation.NewInternalError(fmt.Errorf("prices must contain IDR (mandatory currency)")),
+				}
+			}
+		}
+	} else {
+		// For other promo types, Detail is required
+		if r.Detail == "" {
+			return validation.Errors{
+				"detail": validation.NewInternalError(fmt.Errorf("detail is required")),
+			}
+		}
 	}
 
 	if len(r.RoomTypes) == 0 {

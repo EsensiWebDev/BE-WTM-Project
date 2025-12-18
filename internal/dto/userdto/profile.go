@@ -14,6 +14,7 @@ type ProfileResponse struct {
 	KakaoTalkID         string                `json:"kakao_talk_id,omitempty"`
 	Status              string                `json:"status,omitempty"`
 	AgentCompany        string                `json:"agent_company,omitempty"`
+	Currency            string                `json:"currency,omitempty"`
 	NotificationSetting []NotificationSetting `json:"notification_settings,omitempty"`
 }
 

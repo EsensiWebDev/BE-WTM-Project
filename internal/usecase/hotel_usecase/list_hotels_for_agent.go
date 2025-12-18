@@ -130,6 +130,8 @@ func (hu *HotelUsecase) ListHotelsForAgent(ctx context.Context, req *hoteldto.Li
 				Name:     hotel.Name,
 				Address:  fmt.Sprintf("%s, %s, %s", hotel.AddrSubDistrict, hotel.AddrCity, hotel.AddrProvince),
 				MinPrice: hotel.MinPrice,
+				Prices:   hotel.Prices,
+				Currency: hotel.Currency,
 				Photo:    respPhoto,
 				Rating:   hotel.Rating,
 			})

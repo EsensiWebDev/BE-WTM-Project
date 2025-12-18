@@ -55,13 +55,14 @@ func (hu *HotelUsecase) DetailHotel(ctx context.Context, hotelID uint) (*hoteldt
 	var roomTypeList []hoteldto.DetailRoomType
 	for _, rt := range hotel.RoomTypes {
 		roomType := hoteldto.DetailRoomType{
-			ID:            rt.ID,
-			Name:          rt.Name,
-			RoomSize:      rt.RoomSize,
-			MaxOccupancy:  rt.MaxOccupancy,
-			BedTypes:      rt.BedTypeNames,
-			IsSmokingRoom: rt.IsSmokingAllowed != nil && *rt.IsSmokingAllowed,
-			Description:   rt.Description,
+			ID:                     rt.ID,
+			Name:                   rt.Name,
+			RoomSize:               rt.RoomSize,
+			MaxOccupancy:           rt.MaxOccupancy,
+			BedTypes:               rt.BedTypeNames,
+			IsSmokingRoom:          rt.IsSmokingAllowed != nil && *rt.IsSmokingAllowed,
+			Description:            rt.Description,
+			BookingLimitPerBooking: rt.BookingLimitPerBooking,
 		}
 
 		for i, photo := range rt.Photos {
@@ -75,21 +76,34 @@ func (hu *HotelUsecase) DetailHotel(ctx context.Context, hotelID uint) (*hoteldt
 
 		roomType.WithoutBreakfast = entity.CustomBreakfast{
 			Pax:    rt.WithoutBreakfast.Pax,
-			Price:  rt.WithoutBreakfast.Price,
+			Price:  rt.WithoutBreakfast.Price,  // DEPRECATED: Keep for backward compatibility
+			Prices: rt.WithoutBreakfast.Prices, // NEW: Multi-currency prices
 			IsShow: rt.WithoutBreakfast.IsShow,
 		}
 
 		roomType.WithBreakfast = entity.CustomBreakfast{
 			Pax:    rt.WithBreakfast.Pax,
-			Price:  rt.WithBreakfast.Price,
+			Price:  rt.WithBreakfast.Price,  // DEPRECATED: Keep for backward compatibility
+			Prices: rt.WithBreakfast.Prices, // NEW: Multi-currency prices
 			IsShow: rt.WithBreakfast.IsShow,
 		}
 
 		for _, addition := range rt.RoomAdditions {
 			roomType.Additional = append(roomType.Additional, entity.CustomRoomAdditionalWithID{
-				ID:    addition.ID,
-				Name:  addition.Name,
-				Price: addition.Price,
+				ID:         addition.ID,
+				Name:       addition.Name,
+				Category:   addition.Category,
+				Price:      addition.Price,  // DEPRECATED: Keep for backward compatibility
+				Prices:     addition.Prices, // NEW: Multi-currency prices
+				Pax:        addition.Pax,
+				IsRequired: addition.IsRequired,
+			})
+		}
+
+		for _, pref := range rt.OtherPreferences {
+			roomType.OtherPreferences = append(roomType.OtherPreferences, entity.CustomOtherPreferenceWithID{
+				ID:   pref.ID,
+				Name: pref.Name,
 			})
 		}
 
