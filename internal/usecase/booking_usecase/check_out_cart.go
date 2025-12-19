@@ -310,7 +310,83 @@ func (bu *BookingUsecase) sendEmailNotificationHotelConfirm(ctx context.Context,
 	// Get full guest information from database
 	guests := bu.getGuestsForEmail(ctx, bookingID)
 
-	// Format additional services with details
+	// Calculate room rate in IDR (always use IDR for hotel emails)
+	// Note: bd.RoomPrice.Prices contains all currencies for the selected room price option.
+	// For example, if agent selected room price ID 3 with {"IDR": 250000, "KRW": 10000},
+	// and agent checked out using KRW, we extract IDR 250000 from the same Prices map.
+	nights := int(bd.CheckOutDate.Sub(bd.CheckInDate).Hours() / 24)
+	var rateIDR float64
+
+	// Get base price in IDR from RoomPrice.Prices map
+	// This gets the IDR price from the SAME room price option that the agent selected
+	var basePriceIDR float64
+	if len(bd.RoomPrice.Prices) > 0 {
+		if price, _, err := currency.GetPriceForCurrency(bd.RoomPrice.Prices, "IDR"); err == nil {
+			basePriceIDR = price
+		} else {
+			// Fallback to Price field if IDR not found in Prices map
+			basePriceIDR = bd.RoomPrice.Price
+		}
+	} else {
+		// Fallback to deprecated Price field if Prices map is empty
+		basePriceIDR = bd.RoomPrice.Price
+	}
+
+	// Recalculate rate in IDR with promo if applicable
+	if bd.Promo != nil {
+		promo := bd.Promo
+		switch promo.PromoTypeID {
+		case constant.PromoTypeFixedPriceID:
+			// Use Prices map for multi-currency support, get IDR price
+			if len(promo.Detail.Prices) > 0 {
+				if price, _, err := currency.GetPriceForCurrency(promo.Detail.Prices, "IDR"); err == nil {
+					rateIDR = price
+				} else {
+					// Fallback to FixedPrice if IDR not available (backward compatibility)
+					if promo.Detail.FixedPrice > 0 {
+						rateIDR = promo.Detail.FixedPrice
+					}
+				}
+			} else if promo.Detail.FixedPrice > 0 {
+				// Backward compatibility: use FixedPrice if Prices not set
+				rateIDR = promo.Detail.FixedPrice
+			}
+			if promo.Duration > nights {
+				rateIDR += float64(nights-promo.Duration) * basePriceIDR
+			}
+		case constant.PromoTypeDiscountID:
+			rateIDR = (100 - promo.Detail.DiscountPercentage) / 100 * basePriceIDR * float64(nights)
+			if promo.Duration > nights {
+				rateIDR += float64(nights-promo.Duration) * basePriceIDR
+			}
+		default:
+			rateIDR = basePriceIDR * float64(nights)
+		}
+	} else {
+		// No promo: multiply base price by number of nights
+		rateIDR = basePriceIDR * float64(nights)
+	}
+
+	// Fetch original RoomTypeAdditional to get IDR prices for additional services
+	var roomTypeAdditionalIDs []uint
+	for _, additional := range bd.BookingDetailsAdditional {
+		roomTypeAdditionalIDs = append(roomTypeAdditionalIDs, additional.RoomTypeAdditionalID)
+	}
+
+	// Map of RoomTypeAdditionalID to RoomTypeAdditional for quick lookup
+	roomTypeAdditionalsMap := make(map[uint]entity.RoomTypeAdditional)
+	if len(roomTypeAdditionalIDs) > 0 {
+		roomTypeAdditionals, err := bu.hotelRepo.GetRoomTypeAdditionalsByIDs(ctx, roomTypeAdditionalIDs)
+		if err != nil {
+			logger.Error(ctx, "Failed to get room type additionals for IDR prices", err.Error())
+		} else {
+			for _, rta := range roomTypeAdditionals {
+				roomTypeAdditionalsMap[rta.ID] = rta
+			}
+		}
+	}
+
+	// Format additional services with IDR prices
 	var additionalServices []AdditionalServiceEmailInfo
 	for _, additional := range bd.BookingDetailsAdditional {
 		serviceInfo := AdditionalServiceEmailInfo{
@@ -318,8 +394,25 @@ func (bu *BookingUsecase) sendEmailNotificationHotelConfirm(ctx context.Context,
 			Category:   additional.Category,
 			IsRequired: additional.IsRequired,
 		}
-		if additional.Category == constant.AdditionalServiceCategoryPrice && additional.Price != nil {
-			serviceInfo.Price = fmt.Sprintf("%.2f", *additional.Price)
+		if additional.Category == constant.AdditionalServiceCategoryPrice {
+			// Get IDR price from original RoomTypeAdditional
+			if rta, exists := roomTypeAdditionalsMap[additional.RoomTypeAdditionalID]; exists {
+				if len(rta.Prices) > 0 {
+					if priceIDR, _, err := currency.GetPriceForCurrency(rta.Prices, "IDR"); err == nil {
+						serviceInfo.Price = fmt.Sprintf("%.2f", priceIDR)
+					} else if rta.Price != nil {
+						// Fallback to Price field if IDR not found
+						serviceInfo.Price = fmt.Sprintf("%.2f", *rta.Price)
+					}
+				} else if rta.Price != nil {
+					// Fallback to Price field if Prices map is empty
+					serviceInfo.Price = fmt.Sprintf("%.2f", *rta.Price)
+				}
+			} else if additional.Price != nil {
+				// Last resort: use the stored price (may not be IDR, but better than nothing)
+				logger.Warn(ctx, fmt.Sprintf("RoomTypeAdditional not found for ID %d, using stored price", additional.RoomTypeAdditionalID))
+				serviceInfo.Price = fmt.Sprintf("%.2f", *additional.Price)
+			}
 		} else if additional.Category == constant.AdditionalServiceCategoryPax && additional.Pax != nil {
 			serviceInfo.Pax = fmt.Sprintf("%d", *additional.Pax)
 		}
@@ -335,7 +428,7 @@ func (bu *BookingUsecase) sendEmailNotificationHotelConfirm(ctx context.Context,
 		Period:             fmt.Sprintf("%s to %s", bd.CheckInDate.Format("02-01-2006"), bd.CheckOutDate.Format("02-01-2006")),
 		RoomType:           bd.DetailRooms.RoomTypeName,
 		BedTypes:           bedTypesStr,
-		Rate:               fmt.Sprintf("%.2f", bd.Price),
+		Rate:               fmt.Sprintf("%.2f", rateIDR), // Use IDR price
 		BookingCode:        bd.Booking.BookingCode,
 		Additional:         strings.Join(bd.BookingDetailAdditionalName, ", "), // Keep for backward compatibility
 		AdditionalServices: additionalServices,
