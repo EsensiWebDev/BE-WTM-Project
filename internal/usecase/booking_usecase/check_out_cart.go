@@ -104,9 +104,6 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 			var descriptionItems []entity.DescriptionInvoice
 			var detailPromo entity.DetailPromo
 			nights := int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24)
-			oriPrice := detail.RoomPrice.Price
-			priceRoom := float64(nights) * oriPrice
-			roomPrice := oriPrice
 
 			// Get currency from booking detail (snapshot at booking time)
 			bookingCurrency := detail.Currency
@@ -117,6 +114,24 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 				bookingCurrency = "IDR" // Default fallback
 			}
 
+			// Get base price from multi-currency Prices map, fallback to deprecated Price field
+			var oriPrice float64
+			if len(detail.RoomPrice.Prices) > 0 {
+				// Use Prices map for multi-currency support
+				if price, _, err := currency.GetPriceForCurrency(detail.RoomPrice.Prices, bookingCurrency); err == nil {
+					oriPrice = price
+				} else {
+					// Fallback to Price field if currency not found in Prices map
+					oriPrice = detail.RoomPrice.Price
+				}
+			} else {
+				// Fallback to deprecated Price field if Prices map is empty
+				oriPrice = detail.RoomPrice.Price
+			}
+
+			priceRoom := float64(nights) * oriPrice
+			roomPrice := oriPrice
+
 			if detail.Promo != nil {
 				promo := detail.Promo
 				detailPromo, err = bu.generateDetailPromo(promo)
@@ -126,7 +141,6 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 				// snapshot promo both on booking detail and on invoice detail
 				detail.DetailPromos = detailPromo
 				invoiceData.DetailInvoice.Promo = detailPromo
-				nights := int(detail.CheckOutDate.Sub(detail.CheckInDate).Hours() / 24)
 				switch detail.Promo.PromoTypeID {
 				case constant.PromoTypeFixedPriceID:
 					// Use Prices map for multi-currency support
@@ -155,6 +169,9 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 				default:
 					roomPrice = roomPrice * float64(nights)
 				}
+			} else {
+				// No promo: multiply base price by number of nights
+				roomPrice = oriPrice * float64(nights)
 			}
 			detail.Price = roomPrice
 			itemRoom := entity.DescriptionInvoice{
@@ -242,6 +259,13 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 		if err = bu.bookingRepo.CreateInvoice(txCtx, invoices); err != nil {
 			logger.Error(ctx, "failed to create invoice", err.Error())
 			return fmt.Errorf("failed to create invoice: %s", err.Error())
+		}
+
+		// Delete all guests from cart after successful checkout
+		if err = bu.bookingRepo.DeleteAllGuestsFromBooking(txCtx, booking.ID); err != nil {
+			logger.Error(ctx, "failed to delete guests after checkout", err.Error())
+			// Don't fail the transaction if guest deletion fails, just log it
+			// The checkout is already successful
 		}
 
 		return nil

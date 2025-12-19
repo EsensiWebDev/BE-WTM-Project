@@ -18,15 +18,17 @@ import (
 
 type HotelUsecase struct {
 	hotelRepo     domain.HotelRepository
+	userRepo      domain.UserRepository
 	fileStorage   domain.StorageClient
 	dbTransaction domain.DatabaseTransaction
 	config        *config.Config
 	middleware    domain.Middleware
 }
 
-func NewHotelUsecase(hotelRepo domain.HotelRepository, fileStorage domain.StorageClient, dbTrx domain.DatabaseTransaction, config *config.Config, middleware domain.Middleware) *HotelUsecase {
+func NewHotelUsecase(hotelRepo domain.HotelRepository, userRepo domain.UserRepository, fileStorage domain.StorageClient, dbTrx domain.DatabaseTransaction, config *config.Config, middleware domain.Middleware) *HotelUsecase {
 	return &HotelUsecase{
 		hotelRepo:     hotelRepo,
+		userRepo:      userRepo,
 		fileStorage:   fileStorage,
 		dbTransaction: dbTrx,
 		config:        config,

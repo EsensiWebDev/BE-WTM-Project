@@ -91,6 +91,27 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 				}
 			}
 
+			// Get currency from booking detail (snapshot at booking time)
+			bookingCurrency := detail.Currency
+			if bookingCurrency == "" {
+				bookingCurrency = "IDR" // Default fallback
+			}
+
+			// Get base price from multi-currency Prices map, fallback to deprecated Price field
+			var basePrice float64
+			if len(detail.RoomPrice.Prices) > 0 {
+				// Use Prices map for multi-currency support
+				if price, _, err := currency.GetPriceForCurrency(detail.RoomPrice.Prices, bookingCurrency); err == nil {
+					basePrice = price
+				} else {
+					// Fallback to Price field if currency not found in Prices map
+					basePrice = detail.RoomPrice.Price
+				}
+			} else {
+				// Fallback to deprecated Price field if Prices map is empty
+				basePrice = detail.RoomPrice.Price
+			}
+
 			cartDetail := bookingdto.CartDetail{
 				ID:                   detail.ID,
 				HotelName:            detail.RoomPrice.RoomType.Hotel.Name,
@@ -107,17 +128,10 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 				AdditionalNotes:      detail.AdditionalNotes, // Notes from agent to admin
 				AdminNotes:           detail.AdminNotes,      // Notes from admin to agent
 				CancellationDate:     cancellationDate,
-				PriceBeforePromo:     detail.RoomPrice.Price * float64(nights),
+				PriceBeforePromo:     basePrice * float64(nights),
 				TotalAdditionalPrice: totalAdditional,
 			}
-			basePrice := detail.RoomPrice.Price
 			roomPrice := basePrice
-
-			// Get currency from booking detail (snapshot at booking time)
-			bookingCurrency := detail.Currency
-			if bookingCurrency == "" {
-				bookingCurrency = "IDR" // Default fallback
-			}
 
 			if detail.Promo != nil {
 				promo := detail.Promo
@@ -154,6 +168,9 @@ func (bu *BookingUsecase) ListCart(ctx context.Context) (*bookingdto.ListCartRes
 				default:
 					roomPrice = basePrice * float64(nights)
 				}
+			} else {
+				// No promo: multiply base price by number of nights
+				roomPrice = basePrice * float64(nights)
 			}
 			cartDetail.Price = roomPrice
 			cartDetail.TotalPrice = cartDetail.Price + cartDetail.TotalAdditionalPrice

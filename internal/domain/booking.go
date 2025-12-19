@@ -62,6 +62,8 @@ type BookingRepository interface {
 	GetListBookingLog(ctx context.Context, filter *filter.BookingFilter) ([]entity.BookingDetail, int64, error)
 	UpdateDetailBookingDetail(ctx context.Context, bookingDetailID uint, room *entity.DetailRoom, promo *entity.DetailPromo, price float64, additionals []entity.BookingDetailAdditional) error
 	GetBookingGuests(ctx context.Context, bookingID uint) ([]model.BookingGuest, error)
+	// DeleteAllGuestsFromBooking deletes all guests from a booking (used after checkout)
+	DeleteAllGuestsFromBooking(ctx context.Context, bookingID uint) error
 	// UpdateCartAdditionalNotes updates additional_notes on a booking_detail row
 	// only if it belongs to the given agent's cart.
 	UpdateCartAdditionalNotes(ctx context.Context, agentID uint, bookingDetailID uint, additionalNotes string) error

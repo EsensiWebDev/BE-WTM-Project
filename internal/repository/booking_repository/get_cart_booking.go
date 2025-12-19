@@ -6,6 +6,7 @@ import (
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/infrastructure/database/model"
 	"wtm-backend/pkg/constant"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
 
@@ -32,9 +33,10 @@ func (br *BookingRepository) GetCartBooking(ctx context.Context, agentID uint) (
 		Preload("BookingDetails.Promo").
 		Preload("BookingDetails.Promo.PromoType").
 		First(&booking).Error; err != nil {
-		if br.db.ErrRecordNotFound(ctx, err) {
-			logger.Warn(ctx, "No cart booking found for agent Id", agentID)
-			return nil, nil // No cart booking found
+		if br.db.IsRecordNotFound(err) {
+			// No cart booking found - this is normal, expected behavior
+			// Using IsRecordNotFound to avoid logging warning for expected case
+			return nil, nil
 		}
 		logger.Error(ctx, "Error finding cart booking for agent Id", agentID, err.Error())
 		return nil, err // Other error
@@ -61,6 +63,28 @@ func (br *BookingRepository) GetCartBooking(ctx context.Context, agentID uint) (
 	}
 	bookingEntity.BookingGuests = bookingGuests
 	for i, detail := range booking.BookingDetails {
+		// Convert RoomPrice Prices JSONB to map
+		if len(detail.RoomPrice.Prices) > 0 {
+			prices, err := currency.JSONToPrices(detail.RoomPrice.Prices)
+			if err != nil {
+				logger.Error(ctx, "Failed to convert RoomPrice prices JSONB to map", err.Error())
+				// Fallback to Price field if JSONB conversion fails
+				if detail.RoomPrice.Price > 0 {
+					bookingEntity.BookingDetails[i].RoomPrice.Prices = map[string]float64{"IDR": detail.RoomPrice.Price}
+				} else {
+					bookingEntity.BookingDetails[i].RoomPrice.Prices = make(map[string]float64)
+				}
+			} else {
+				bookingEntity.BookingDetails[i].RoomPrice.Prices = prices
+			}
+		} else if detail.RoomPrice.Price > 0 {
+			// Fallback: use Price field if Prices JSONB is empty
+			bookingEntity.BookingDetails[i].RoomPrice.Prices = map[string]float64{"IDR": detail.RoomPrice.Price}
+		} else {
+			// Initialize empty map to avoid nil
+			bookingEntity.BookingDetails[i].RoomPrice.Prices = make(map[string]float64)
+		}
+
 		// Map selected bed type from database
 		bookingEntity.BookingDetails[i].BedType = detail.BedType
 
