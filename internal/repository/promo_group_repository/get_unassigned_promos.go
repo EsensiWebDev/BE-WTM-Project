@@ -25,6 +25,9 @@ func (pgr *PromoGroupRepository) GetUnassignedPromos(ctx context.Context, filter
 			Where("detail_promo_groups.promo_group_id = ?", filterReq.PromoGroupID),
 	)
 
+	// 🔍 Filter: only active promos
+	query = query.Where("promos.is_active = ?", true)
+
 	// 🔍 Filter: search by name
 	if strings.TrimSpace(filterReq.Search) != "" {
 		safeSearch := utils.EscapeAndNormalizeSearch(filterReq.Search)

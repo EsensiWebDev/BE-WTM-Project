@@ -142,7 +142,7 @@ Many thanks for your kind attention and assistance.</p>
     <li><strong>GUESTS:</strong>
         <ul>
             {{range .Guests}}
-            <li>{{.Honorific}} {{.Name}}{{if eq .Category "Child"}} (Child{{if .Age}}, Age: {{.Age}}{{end}}){{end}}</li>
+            <li>{{.Honorific}} {{.Name}} ({{.Category}}{{if eq .Category "Child"}}{{if .Age}}, Age: {{.Age}}{{end}}{{end}})</li>
             {{else}}
             <li>{{$.GuestName}}</li>
             {{end}}
