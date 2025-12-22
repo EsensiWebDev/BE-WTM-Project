@@ -148,13 +148,52 @@ Many thanks for your kind attention and assistance.</p>
             {{end}}
         </ul>
     </li>
+    <li><strong>BOOKING CODE:</strong> {{.BookingCode}}</li>
+</ul>
+
+{{if .BookingDetails}}
+{{/* Multiple bookings - show each booking separately */}}
+{{range $index, $booking := .BookingDetails}}
+<div style="margin-bottom: 2em; padding: 1em; border: 1px solid #ddd; border-radius: 4px;">
+    <h3 style="margin-top: 0; color: #333;">{{if gt (len $.BookingDetails) 1}}Booking #{{$booking.BookingNumber}} - {{end}}Sub-Booking ID: {{$booking.SubBookingID}}</h3>
+    <ul>
+        <li><strong>GUEST:</strong> {{$booking.GuestName}}</li>
+        <li><strong>PERIOD:</strong> {{$booking.Period}}</li>
+        <li><strong>ROOM:</strong> {{$booking.RoomType}}</li>
+        {{if $booking.BedTypes}}
+        <li><strong>BED TYPE:</strong> {{$booking.BedTypes}}</li>
+        {{end}}
+        <li><strong>RATE:</strong> {{$booking.Rate}}</li>
+        {{if $booking.AdditionalServices}}
+        <li><strong>ADDITIONAL SERVICES:</strong>
+            <ul>
+                {{range $booking.AdditionalServices}}
+                <li>
+                    {{.Name}}
+                    {{if eq .Category "price"}}
+                        - Price: {{.Price}}{{if .IsRequired}} <strong>(Required)</strong>{{end}}
+                    {{else if eq .Category "pax"}}
+                        - Pax: {{.Pax}}{{if .IsRequired}} <strong>(Required)</strong>{{end}}
+                    {{end}}
+                </li>
+                {{end}}
+            </ul>
+        </li>
+        {{else if $booking.Additional}}
+        <li><strong>ADDITIONAL:</strong> {{$booking.Additional}}</li>
+        {{end}}
+    </ul>
+</div>
+{{end}}
+{{else}}
+{{/* Single booking - backward compatibility */}}
+<ul>
     <li><strong>PERIOD:</strong> {{.Period}}</li>
     <li><strong>ROOM:</strong> {{.RoomType}}</li>
     {{if .BedTypes}}
     <li><strong>BED TYPE:</strong> {{.BedTypes}}</li>
     {{end}}
     <li><strong>RATE:</strong> {{.Rate}}</li>
-    <li><strong>BOOKING CODE:</strong> {{.BookingCode}}</li>
     {{if .AdditionalServices}}
     <li><strong>ADDITIONAL SERVICES:</strong>
         <ul>
@@ -174,6 +213,7 @@ Many thanks for your kind attention and assistance.</p>
     <li><strong>ADDITIONAL:</strong> {{.Additional}}</li>
     {{end}}
 </ul>
+{{end}}
 
 <p>We are looking forward to hearing back from you soon.<br>
 Many thanks for your kind attention and assistance.</p>

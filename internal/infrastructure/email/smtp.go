@@ -141,6 +141,7 @@ func buildAccounts(cfg *config.Config) map[string]SMTPAccount {
 			Port:           cfg.PortMailhog,
 			DisableAuth:    true,
 			UseImplicitTLS: false,
+			SkipSTARTTLS:   true, // Mailhog doesn't support STARTTLS
 			DefaultFrom:    cfg.DefaultFromMailhog,
 		},
 	}

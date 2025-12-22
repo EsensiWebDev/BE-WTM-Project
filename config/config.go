@@ -1,8 +1,11 @@
 package config
 
 import (
+	"context"
+	"fmt"
 	"strings"
 	"time"
+	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
 
 	"github.com/joho/godotenv"
@@ -179,8 +182,8 @@ func LoadConfig() *Config {
 		ProviderGmailReturnPath: utils.GetBoolEnv("PROVIDER_GMAIL_RETURN_PATH", false),
 		TimeoutGmail:            utils.GetDurationEnv("TIMEOUT_GMAIL", 12*time.Second),
 
-		HostMailhog:        utils.GetStringEnv("HOST_MAILHOG", ""),
-		PortMailhog:        utils.GetIntEnv("PORT_MAILHOG", 8025),
+		HostMailhog:        utils.GetStringEnv("HOST_MAILHOG", "localhost"),
+		PortMailhog:        utils.GetIntEnv("PORT_MAILHOG", 1025),
 		DisableAuthMailhog: utils.GetBoolEnv("DISABLE_AUTH_MAILHOG", false),
 		UseTLSMailhog:      utils.GetBoolEnv("USE_TLS_MAILHOG", false),
 		DefaultFromMailhog: utils.GetStringEnv("DEFAULT_FROM_MAILHOG", ""),
@@ -189,8 +192,8 @@ func LoadConfig() *Config {
 		EmailFromAgent: utils.GetStringEnv("EMAIL_FROM_AGENT", "agent@wtm.com"),
 		EmailFromHotel: utils.GetStringEnv("EMAIL_FROM_HOTEL", "admin@wtm.com"),
 
-		ProviderAgent: utils.GetStringEnv("PROVIDER_AGENT", "mailhog"),
-		ProviderHotel: utils.GetStringEnv("PROVIDER_HOTEL", "mailhog"),
+		ProviderAgent: utils.GetStringEnv("PROVIDER_AGENT", ""), // Will be set after config creation
+		ProviderHotel: utils.GetStringEnv("PROVIDER_HOTEL", ""), // Will be set after config creation
 
 		RetryDelay:     utils.GetDurationEnv("RETRY_DELAY", 2*time.Second),
 		DialTimeout:    utils.GetDurationEnv("DIAL_TIMEOUT", 10*time.Second),
@@ -218,6 +221,30 @@ func LoadConfig() *Config {
 	if config.AppEnv == "DEV" {
 		config.URL = ""
 		config.SecureService = false
+	}
+
+	// Force Mailhog in development mode to prevent accidental use of production SMTP
+	// Set FORCE_MAILHOG=false to override this behavior
+	forceMailhog := utils.GetBoolEnv("FORCE_MAILHOG", true)
+	if (config.AppEnv == "DEV" || config.AppEnv == "development") && forceMailhog {
+		originalAgent := config.ProviderAgent
+		originalHotel := config.ProviderHotel
+		config.ProviderAgent = "mailhog"
+		config.ProviderHotel = "mailhog"
+		if originalAgent != "" && originalAgent != "mailhog" {
+			logger.Info(context.Background(), fmt.Sprintf("[config] Forced PROVIDER_AGENT to 'mailhog' in DEV mode (was: %s). Set FORCE_MAILHOG=false to override.", originalAgent))
+		}
+		if originalHotel != "" && originalHotel != "mailhog" {
+			logger.Info(context.Background(), fmt.Sprintf("[config] Forced PROVIDER_HOTEL to 'mailhog' in DEV mode (was: %s). Set FORCE_MAILHOG=false to override.", originalHotel))
+		}
+	} else {
+		// Default to mailhog for other environments too if not set
+		if config.ProviderAgent == "" {
+			config.ProviderAgent = "mailhog"
+		}
+		if config.ProviderHotel == "" {
+			config.ProviderHotel = "mailhog"
+		}
 	}
 
 	return config

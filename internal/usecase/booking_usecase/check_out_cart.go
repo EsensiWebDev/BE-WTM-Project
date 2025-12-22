@@ -261,13 +261,6 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 			return fmt.Errorf("failed to create invoice: %s", err.Error())
 		}
 
-		// Delete all guests from cart after successful checkout
-		if err = bu.bookingRepo.DeleteAllGuestsFromBooking(txCtx, booking.ID); err != nil {
-			logger.Error(ctx, "failed to delete guests after checkout", err.Error())
-			// Don't fail the transaction if guest deletion fails, just log it
-			// The checkout is already successful
-		}
-
 		return nil
 	})
 
@@ -276,22 +269,158 @@ func (bu *BookingUsecase) CheckOutCart(ctx context.Context) (*bookingdto.CheckOu
 		return nil, err
 	}
 
-	// sekarang invoices sudah terisi
-	resp := &bookingdto.CheckOutCartResponse{
-		Invoice: make([]bookingdto.DataInvoice, 0, len(invoices)),
+	// Consolidate invoices into one invoice with all booking details
+	// Group all items by sub-booking ID for clear separation
+	var consolidatedItems []entity.DescriptionInvoice
+	var consolidatedTotalPrice float64
+	var consolidatedCurrency string
+	var consolidatedSubBookingIDs []string
+
+	// Get all guests for the booking BEFORE they are deleted
+	// This must be done before deleting guests, as they are needed for emails
+	allGuests := bu.getGuestsForEmail(ctx, bookingID)
+	var guestNamesList []string
+	for _, guest := range allGuests {
+		guestStr := fmt.Sprintf("%s %s (%s", guest.Honorific, guest.Name, guest.Category)
+		if guest.Category == "Child" && guest.Age != "" {
+			guestStr += fmt.Sprintf(", Age: %s", guest.Age)
+		}
+		guestStr += ")"
+		guestNamesList = append(guestNamesList, guestStr)
 	}
+
+	// Delete all guests from cart after successful checkout (now that we have them for emails)
+	if err = bu.bookingRepo.DeleteAllGuestsFromBooking(ctx, bookingID); err != nil {
+		logger.Error(ctx, "failed to delete guests after checkout", err.Error())
+		// Don't fail if guest deletion fails, just log it
+		// The checkout is already successful
+	}
+
+	// Collect all unique hotels, guests, and dates
+	hotelNamesMap := make(map[string]bool)
+	var allCheckInDates []string
+	var allCheckOutDates []string
+
+	// Use the first invoice as base for consolidated invoice
+	if len(invoices) == 0 {
+		logger.Error(ctx, "no invoices created")
+		return nil, fmt.Errorf("no invoices created")
+	}
+
+	baseInvoice := invoices[0]
+	consolidatedCurrency = baseInvoice.DetailInvoice.Currency
+
+	// Collect all items from all invoices, grouped by sub-booking ID
 	for _, invoice := range invoices {
-		invBookingID := bookingID // Capture booking ID for goroutine
-		go func(inv entity.Invoice) {
+		subBookingID := invoice.DetailInvoice.SubBookingID
+		consolidatedSubBookingIDs = append(consolidatedSubBookingIDs, subBookingID)
+		consolidatedTotalPrice += invoice.DetailInvoice.TotalPrice
+
+		// Collect hotel names
+		hotelNamesMap[invoice.DetailInvoice.Hotel] = true
+
+		// Collect check-in and check-out dates
+		if invoice.DetailInvoice.CheckIn != "" {
+			allCheckInDates = append(allCheckInDates, invoice.DetailInvoice.CheckIn)
+		}
+		if invoice.DetailInvoice.CheckOut != "" {
+			allCheckOutDates = append(allCheckOutDates, invoice.DetailInvoice.CheckOut)
+		}
+
+		// Add a separator item for each sub-booking with hotel name
+		hotelName := invoice.DetailInvoice.Hotel
+		separatorDescription := fmt.Sprintf("--- %s (Sub-Booking ID: %s) ---", hotelName, subBookingID)
+		if len(consolidatedItems) > 0 {
+			separatorItem := entity.DescriptionInvoice{
+				Description: separatorDescription,
+				Quantity:    0,
+				Unit:        "separator",
+				Price:       0,
+				Total:       0,
+			}
+			consolidatedItems = append(consolidatedItems, separatorItem)
+		} else {
+			// Add header for first sub-booking
+			headerItem := entity.DescriptionInvoice{
+				Description: separatorDescription,
+				Quantity:    0,
+				Unit:        "separator",
+				Price:       0,
+				Total:       0,
+			}
+			consolidatedItems = append(consolidatedItems, headerItem)
+		}
+
+		// Add all items from this invoice
+		for _, item := range invoice.DetailInvoice.DescriptionInvoice {
+			consolidatedItems = append(consolidatedItems, item)
+		}
+	}
+
+	// Build consolidated hotel names string
+	var hotelNamesList []string
+	for hotelName := range hotelNamesMap {
+		hotelNamesList = append(hotelNamesList, hotelName)
+	}
+	consolidatedHotelNames := strings.Join(hotelNamesList, ", ")
+	if consolidatedHotelNames == "" {
+		consolidatedHotelNames = "Multiple Hotels"
+	}
+
+	// Build consolidated guest names string
+	consolidatedGuestNames := strings.Join(guestNamesList, ", ")
+	if consolidatedGuestNames == "" {
+		consolidatedGuestNames = "Multiple Guests"
+	}
+
+	// Build consolidated check-in and check-out dates strings
+	consolidatedCheckIn := strings.Join(allCheckInDates, ", ")
+	consolidatedCheckOut := strings.Join(allCheckOutDates, ", ")
+
+	// Create consolidated invoice detail
+	consolidatedDetailInvoice := entity.DetailInvoice{
+		CompanyAgent:       baseInvoice.DetailInvoice.CompanyAgent,
+		Agent:              baseInvoice.DetailInvoice.Agent,
+		Email:              baseInvoice.DetailInvoice.Email,
+		Hotel:              consolidatedHotelNames,
+		Guest:              consolidatedGuestNames,
+		CheckIn:            consolidatedCheckIn,
+		CheckOut:           consolidatedCheckOut,
+		SubBookingID:       strings.Join(consolidatedSubBookingIDs, ", "),
+		BedType:            "", // Will be shown per sub-booking in items
+		AdditionalNotes:    "",
+		DescriptionInvoice: consolidatedItems,
+		Promo:              entity.DetailPromo{}, // Promos are per sub-booking
+		TotalPrice:         consolidatedTotalPrice,
+		Currency:           consolidatedCurrency,
+	}
+
+	// Create consolidated invoice response
+	resp := &bookingdto.CheckOutCartResponse{
+		Invoice: []bookingdto.DataInvoice{
+			{
+				InvoiceNumber: baseInvoice.InvoiceCode, // Use first invoice code as consolidated code
+				DetailInvoice: consolidatedDetailInvoice,
+				InvoiceDate:   time.Now().Format(time.DateOnly),
+			},
+		},
+	}
+
+	// Group bookings by hotel email for consolidated email sending
+	hotelEmailMap := make(map[string][]entity.BookingDetail)
+	for _, invoice := range invoices {
+		hotelEmail := invoice.BookingDetail.RoomPrice.RoomType.Hotel.Email
+		hotelEmailMap[hotelEmail] = append(hotelEmailMap[hotelEmail], invoice.BookingDetail)
+	}
+
+	// Send one consolidated email per hotel
+	// Pass guests as parameter since they're already retrieved and will be deleted
+	for hotelEmail, bookingDetails := range hotelEmailMap {
+		go func(email string, details []entity.BookingDetail, guests []GuestEmailInfo) {
 			newCtx, cancel := context.WithTimeout(context.Background(), bu.config.DurationCtxTOSlow)
 			defer cancel()
-			bu.sendEmailNotificationHotelConfirm(newCtx, inv.BookingDetail, invBookingID)
-		}(invoice)
-		resp.Invoice = append(resp.Invoice, bookingdto.DataInvoice{
-			InvoiceNumber: invoice.InvoiceCode,
-			DetailInvoice: invoice.DetailInvoice,
-			InvoiceDate:   time.Now().Format(time.DateOnly),
-		})
+			bu.sendConsolidatedEmailNotificationHotelConfirm(newCtx, details, bookingID, guests)
+		}(hotelEmail, bookingDetails, allGuests)
 	}
 
 	return resp, nil
@@ -533,6 +662,207 @@ func (bu *BookingUsecase) getGuestsForEmail(ctx context.Context, bookingID uint)
 	return guests
 }
 
+// sendConsolidatedEmailNotificationHotelConfirm sends one email per hotel with all booking details
+func (bu *BookingUsecase) sendConsolidatedEmailNotificationHotelConfirm(ctx context.Context, bookingDetails []entity.BookingDetail, bookingID uint, guests []GuestEmailInfo) {
+	if len(bookingDetails) == 0 {
+		logger.Warn(ctx, "No booking details provided for consolidated email")
+		return
+	}
+
+	logger.Info(ctx, fmt.Sprintf("Sending consolidated email for %d booking details", len(bookingDetails)))
+
+	emailTemplate, err := bu.emailRepo.GetEmailTemplateByName(ctx, constant.EmailHotelBookingRequest)
+	if err != nil || emailTemplate == nil {
+		logger.Error(ctx, "Failed to get email template:", err)
+		return
+	}
+
+	// Use guests passed as parameter (retrieved before deletion)
+	// This ensures all guests are included even after they're deleted from the database
+
+	// Get hotel info from first booking detail (all should be same hotel)
+	firstBD := bookingDetails[0]
+	hotelEmail := firstBD.RoomPrice.RoomType.Hotel.Email
+	hotelName := firstBD.RoomPrice.RoomType.Hotel.Name
+	bookingCode := firstBD.Booking.BookingCode
+
+	// Build consolidated booking details
+	var consolidatedBookings []ConsolidatedBookingDetail
+	for index, bd := range bookingDetails {
+		// Calculate room rate in IDR (always use IDR for hotel emails)
+		nights := int(bd.CheckOutDate.Sub(bd.CheckInDate).Hours() / 24)
+		var rateIDR float64
+
+		// Get base price in IDR from RoomPrice.Prices map
+		var basePriceIDR float64
+		if len(bd.RoomPrice.Prices) > 0 {
+			if price, _, err := currency.GetPriceForCurrency(bd.RoomPrice.Prices, "IDR"); err == nil {
+				basePriceIDR = price
+			} else {
+				basePriceIDR = bd.RoomPrice.Price
+			}
+		} else {
+			basePriceIDR = bd.RoomPrice.Price
+		}
+
+		// Recalculate rate in IDR with promo if applicable
+		if bd.Promo != nil {
+			promo := bd.Promo
+			switch promo.PromoTypeID {
+			case constant.PromoTypeFixedPriceID:
+				if len(promo.Detail.Prices) > 0 {
+					if price, _, err := currency.GetPriceForCurrency(promo.Detail.Prices, "IDR"); err == nil {
+						rateIDR = price
+					} else if promo.Detail.FixedPrice > 0 {
+						rateIDR = promo.Detail.FixedPrice
+					}
+				} else if promo.Detail.FixedPrice > 0 {
+					rateIDR = promo.Detail.FixedPrice
+				}
+				if promo.Duration > nights {
+					rateIDR += float64(nights-promo.Duration) * basePriceIDR
+				}
+			case constant.PromoTypeDiscountID:
+				rateIDR = (100 - promo.Detail.DiscountPercentage) / 100 * basePriceIDR * float64(nights)
+				if promo.Duration > nights {
+					rateIDR += float64(nights-promo.Duration) * basePriceIDR
+				}
+			default:
+				rateIDR = basePriceIDR * float64(nights)
+			}
+		} else {
+			rateIDR = basePriceIDR * float64(nights)
+		}
+
+		// Fetch original RoomTypeAdditional to get IDR prices for additional services
+		var roomTypeAdditionalIDs []uint
+		for _, additional := range bd.BookingDetailsAdditional {
+			roomTypeAdditionalIDs = append(roomTypeAdditionalIDs, additional.RoomTypeAdditionalID)
+		}
+
+		roomTypeAdditionalsMap := make(map[uint]entity.RoomTypeAdditional)
+		if len(roomTypeAdditionalIDs) > 0 {
+			roomTypeAdditionals, err := bu.hotelRepo.GetRoomTypeAdditionalsByIDs(ctx, roomTypeAdditionalIDs)
+			if err != nil {
+				logger.Error(ctx, "Failed to get room type additionals for IDR prices", err.Error())
+			} else {
+				for _, rta := range roomTypeAdditionals {
+					roomTypeAdditionalsMap[rta.ID] = rta
+				}
+			}
+		}
+
+		// Format additional services with IDR prices
+		var additionalServices []AdditionalServiceEmailInfo
+		for _, additional := range bd.BookingDetailsAdditional {
+			serviceInfo := AdditionalServiceEmailInfo{
+				Name:       additional.NameAdditional,
+				Category:   additional.Category,
+				IsRequired: additional.IsRequired,
+			}
+			if additional.Category == constant.AdditionalServiceCategoryPrice {
+				if rta, exists := roomTypeAdditionalsMap[additional.RoomTypeAdditionalID]; exists {
+					if len(rta.Prices) > 0 {
+						if priceIDR, _, err := currency.GetPriceForCurrency(rta.Prices, "IDR"); err == nil {
+							serviceInfo.Price = fmt.Sprintf("%.2f", priceIDR)
+						} else if rta.Price != nil {
+							serviceInfo.Price = fmt.Sprintf("%.2f", *rta.Price)
+						}
+					} else if rta.Price != nil {
+						serviceInfo.Price = fmt.Sprintf("%.2f", *rta.Price)
+					}
+				} else if additional.Price != nil {
+					logger.Warn(ctx, fmt.Sprintf("RoomTypeAdditional not found for ID %d, using stored price", additional.RoomTypeAdditionalID))
+					serviceInfo.Price = fmt.Sprintf("%.2f", *additional.Price)
+				}
+			} else if additional.Category == constant.AdditionalServiceCategoryPax && additional.Pax != nil {
+				serviceInfo.Pax = fmt.Sprintf("%d", *additional.Pax)
+			}
+			additionalServices = append(additionalServices, serviceInfo)
+		}
+
+		// Format bed types
+		bedTypesStr := strings.Join(bd.BedTypeNames, ", ")
+
+		consolidatedBooking := ConsolidatedBookingDetail{
+			BookingNumber:      index + 1, // 1-based numbering
+			SubBookingID:       bd.SubBookingID,
+			GuestName:          bd.Guest,
+			Period:             fmt.Sprintf("%s to %s", bd.CheckInDate.Format("02-01-2006"), bd.CheckOutDate.Format("02-01-2006")),
+			RoomType:           bd.DetailRooms.RoomTypeName,
+			BedTypes:           bedTypesStr,
+			Rate:               fmt.Sprintf("%.2f", rateIDR),
+			AdditionalServices: additionalServices,
+			Additional:         strings.Join(bd.BookingDetailAdditionalName, ", "),
+		}
+		consolidatedBookings = append(consolidatedBookings, consolidatedBooking)
+	}
+
+	// Build email data with consolidated bookings
+	data := HotelEmailData{
+		Guests:             guests,
+		GuestName:          bookingDetails[0].Guest, // Keep for backward compatibility (first guest)
+		Period:             "",                      // Will be shown per booking
+		RoomType:           "",                      // Will be shown per booking
+		BedTypes:           "",                      // Will be shown per booking
+		Rate:               "",                      // Will be shown per booking
+		BookingCode:        bookingCode,
+		Additional:         "",                             // Will be shown per booking
+		AdditionalServices: []AdditionalServiceEmailInfo{}, // Will be shown per booking
+		BookingDetails:     consolidatedBookings,
+	}
+
+	if emailTemplate.IsSignatureImage && emailTemplate.Signature != "" {
+		data.SystemSignature = bu.assignSignatureEmail(emailTemplate.Signature)
+	}
+
+	if data.SystemSignature == "" && emailTemplate.Signature != "" {
+		data.SystemSignature = emailTemplate.Signature
+	}
+
+	subjectParsed, err := utils.ParseTemplate(emailTemplate.Subject, data)
+	bodyHTML, err := utils.ParseTemplate(emailTemplate.Body, data)
+	if err != nil {
+		logger.Error(ctx, "Failed to parse hotel email template:", err)
+		return
+	}
+
+	emailLog := entity.EmailLog{
+		To:              hotelEmail,
+		Subject:         subjectParsed,
+		Body:            bodyHTML,
+		EmailTemplateID: uint(emailTemplate.ID),
+	}
+	metadataLog := entity.MetadataEmailLog{
+		HotelName: hotelName,
+	}
+	emailLog.Meta = &metadataLog
+
+	var dataEmail bool
+	statusEmailID := constant.StatusEmailSuccessID
+	if err = bu.emailRepo.CreateEmailLog(ctx, &emailLog); err != nil {
+		logger.Error(ctx, "Failed to create email log:", err)
+		dataEmail = false
+	} else {
+		dataEmail = true
+	}
+
+	err = bu.emailSender.Send(ctx, constant.ScopeHotel, hotelEmail, subjectParsed, bodyHTML, "Please view this email in HTML format.")
+	if err != nil {
+		logger.Error(ctx, "Failed to sending email:", err.Error())
+		statusEmailID = constant.StatusEmailFailedID
+		metadataLog.Notes = fmt.Sprintf("Failed to send email: %s", err.Error())
+		emailLog.Meta = &metadataLog
+	}
+
+	if dataEmail {
+		emailLog.StatusID = uint(statusEmailID)
+		if err := bu.emailRepo.UpdateStatusEmailLog(ctx, &emailLog); err != nil {
+			logger.Error(ctx, "Failed to update email log:", err.Error())
+		}
+	}
+}
+
 type HotelEmailData struct {
 	Guests             []GuestEmailInfo
 	GuestName          string // Keep for backward compatibility
@@ -545,4 +875,19 @@ type HotelEmailData struct {
 	Additional         string // Keep for backward compatibility (comma-separated names)
 	AdditionalServices []AdditionalServiceEmailInfo
 	SystemSignature    string // bisa berupa teks atau <img src="...">
+	// Consolidated booking data
+	BookingDetails []ConsolidatedBookingDetail // For multiple bookings in one email
+}
+
+// ConsolidatedBookingDetail represents a single booking detail for consolidated email
+type ConsolidatedBookingDetail struct {
+	BookingNumber      int // 1-based booking number for display
+	SubBookingID       string
+	GuestName          string
+	Period             string
+	RoomType           string
+	BedTypes           string
+	Rate               string
+	AdditionalServices []AdditionalServiceEmailInfo
+	Additional         string
 }
