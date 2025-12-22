@@ -16,6 +16,8 @@ func EmailRoute(app *bootstrap.Application, middlewareMap MiddlewareMap, routerG
 		emailRouter.GET("/template", middlewareMap.Auth, middlewareMap.TimeoutFast, emailHandler.EmailTemplate)
 		emailRouter.PUT("/template", middlewareMap.Auth, middlewareMap.TimeoutFile, emailHandler.UpdateEmailTemplate)
 		emailRouter.GET("/logs", middlewareMap.Auth, middlewareMap.TimeoutFast, emailHandler.ListEmailLogs)
+		emailRouter.GET("/logs/:id", middlewareMap.Auth, middlewareMap.TimeoutFast, emailHandler.GetEmailLogDetail)
+		emailRouter.POST("/logs/retry", middlewareMap.Auth, middlewareMap.TimeoutSlow, emailHandler.RetryEmail)
 	}
 
 }

@@ -587,7 +587,8 @@ func (bu *BookingUsecase) sendEmailNotificationHotelConfirm(ctx context.Context,
 		EmailTemplateID: uint(emailTemplate.ID),
 	}
 	metadataLog := entity.MetadataEmailLog{
-		HotelName: bd.RoomPrice.RoomType.Hotel.Name,
+		HotelName:   bd.RoomPrice.RoomType.Hotel.Name,
+		BookingCode: bd.Booking.BookingCode,
 	}
 	emailLog.Meta = &metadataLog
 
@@ -834,7 +835,8 @@ func (bu *BookingUsecase) sendConsolidatedEmailNotificationHotelConfirm(ctx cont
 		EmailTemplateID: uint(emailTemplate.ID),
 	}
 	metadataLog := entity.MetadataEmailLog{
-		HotelName: hotelName,
+		HotelName:   hotelName,
+		BookingCode: bookingCode,
 	}
 	emailLog.Meta = &metadataLog
 
