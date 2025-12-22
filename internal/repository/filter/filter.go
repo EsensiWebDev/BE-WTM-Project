@@ -37,7 +37,12 @@ type DefaultFilter struct {
 
 type EmailLogFilter struct {
 	dto.PaginationRequest
-	EmailType []string
+	EmailType   []string
+	Status      []string
+	HotelName   string
+	BookingCode string
+	DateFrom    *time.Time
+	DateTo      *time.Time
 }
 
 type BannerFilter struct {

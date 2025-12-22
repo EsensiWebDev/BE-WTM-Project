@@ -88,7 +88,8 @@ func (bu *BookingUsecase) sendEmailNotificationHotelCancel(ctx context.Context, 
 		EmailTemplateID: uint(emailTemplate.ID),
 	}
 	metadataLog := entity.MetadataEmailLog{
-		HotelName: bd.RoomPrice.RoomType.Hotel.Name,
+		HotelName:   bd.RoomPrice.RoomType.Hotel.Name,
+		BookingCode: bd.Booking.BookingCode,
 	}
 	emailLog.Meta = &metadataLog
 

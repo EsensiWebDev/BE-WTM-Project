@@ -18,6 +18,7 @@ type EmailRepository interface {
 	CreateEmailLog(ctx context.Context, log *entity.EmailLog) error
 	UpdateStatusEmailLog(ctx context.Context, log *entity.EmailLog) error
 	GetEmailLogs(ctx context.Context, filter filter.EmailLogFilter) ([]entity.EmailLog, int64, error)
+	GetEmailLogByID(ctx context.Context, id uint) (*entity.EmailLog, error)
 }
 
 type EmailUsecase interface {
@@ -25,4 +26,6 @@ type EmailUsecase interface {
 	UpdateEmailTemplate(ctx context.Context, req *emaildto.UpdateEmailTemplateRequest) error
 	SendContactUsEmail(ctx context.Context, req *emaildto.SendContactUsEmailRequest) error
 	ListEmailLogs(ctx context.Context, req *emaildto.ListEmailLogsRequest) (*emaildto.ListEmailLogsResponse, error)
+	GetEmailLogDetail(ctx context.Context, id uint) (*emaildto.EmailLogDetailResponse, error)
+	RetryEmail(ctx context.Context, req *emaildto.RetryEmailRequest) (*emaildto.RetryEmailResponse, error)
 }

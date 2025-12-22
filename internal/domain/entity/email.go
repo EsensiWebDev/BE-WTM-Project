@@ -15,7 +15,8 @@ type EmailLog struct {
 }
 
 type MetadataEmailLog struct {
-	HotelName string `json:"hotel_name"`
-	AgentName string `json:"agent_name"`
-	Notes     string `json:"notes"`
+	HotelName   string `json:"hotel_name"`
+	AgentName   string `json:"agent_name"`
+	Notes       string `json:"notes"`
+	BookingCode string `json:"booking_code,omitempty"`
 }

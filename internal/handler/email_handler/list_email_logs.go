@@ -24,7 +24,7 @@ func (eh *EmailHandler) ListEmailLogs(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	var req emaildto.ListEmailLogsRequest
-	if err := c.ShouldBind(&req); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		logger.Error(ctx, "Error binding request:", err.Error())
 		response.Error(c, http.StatusBadRequest, "Invalid request payload")
 		return

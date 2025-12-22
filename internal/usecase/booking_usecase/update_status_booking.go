@@ -180,7 +180,10 @@ func (bu *BookingUsecase) sendEmailNotificationAgent(ctx context.Context, detail
 				Body:            bodyHTML,
 				EmailTemplateID: uint(emailTemplate.ID),
 			}
-			metadataLog := entity.MetadataEmailLog{AgentName: booking.AgentName}
+			metadataLog := entity.MetadataEmailLog{
+				AgentName:   booking.AgentName,
+				BookingCode: booking.BookingCode,
+			}
 			emailLog.Meta = &metadataLog
 
 			var dataEmail bool
