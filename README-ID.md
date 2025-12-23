@@ -138,4 +138,50 @@ docker exec -t <postgres-container> pg_dump -U $POSTGRES_USER -d $POSTGRES_DB > 
 - [ ] Swagger dapat diakses
 - [ ] Firewall & DNS OK
 
+## 13) Proses Deployment Langkah demi Langkah
+
+### Langkah 1: Bangun Aplikasi Secara Lokal
+
+Sebelum mengunggah ke server, bangun binary Go secara lokal:
+
+```bash
+GOOS=linux GOARCH=amd64 go build -o app ./cmd/main.go
+```
+- `GOOS=linux`: target OS Linux
+- `GOARCH=amd64`: target arsitektur 64-bit
+- `-o app`: nama output binary
+- `./cmd/main.go`: titik masuk aplikasi
+#### Tunggu hingga proses build selesai.
+
+### Langkah 2: Salin Binary ke Server via SFTP
+
+1. Hubungkan ke server menggunakan klien SFTP Anda 
+2. Navigasi ke folder backend di server 
+3. Langkah keamanan opsional: Ganti nama file app yang ada (misalnya, app.old) jika ada 
+4. Unggah file app yang baru dibangun (drag and drop dari folder lokal Anda)
+5. Pastikan file ditempatkan di direktori server yang benar
+#### Tunggu hingga transfer file selesai.
+
+### Langkah 3: Perbarui Container Docker di Server
+
+1. SSH ke server menggunakan terminal 
+2. Navigasi ke direktori backend yang berisi docker-compose.yml 
+3. Jalankan perintah pembaruan:
+```bash
+docker compose up -d --build --no-deps backend
+```
+Perintah ini hanya membangun ulang container backend tanpa mempengaruhi layanan lainnya.
+
+#### Tunggu container untuk dibangun ulang dan restart.
+
+### Langkah 4: Verifikasi Deployment
+
+Periksa log aplikasi untuk memastikan deployment berhasil:
+
+```bash
+docker compose logs -f backend
+```
+
+Cari error apa pun dan verifikasi aplikasi dimulai dengan benar.
+
 ---

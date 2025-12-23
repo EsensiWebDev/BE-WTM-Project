@@ -139,3 +139,53 @@ docker exec -t <postgres-container> pg_dump -U $POSTGRES_USER -d $POSTGRES_DB > 
 - [ ] Firewall & DNS configured
 
 ---
+
+## 13) Step-by-Step Deployment Process
+### Step 1: Build the Application Locally
+
+Before uploading to the server, build the Go binary locally:
+```bash
+GOOS=linux GOARCH=amd64 go build -o app ./cmd/main.go
+```
+
+- `GOOS=linux`: file is complete
+ target OS Linux
+- `GOARCH=amd64`: target architecture 64-bit
+- `-o app`: output binary name
+- `./cmd/main.go`: application entry point 
+
+#### Wait until the build process completes.
+
+### Step 2: Copy Binary to Server via SFTP
+
+1. Connect to the server using your SFTP client
+2. Navigate to the backend folder on the server 
+3. Optional safety step: Rename the existing app file (e.g., app.old) if present 
+4. Upload the newly built app file (drag and drop from your local folder)
+5. Ensure the file is placed in the correct server directory
+   
+#### Wait for the file transfer to complete.
+
+### Step 3: Update Docker Container on Server
+
+1. SSH into the server using terminal 
+2. Navigate to the backend directory containing docker-compose.yml 
+3. Run the update command:
+
+``` bash
+docker compose up -d --build --no-deps backend
+```
+This command rebuilds only the backend container without affecting other services.
+
+#### Wait for the container to rebuild and restart.
+
+### Step 4: Verify Deployment
+
+Check the application logs to confirm successful deployment:
+
+```bash
+docker compose logs -f backend
+```
+Look for any errors and verify the application
+
+---
