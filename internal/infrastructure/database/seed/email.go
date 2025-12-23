@@ -306,6 +306,12 @@ For security reasons, please update your password immediately after your first l
 We strongly recommend changing this temporary password to a new, secure one to keep your account protected.
 </p>
 
+<h3>Visit this link to update your password</h3>
+<p>
+After logging in, you can go directly to your account settings here:<br>
+👉 <a href="{{.AccountSettingsLink}}" target="_blank">{{.AccountSettingsLink}}</a>
+</p>
+
 <p>Best regards,<br>
 World Travel Management</p>
 `

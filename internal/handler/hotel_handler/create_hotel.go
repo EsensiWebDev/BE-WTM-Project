@@ -1,12 +1,13 @@
 package hotel_handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"wtm-backend/internal/dto/hoteldto"
 	"wtm-backend/internal/response"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CreateHotel godoc
@@ -34,7 +35,14 @@ func (hh *HotelHandler) CreateHotel(c *gin.Context) {
 	var req hoteldto.CreateHotelRequest
 	if err := c.ShouldBind(&req); err != nil {
 		logger.Error(ctx, "Failed to bind CreateHotelRequest", err.Error())
-		response.Error(c, http.StatusBadRequest, "Invalid request payload")
+		// Check if error is related to payload size
+		if err.Error() == "http: request body too large" ||
+			err.Error() == "multipart: NextPart: EOF" ||
+			err.Error() == "request entity too large" {
+			response.Error(c, http.StatusRequestEntityTooLarge, "Payload too large. Maximum file size is 2MB per image.")
+			return
+		}
+		response.Error(c, http.StatusBadRequest, "Invalid request payload: "+err.Error())
 		return
 	}
 
