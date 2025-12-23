@@ -103,14 +103,14 @@ func (uu *UserUsecase) CreateUserByAdmin(ctx context.Context, userReq *userdto.C
 		go func() {
 			newCtx, cancel := context.WithTimeout(context.Background(), uu.config.DurationCtxTOSlow)
 			defer cancel()
-			uu.sendEmail(newCtx, userDB.FullName, userDB.Email, randomString)
+			uu.sendEmail(newCtx, userDB.FullName, userDB.Email, randomString, userDB.RoleID)
 		}()
 
 		return nil
 	})
 }
 
-func (uu *UserUsecase) sendEmail(ctx context.Context, name, email, tempPassword string) {
+func (uu *UserUsecase) sendEmail(ctx context.Context, name, email, tempPassword string, roleID uint) {
 	var statusEmail = constant.EmailAccountActivated
 
 	emailTemplate, err := uu.emailRepo.GetEmailTemplateByName(ctx, statusEmail)
@@ -124,10 +124,20 @@ func (uu *UserUsecase) sendEmail(ctx context.Context, name, email, tempPassword 
 		return
 	}
 
+	var baseURL string
+	if roleID == constant.RoleAgentID {
+		baseURL = uu.config.URLFEAgent
+	} else {
+		baseURL = uu.config.URLFEAdmin
+	}
+
+	accountSettingsLink := fmt.Sprintf("%s/settings/account-setting", baseURL)
+
 	// Inject data
 	data := AccountActivatedEmailData{
-		FullName:          name,
-		TemporaryPassword: tempPassword,
+		FullName:            name,
+		TemporaryPassword:   tempPassword,
+		AccountSettingsLink: accountSettingsLink,
 	}
 
 	bodyHTML, err := utils.ParseTemplate(emailTemplate.Body, data)
@@ -178,6 +188,7 @@ func (uu *UserUsecase) sendEmail(ctx context.Context, name, email, tempPassword 
 }
 
 type AccountActivatedEmailData struct {
-	FullName          string
-	TemporaryPassword string
+	FullName            string
+	TemporaryPassword   string
+	AccountSettingsLink string
 }

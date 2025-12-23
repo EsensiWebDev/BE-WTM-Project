@@ -21,6 +21,10 @@ type MiddlewareMap struct {
 func SetupRouter(app *bootstrap.Application) *gin.Engine {
 	route := gin.Default()
 
+	// Set maximum multipart memory size to 50MB for file uploads
+	// This prevents "payload too large" errors for hotel image uploads
+	route.MaxMultipartMemory = 50 << 20 // 50MB
+
 	// Endpoint metrik untuk Prometheus
 	route.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
