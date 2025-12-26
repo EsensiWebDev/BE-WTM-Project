@@ -9,7 +9,7 @@ type Currency struct {
 	ExternalID ExternalID `gorm:"embedded"`
 	Code       string     `json:"code" gorm:"uniqueIndex;type:varchar(3);not null"` // ISO 4217: USD, IDR, EUR, etc.
 	Name       string     `json:"name" gorm:"type:varchar(100);not null"`           // "US Dollar", "Indonesian Rupiah"
-	Symbol     string     `json:"symbol" gorm:"type:varchar(10)"`                   // "$", "Rp", "€"
+	Symbol     string     `json:"symbol" gorm:"type:varchar(10)"`                   // "$", "IDR", "€"
 	IsActive   bool       `json:"is_active" gorm:"default:true"`
 }
 

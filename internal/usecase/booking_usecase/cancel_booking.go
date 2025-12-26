@@ -7,6 +7,7 @@ import (
 	"wtm-backend/internal/domain/entity"
 	"wtm-backend/internal/dto/bookingdto"
 	"wtm-backend/pkg/constant"
+	"wtm-backend/pkg/currency"
 	"wtm-backend/pkg/logger"
 	"wtm-backend/pkg/utils"
 )
@@ -58,7 +59,7 @@ func (bu *BookingUsecase) sendEmailNotificationHotelCancel(ctx context.Context, 
 		GuestName:   bd.Guest,
 		Period:      fmt.Sprintf("%s to %s", bd.CheckInDate.Format("02-01-2006"), bd.CheckOutDate.Format("02-01-2006")),
 		RoomType:    bd.RoomPrice.RoomType.Name,
-		Rate:        fmt.Sprintf("%.2f", bd.Price),
+		Rate:        currency.FormatCurrency(bd.Price, "IDR", "IDR"), // Use IDR price with currency formatting
 		BookingCode: bd.Booking.BookingCode,
 		Additional:  strings.Join(bd.BookingDetailAdditionalName, ", "),
 	}

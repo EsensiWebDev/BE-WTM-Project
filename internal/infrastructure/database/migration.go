@@ -115,6 +115,12 @@ func (dbs *DBPostgre) runMigrations(ctx context.Context, cfg *config.Config) err
 		return fmt.Errorf("multi-currency migration: %w", err)
 	}
 
+	// ✅ Migrate Currency Symbol: Update IDR symbol from "Rp" to "IDR"
+	if err := dbs.migrateCurrencySymbol(ctx); err != nil {
+		logger.Error(ctx, "Currency symbol migration failed", err.Error())
+		return fmt.Errorf("currency symbol migration: %w", err)
+	}
+
 	logger.Info(ctx, "Database migration completed",
 		fmt.Sprintf("models: %d", len(models)))
 
@@ -958,5 +964,68 @@ func (dbs *DBPostgre) migratePromoDetailStructure(ctx context.Context) error {
 	}
 
 	logger.Info(ctx, "✓ Successfully migrated promo detail structure")
+	return nil
+}
+
+// ✅ FUNGSI BARU: Migrasi Currency Symbol - Update IDR symbol from "Rp" to "IDR"
+func (dbs *DBPostgre) migrateCurrencySymbol(ctx context.Context) error {
+	logger.Info(ctx, "Starting Currency Symbol migration: Updating IDR symbol from 'Rp' to 'IDR'")
+
+	tableName := "currencies"
+
+	// Check if currencies table exists
+	var tableExists bool
+	checkTableSQL := `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.tables 
+			WHERE table_name = $1
+		)
+	`
+	if err := dbs.DB.Raw(checkTableSQL, tableName).Scan(&tableExists).Error; err != nil {
+		return fmt.Errorf("failed to check currencies table existence: %w", err)
+	}
+
+	if !tableExists {
+		logger.Info(ctx, "Currencies table does not exist, skipping migration")
+		return nil
+	}
+
+	// Check if IDR currency exists with old symbol "Rp"
+	var idrCount int64
+	checkIDRSQL := `
+		SELECT COUNT(*) FROM currencies 
+		WHERE code = 'IDR' AND symbol = 'Rp'
+	`
+	if err := dbs.DB.Raw(checkIDRSQL).Scan(&idrCount).Error; err != nil {
+		return fmt.Errorf("failed to check IDR currency: %w", err)
+	}
+
+	if idrCount == 0 {
+		logger.Info(ctx, "No IDR currency found with symbol 'Rp', migration not needed")
+		return nil
+	}
+
+	// Update IDR currency symbol from "Rp" to "IDR"
+	logger.Info(ctx, fmt.Sprintf("Updating %d IDR currency record(s) from symbol 'Rp' to 'IDR'", idrCount))
+	updateSymbolSQL := `
+		UPDATE currencies 
+		SET symbol = 'IDR'
+		WHERE code = 'IDR' AND symbol = 'Rp'
+	`
+	if err := dbs.DB.Exec(updateSymbolSQL).Error; err != nil {
+		return fmt.Errorf("failed to update IDR currency symbol: %w", err)
+	}
+
+	// Verify the update
+	var updatedCount int64
+	verifySQL := `
+		SELECT COUNT(*) FROM currencies 
+		WHERE code = 'IDR' AND symbol = 'IDR'
+	`
+	if err := dbs.DB.Raw(verifySQL).Scan(&updatedCount).Error; err != nil {
+		return fmt.Errorf("failed to verify currency symbol update: %w", err)
+	}
+
+	logger.Info(ctx, fmt.Sprintf("✓ Successfully migrated Currency Symbol: %d IDR record(s) updated to symbol 'IDR'", updatedCount))
 	return nil
 }

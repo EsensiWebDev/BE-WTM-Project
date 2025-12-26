@@ -3,9 +3,15 @@ package booking_repository
 import (
 	"context"
 	"fmt"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"time"
 	"wtm-backend/pkg/logger"
+
+	gonanoid "github.com/matoous/go-nanoid/v2"
+)
+
+const (
+	// customAlphabet contains only uppercase letters and digits (no symbols)
+	customAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
 func (br *BookingRepository) GenerateCode(ctx context.Context, keyRedis string, prefixCode string) (string, error) {
@@ -13,7 +19,11 @@ func (br *BookingRepository) GenerateCode(ctx context.Context, keyRedis string, 
 	redisKey := fmt.Sprintf("%s:%s", keyRedis, date)
 
 	for i := 0; i < 10; i++ {
-		suffix, _ := gonanoid.New(4)
+		suffix, err := gonanoid.Generate(customAlphabet, 6)
+		if err != nil {
+			logger.Warn(ctx, "failed to generate suffix", "error", err)
+			return "", err
+		}
 		used, err := br.redisClient.IsSuffixUsed(ctx, redisKey, suffix)
 		if err != nil {
 			logger.Warn(ctx, "failed to check if redis is used", "error", err)

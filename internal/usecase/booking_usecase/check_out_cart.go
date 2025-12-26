@@ -557,7 +557,7 @@ func (bu *BookingUsecase) sendEmailNotificationHotelConfirm(ctx context.Context,
 		Period:             fmt.Sprintf("%s to %s", bd.CheckInDate.Format("02-01-2006"), bd.CheckOutDate.Format("02-01-2006")),
 		RoomType:           bd.DetailRooms.RoomTypeName,
 		BedTypes:           bedTypesStr,
-		Rate:               fmt.Sprintf("%.2f", rateIDR), // Use IDR price
+		Rate:               currency.FormatCurrency(rateIDR, "IDR", "IDR"), // Use IDR price with currency formatting
 		BookingCode:        bd.Booking.BookingCode,
 		Additional:         strings.Join(bd.BookingDetailAdditionalName, ", "), // Keep for backward compatibility
 		AdditionalServices: additionalServices,
@@ -792,7 +792,7 @@ func (bu *BookingUsecase) sendConsolidatedEmailNotificationHotelConfirm(ctx cont
 			Period:             fmt.Sprintf("%s to %s", bd.CheckInDate.Format("02-01-2006"), bd.CheckOutDate.Format("02-01-2006")),
 			RoomType:           bd.DetailRooms.RoomTypeName,
 			BedTypes:           bedTypesStr,
-			Rate:               fmt.Sprintf("%.2f", rateIDR),
+			Rate:               currency.FormatCurrency(rateIDR, "IDR", "IDR"), // Use IDR price with currency formatting
 			AdditionalServices: additionalServices,
 			Additional:         strings.Join(bd.BookingDetailAdditionalName, ", "),
 		}

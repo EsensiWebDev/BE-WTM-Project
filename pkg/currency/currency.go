@@ -115,3 +115,87 @@ func GetDecimalPlaces(currency string) int {
 	}
 	return 2
 }
+
+// FormatCurrency formats a price value with currency symbol and proper formatting
+// For IDR: uses dot (.) as thousands separator, no decimal places
+// Format: "IDR 750.000"
+func FormatCurrency(amount float64, currencyCode string, symbol string) string {
+	normalizedCurrency := NormalizeCurrencyCode(currencyCode)
+	decimalPlaces := GetDecimalPlaces(normalizedCurrency)
+
+	// Round to appropriate decimal places
+	var roundedAmount float64
+	if decimalPlaces == 0 {
+		roundedAmount = float64(int64(amount + 0.5)) // Round to nearest integer
+	} else {
+		// For currencies with decimals, round to specified decimal places
+		multiplier := 1.0
+		for i := 0; i < decimalPlaces; i++ {
+			multiplier *= 10
+		}
+		roundedAmount = float64(int64(amount*multiplier+0.5)) / multiplier
+	}
+
+	// Format number with appropriate decimal places
+	var amountStr string
+	if decimalPlaces == 0 {
+		amountStr = fmt.Sprintf("%.0f", roundedAmount)
+	} else {
+		amountStr = fmt.Sprintf("%."+fmt.Sprintf("%d", decimalPlaces)+"f", roundedAmount)
+	}
+
+	// Add thousands separators
+	// For IDR: use dot (.) as thousands separator, no decimal separator needed
+	// For others: use comma (,) as thousands separator, dot (.) as decimal separator
+	var formattedAmount string
+	if normalizedCurrency == "IDR" {
+		// Indonesian format: dot as thousands separator, no decimals
+		formattedAmount = formatWithSeparator(amountStr, ".", "")
+	} else {
+		// Default: comma as thousands separator, dot as decimal separator
+		formattedAmount = formatWithSeparator(amountStr, ",", ".")
+	}
+
+	// Return formatted string with symbol prefix
+	return fmt.Sprintf("%s %s", symbol, formattedAmount)
+}
+
+// formatWithSeparator adds thousands separator to a number string
+// numStr: the number string (e.g., "750000" or "750000.50")
+// thousandsSep: the thousands separator (e.g., "." or ",")
+// decimalSep: the decimal separator (e.g., "." or ","), empty string if no decimals
+func formatWithSeparator(numStr string, thousandsSep string, decimalSep string) string {
+	// Split integer and decimal parts using the decimal separator
+	var integerPart, decimalPart string
+	if decimalSep != "" {
+		parts := strings.Split(numStr, decimalSep)
+		integerPart = parts[0]
+		if len(parts) > 1 {
+			decimalPart = decimalSep + parts[1]
+		}
+	} else {
+		// No decimal separator, entire string is integer part
+		integerPart = numStr
+		decimalPart = ""
+	}
+
+	// Add thousands separators from right to left
+	var result strings.Builder
+	count := 0
+	for i := len(integerPart) - 1; i >= 0; i-- {
+		if count > 0 && count%3 == 0 {
+			result.WriteString(thousandsSep)
+		}
+		result.WriteByte(integerPart[i])
+		count++
+	}
+
+	// Reverse the string
+	reversed := result.String()
+	formattedInteger := ""
+	for i := len(reversed) - 1; i >= 0; i-- {
+		formattedInteger += string(reversed[i])
+	}
+
+	return formattedInteger + decimalPart
+}

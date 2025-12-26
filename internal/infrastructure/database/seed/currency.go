@@ -10,7 +10,7 @@ func (s *Seed) SeedCurrency() {
 	s.db.Model(&model.Currency{}).Count(&countCurrency)
 	if countCurrency == 0 {
 		currencies := []model.Currency{
-			{Code: "IDR", Name: "Indonesian Rupiah", Symbol: "Rp", IsActive: true},
+			{Code: "IDR", Name: "Indonesian Rupiah", Symbol: "IDR", IsActive: true},
 			{Code: "USD", Name: "US Dollar", Symbol: "$", IsActive: true},
 			{Code: "EUR", Name: "Euro", Symbol: "€", IsActive: true},
 			{Code: "GBP", Name: "British Pound", Symbol: "£", IsActive: true},
